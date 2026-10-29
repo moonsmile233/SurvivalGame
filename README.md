@@ -83,6 +83,39 @@ H5 读取它来决定加载哪些文件。若换 Unity 版本导致文件名变�
 - [x] 浏览器 Console 无 error（Playwright 采集到 `[]`；此前唯一的 404 是浏览器自动请求 `/favicon.ico`，已用空 icon 声明消除）
 - [x] Playwright 能读到 `Unity Ready` 并点到 `Pong: hello-from-h5`（Chrome channel，截图存 `docs/evidence/m0-playwright.png`）
 
+## 版本管理
+
+仓库使用 **Jujutsu (`jj`)**，colocate 模式（同时保留 `.git`，可直接推 GitHub）。
+
+```bash
+jj status                 # 看改动
+jj log                    # 看历史
+jj describe -m "说明"      # 给当前改动写提交说明
+jj new                    # 完结当前改动，开下一个
+jj bookmark set main -r @ # 把 main 指到当前改动
+```
+
+`.gitignore` 已排除 `Library/`、`Temp/`、`Obj/`、`Logs/`、`UserSettings/`、`*.csproj`、`*.sln`
+等可重建内容；Unity 会自己重新生成它们，**不要提交**。
+
+首次连接 GitHub：
+
+```bash
+jj git remote add origin <你的仓库地址>
+jj git push --bookmark main
+```
+
+## 发布到 GitHub Pages（尚未配置）
+
+`web/unity/`（构建产物）默认不入库，所以直接把仓库挂 Pages 是没内容的。两种做法：
+
+1. **提交构建产物**（推荐，简单）：删掉 `.gitignore` 里的 `/web/unity/` 一行，
+   重新 `jj status` / 提交；然后仓库 Settings → Pages 选择 `web/` 目录作为站点根。
+2. **CI 构建**：用 GitHub Actions 在流水线里跑 `BuildScript.BuildWebGL`，
+   需要配置 Unity License secret，配置成本明显更高。
+
+无论哪种，H5 入口都是 `web/index.html`；`build-info.json` 由构建生成，不要手工改。
+
 ## 约定
 
 - 游戏内 UI 只用英文 + 数字；中文文案放在 H5。
