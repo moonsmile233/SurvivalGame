@@ -1,0 +1,9 @@
+Total messages: 60 (Errors: 0, Warnings: 6)
+Returning 6 messages for level "warning"
+
+[WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:http://127.0.0.1:8000/35b906bd-890b-4077-af62-339ceb97c3e2:8
+[WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:http://127.0.0.1:8000/35b906bd-890b-4077-af62-339ceb97c3e2:8
+[WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:http://127.0.0.1:8000/35b906bd-890b-4077-af62-339ceb97c3e2:8
+[WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:http://127.0.0.1:8000/35b906bd-890b-4077-af62-339ceb97c3e2:8
+[WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:http://127.0.0.1:8000/35b906bd-890b-4077-af62-339ceb97c3e2:8
+[WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:http://127.0.0.1:8000/35b906bd-890b-4077-af62-339ceb97c3e2:8

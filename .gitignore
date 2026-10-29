@@ -1,0 +1,58 @@
+# ---- Unity 生成目录（体积大、可重建，绝不入库）----
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+/[Aa]ssetStoreTools*/
+/[Aa]ssets/[Aa]ssetStoreTools*/
+
+# Unity 崩溃报告
+sysinfo.txt
+
+# ---- IDE / 工程文件（Unity 自动重建）----
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+.vs/
+.idea/
+.vscode/
+*.DotSettings.user
+
+# ---- 构建产物 ----
+# 说明：WebGL 产物落在 web/unity/，默认不入库（可随时重建）。
+# 如果改成「提交产物、让 GitHub Pages 直接托管」，删掉下面这一行并重新提交即可。
+/web/unity/
+/[Bb]uild/
+/[Bb]uilds/
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# ---- Addressables ----
+/[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
+/[Aa]ssets/[Ss]treamingAssets/aa.meta
+/[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# ---- 本机工具产物 ----
+.playwright-mcp/
+
+# ---- 编辑器 / Claude Code 本地设置 ----
+.claude/settings.local.json
+
+# ---- 操作系统 ----
+.DS_Store
+Thumbs.db

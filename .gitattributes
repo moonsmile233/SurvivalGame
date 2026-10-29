@@ -1,0 +1,29 @@
+# 统一换行，避免 Windows/Linux 互相制造无意义 diff
+* text=auto
+
+# Unity 的 YAML 资产按文本处理（便于 diff）
+*.unity     text
+*.prefab    text
+*.asset     text
+*.mat       text
+*.anim      text
+*.controller text
+*.meta      text
+*.jslib     text
+*.shader    text
+*.uss       text
+*.uxml      text
+*.json      text
+
+# 二进制，不做行尾转换
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.psd   binary
+*.tga   binary
+*.fbx   binary
+*.wav   binary
+*.mp3   binary
+*.ogg   binary
+*.unityweb binary
+*.wasm  binary
