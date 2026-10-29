@@ -5,7 +5,7 @@
 
 ## 文档索引
 - 完整设计规范：`docs/项目规范.md`（实现前先读第 5、6、7、11 节）
-- 当前任务：`docs/tickets/M0.md`
+- 当前任务：M0 已完成（`docs/tickets/M0.md`、`docs/M0-执行记录.md`）；M1 ticket 待提供
 - 通信协议：规范第 7 节（M0 通过后抽成 `docs/bridge-protocol.md`）
 
 ## 环境（已确认，不要猜）
@@ -16,10 +16,21 @@
 - 系统：Windows 11；Shell：Git Bash；Python 3.13 / Node 24 可用
 - 外网访问走代理 `http://127.0.0.1:7897`
 - UnityMCP 已配置在 `http://127.0.0.1:8081/mcp`（8080 是别的项目）：**有就用，没有就走文件 + batchmode，M0 不依赖它**
+- 构建产物实际文件名（Unity 6 + Brotli + Decompression Fallback，**是 `.unityweb` 后缀**，不是 `.data.br`）：
+  - `web/unity/Build/unity.loader.js`
+  - `web/unity/Build/unity.data.unityweb`
+  - `web/unity/Build/unity.framework.js.unityweb`
+  - `web/unity/Build/unity.wasm.unityweb`
+  - `web/unity/build-info.json` 由 `BuildScript` **扫描实际产物生成**，不要手改；换 Unity 版本后重跑构建即可自适应
+- 构建耗时：约 6 分钟；产物约 8 MB（M0 空场景）
+- 构建方式验证情况：**菜单 `Survival/Build WebGL` 已实测成功**；batchmode 命令路径已核对，但**尚未实测**（编辑器开着时无法跑，会撞工程锁）
+- 发布：Netlify，线上 <https://survivalgame-m0.netlify.app>，部署命令 `bash scripts/deploy-netlify.sh`。
+  新站点默认「需登录访问」，必须在后台 **Project configuration → General → Visitor access → Visibility** 改成 **Public**
+- npm 默认缓存 `D:\nodejs\node_cache` 当前用户不可写，`npx` 需带 `npm_config_cache="D:/agent使用学习/浏览器相关/.npm-cache"`
 
-## 当前里程碑：M0（打通链路）
-只做：空场景 → 构建 WebGL → H5 加载 → 双向一条消息。
-不做：玩家、敌人、计分、UI 美术、音效。
+## 当前里程碑：M1（未开始）
+M0（打通链路）已于 2026-10-29 完成并通过验收，执行记录见 `docs/M0-执行记录.md`。
+M1 ticket 尚未提供，**不要自行开始 M1**。
 
 ## 硬约束
 1. **一个状态一个作者**：静态结构（相机、Canvas、玩家、生成器）放在场景里；动态物体（敌人、特效、飘字）运行时生成。禁止两边各生成一份。

@@ -2,8 +2,26 @@
 
 2D 生存挑战：Unity WebGL 构建，由 H5 页面承载。玩家存活 60 秒获胜，H5 显示并保存最高分。
 
-**当前状态：M0（打通链路）已完成** —— 空场景 → WebGL 构建 → H5 加载 → 双向一条消息。
-玩家、敌人、计分、HUD 美术、音效属于 M1/M2，尚未开始。
+## 当前状态
+
+- **M0（打通链路）已完成**（2026-10-29）：空场景 → WebGL 构建 → H5 加载 → 双向一条消息
+- **线上地址**：<https://survivalgame-m0.netlify.app>
+- 玩家、敌人、计分、HUD 美术、音效属于 M1/M2，**尚未开始**
+- 验收证据与偏差记录：`docs/M0-执行记录.md`
+
+**构建**（编辑器打开时点菜单；关闭时用 batchmode，详见下文「构建」）：
+
+```text
+Survival/Setup Scene     # 重建 Assets/Scenes/Game.unity
+Survival/Build WebGL     # 构建到 web/unity
+```
+
+**预览**：
+
+```bash
+cd "D:/unityFile/SurvivalGame/web" && python -m http.server 8000
+# 打开 http://localhost:8000
+```
 
 ## 目录
 
