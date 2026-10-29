@@ -1,0 +1,12 @@
+Total messages: 63 (Errors: 0, Warnings: 9)
+Returning 9 messages for level "warning"
+
+[WARNING] [UnityCache] Response is served without Content-Length header. Please reconfigure server to include valid Content-Length for better download performance. @ https://survivalgame-m0.netlify.app/unity/Build/unity.loader.js:0
+[WARNING] [UnityCache] Response is served without Content-Length header. Please reconfigure server to include valid Content-Length for better download performance. @ https://survivalgame-m0.netlify.app/unity/Build/unity.loader.js:0
+[WARNING] [UnityCache] Response is served without Content-Length header. Please reconfigure server to include valid Content-Length for better download performance. @ https://survivalgame-m0.netlify.app/unity/Build/unity.loader.js:0
+[WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:https://survivalgame-m0.netlify.app/9f002520-9e0b-4d84-bc6e-a0b778ce5683:8
+[WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:https://survivalgame-m0.netlify.app/9f002520-9e0b-4d84-bc6e-a0b778ce5683:8
+[WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:https://survivalgame-m0.netlify.app/9f002520-9e0b-4d84-bc6e-a0b778ce5683:8
+[WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:https://survivalgame-m0.netlify.app/9f002520-9e0b-4d84-bc6e-a0b778ce5683:8
+[WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:https://survivalgame-m0.netlify.app/9f002520-9e0b-4d84-bc6e-a0b778ce5683:8
+[WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:https://survivalgame-m0.netlify.app/9f002520-9e0b-4d84-bc6e-a0b778ce5683:8

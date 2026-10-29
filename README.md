@@ -107,7 +107,16 @@ jj git push --bookmark main
 
 ## 发布（Netlify，本地部署）
 
+**线上地址：<https://survivalgame-m0.netlify.app>**
+
 采用「本地构建 + 本地部署」：构建产物**不进仓库**，每次构建后用 Netlify CLI 上传 `web/`。
+
+站点信息：项目名 `survivalgame-m0`，Site ID `4d183772-2a92-4ff5-8cbc-b77450df46dd`，
+团队 `moonsmile233`。
+
+> 新站点创建后默认开了「需要登录访问」，必须到
+> **Project configuration → General → Visitor access → Visibility** 改成 **Public** 才能被公开访问，
+> 否则访客会看到 Netlify 登录页。该开关只能从网页后台改（公开 API 不提供写入）。
 
 一次性准备：
 
