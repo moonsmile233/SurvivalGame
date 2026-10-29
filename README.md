@@ -105,16 +105,36 @@ jj git remote add origin <你的仓库地址>
 jj git push --bookmark main
 ```
 
-## 发布到 GitHub Pages（尚未配置）
+## 发布（Netlify，本地部署）
 
-`web/unity/`（构建产物）默认不入库，所以直接把仓库挂 Pages 是没内容的。两种做法：
+采用「本地构建 + 本地部署」：构建产物**不进仓库**，每次构建后用 Netlify CLI 上传 `web/`。
 
-1. **提交构建产物**（推荐，简单）：删掉 `.gitignore` 里的 `/web/unity/` 一行，
-   重新 `jj status` / 提交；然后仓库 Settings → Pages 选择 `web/` 目录作为站点根。
-2. **CI 构建**：用 GitHub Actions 在流水线里跑 `BuildScript.BuildWebGL`，
-   需要配置 Unity License secret，配置成本明显更高。
+一次性准备：
 
-无论哪种，H5 入口都是 `web/index.html`；`build-info.json` 由构建生成，不要手工改。
+```bash
+npx netlify-cli login   # 浏览器授权，需要本人操作
+npx netlify-cli link    # 选择或新建站点
+```
+
+之后每次发布：
+
+```bash
+# 1) 构建 WebGL（编辑器开着点菜单 Survival/Build WebGL；关着用 batchmode）
+# 2) 部署
+bash scripts/deploy-netlify.sh
+```
+
+`netlify.toml` 已固定 `publish = "web"`；`/unity/Build/*` 与 `build-info.json` 设为不缓存，
+因为 Unity 产物文件名跨构建不变，长缓存会导致更新后浏览器仍加载旧包。
+
+### 想改成「推 GitHub 就自动上线」
+
+把 `.gitignore` 里的 `/web/unity/` 删掉、把构建产物提交，然后在 Netlify 里连接这个仓库即可。
+代价是每次构建都会往历史里塞约 8 MB 二进制，等游戏定型再切也不迟。
+
+### GitHub Pages（备选，未采用）
+
+Pages 同理需要产物在仓库里；`web/` 作为站点根即可。当前方案不依赖它。
 
 ## 约定
 

@@ -1,0 +1,15 @@
+# Netlify 只做静态托管：Unity WebGL 产物在本地构建，再由 CLI 上传。
+# 部署：scripts/deploy-netlify.sh（等价于 npx netlify-cli deploy --dir=web --prod）
+[build]
+  publish = "web"
+
+# 构建产物文件名跨构建保持不变（unity.loader.js 等），不能长缓存，否则会拿到旧包
+[[headers]]
+  for = "/unity/Build/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/unity/build-info.json"
+  [headers.values]
+    Cache-Control = "no-cache"
