@@ -1,0 +1,432 @@
+[     189ms] [LOG] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.framework.js.unityweb" file. @ http://localhost:8000/unity/Build/unity.loader.js:0
+[     267ms] [LOG] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.data.unityweb" file. @ http://localhost:8000/unity/Build/unity.loader.js:0
+[     281ms] [LOG] [UnityCache] 'http://localhost:8000/unity/Build/unity.data.unityweb' successfully downloaded and stored in the browser cache @ http://localhost:8000/unity/Build/unity.loader.js:0
+[     297ms] [LOG] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.wasm.unityweb" file. @ http://localhost:8000/unity/Build/unity.loader.js:0
+[    1456ms] [LOG] [UnityMemory] Configuration Parameters - Can be set up in boot.config
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1456ms] [LOG]     "memorysetup-allocator-temp-initial-block-size-main=262144"
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1456ms] [LOG]     "memorysetup-allocator-temp-initial-block-size-worker=262144"
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1456ms] [LOG]     "memorysetup-temp-allocator-size-audio-worker=65536"
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1456ms] [LOG]     "memorysetup-temp-allocator-size-background-worker=32768"
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1456ms] [LOG]     "memorysetup-bucket-allocator-granularity=16"
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1456ms] [LOG]     "memorysetup-bucket-allocator-bucket-count=8"
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1456ms] [LOG]     "memorysetup-bucket-allocator-block-size=4194304"
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1456ms] [LOG]     "memorysetup-bucket-allocator-block-count=1"
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1457ms] [LOG]     "memorysetup-main-allocator-block-size=16777216"
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1457ms] [LOG]     "memorysetup-thread-allocator-block-size=16777216"
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1457ms] [LOG]     "memorysetup-gfx-main-allocator-block-size=16777216"
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1457ms] [LOG]     "memorysetup-gfx-thread-allocator-block-size=16777216"
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1457ms] [LOG]     "memorysetup-cache-allocator-block-size=4194304"
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1457ms] [LOG]     "memorysetup-typetree-allocator-block-size=2097152"
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1457ms] [LOG]     "memorysetup-profiler-bucket-allocator-granularity=16"
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1457ms] [LOG]     "memorysetup-profiler-bucket-allocator-bucket-count=8"
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1457ms] [LOG]     "memorysetup-profiler-bucket-allocator-block-size=4194304"
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1457ms] [LOG]     "memorysetup-profiler-bucket-allocator-block-count=1"
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1457ms] [LOG]     "memorysetup-profiler-allocator-block-size=16777216"
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1457ms] [LOG]     "memorysetup-profiler-editor-allocator-block-size=1048576"
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1457ms] [LOG]     "memorysetup-temp-allocator-size-main=4194304"
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1457ms] [LOG]     "memorysetup-job-temp-allocator-block-size=2097152"
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1458ms] [LOG]     "memorysetup-job-temp-allocator-block-size-background=1048576"
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1458ms] [LOG]     "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1508ms] [LOG] Input System module state changed to: Initialized.
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1510ms] [LOG] [Physics::Module] Initialized fallback backend.
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1510ms] [LOG] [Physics::Module] Id: 0xdecafbad
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1511ms] [LOG] Loading player data from data.unity3d
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1517ms] [LOG] Initialize engine version: 6000.3.22f1 (1c726e1fb402)
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1518ms] [LOG] Creating WebGL 2.0 context. @ http://localhost:8000/unity/Build/unity.loader.js:0
+[    1530ms] [LOG] Renderer: WebKit WebGL
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1530ms] [LOG] Vendor:   WebKit
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1531ms] [LOG] Version:  OpenGL ES 3.0 (WebGL 2.0 (OpenGL ES 3.0 Chromium))
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1531ms] [LOG] GLES:     3
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1531ms] [LOG]  EXT_clip_control EXT_color_buffer_float EXT_color_buffer_half_float EXT_conservative_depth EXT_depth_clamp EXT_disjoint_timer_query_webgl2 EXT_float_blend EXT_polygon_offset_clamp EXT_render_snorm EXT_texture_compression_bptc EXT_texture_compression_rgtc EXT_texture_filter_anisotropic EXT_texture_mirror_clamp_to_edge EXT_texture_norm16 KHR_parallel_shader_compile NV_shader_noperspective_interpolation OES_draw_buffers_indexed OES_sample_variables OES_shader_multisample_interpolation OES_texture_float_linear OVR_multiview2 WEBGL_blend_func_extended WEBGL_clip_cull_distance WEBGL_compressed_texture_s3tc WEBGL_compressed_texture_s3tc_srgb WEBGL_debug_renderer_info WEBGL_debug_shaders WEBGL_lose_context WEBGL_multi_draw WEBGL_polygon_mode WEBGL_provoking_vertex WEBGL_stencil_texturing GL_EXT_clip_control GL_EXT_color_buffer_float GL_EXT_color_buffer_half_float GL_EXT_conservative_depth GL_EXT_depth_clamp GL_EXT_disjoint_timer_query_webgl2 GL_EXT_float_blend GL_EXT_polygon_offset_clamp GL_EXT_render_snorm GL_EXT_
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1531ms] [LOG] texture_compression_bptc GL_EXT_texture_compression_rgtc GL_EXT_texture_filter_anisotropic GL_EXT_texture_mirror_clamp_to_edge GL_EXT_texture_norm16 GL_KHR_parallel_shader_compile GL_NV_shader_noperspective_interpolation GL_OES_draw_buffers_indexed GL_OES_sample_variables GL_OES_shader_multisample_interpolation GL_OES_texture_float_linear GL_OVR_multiview2 GL_WEBGL_blend_func_extended GL_WEBGL_clip_cull_distance GL_WEBGL_compressed_texture_s3tc GL_WEBGL_compressed_texture_s3tc_srgb GL_WEBGL_debug_renderer_info GL_WEBGL_debug_shaders GL_WEBGL_lose_context GL_WEBGL_multi_draw GL_WEBGL_polygon_mode GL_WEBGL_provoking_vertex GL_WEBGL_stencil_texturing
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1533ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1533ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1533ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1533ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1534ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1534ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1537ms] [LOG] OPENGL LOG: Creating OpenGL ES 3.0 graphics device ; Context level  <OpenGL ES 3.0> ; Context handle 1
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1610ms] [LOG] [Physics::Module] Selected backend.
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1610ms] [LOG] [Physics::Module] Name: PhysX
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1610ms] [LOG] [Physics::Module] Id: 0xf2b8ea05
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1610ms] [LOG] [Physics::Module] SDK Version: 4.1.2
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1610ms] [LOG] [Physics::Module] Integration Version: 1.0.0
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1610ms] [LOG] [Physics::Module] Threading Mode: Single-Threaded
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1646ms] [LOG] Input Manager initialize...
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1646ms] [LOG] Input System initialize...
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1667ms] [LOG] UnloadTime: 2.700000 ms
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    1732ms] [LOG] Audio context resumed after 0.156 seconds. @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    3749ms] [LOG] [GameManager] state=Playing
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[    3887ms] [LOG] [App] Unity ready @ http://localhost:8000/js/app.js:30
+[    3887ms] [LOG] [Bridge] ready
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[   11370ms] [LOG] [PlayerHealth] damage=12 hp=88/100
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[   12369ms] [LOG] [PlayerHealth] damage=12 hp=76/100
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[   13387ms] [LOG] [PlayerHealth] damage=12 hp=64/100
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[   14388ms] [LOG] [PlayerHealth] damage=12 hp=52/100
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[   15412ms] [LOG] [PlayerHealth] damage=12 hp=40/100
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[   16430ms] [LOG] [PlayerHealth] damage=12 hp=28/100
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[   17430ms] [LOG] [PlayerHealth] damage=12 hp=16/100
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[   18448ms] [LOG] [PlayerHealth] damage=12 hp=4/100
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[   19467ms] [LOG] [PlayerHealth] damage=12 hp=0/100
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[   19467ms] [LOG] [GameManager] state=Lost survived=15.6s score=150
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[   43861ms] [LOG] [Bridge] ping: hello-from-h5
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[   43861ms] [LOG] [Bridge] pong: hello-from-h5
+ @ blob:http://localhost:8000/5ac152d6-57f9-4eed-8476-e2a5f5810116:8
+[   57930ms] [LOG] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.framework.js.unityweb" file. @ http://localhost:8000/unity/Build/unity.loader.js:0
+[   57952ms] [LOG] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.wasm.unityweb" file. @ http://localhost:8000/unity/Build/unity.loader.js:0
+[   57959ms] [LOG] [UnityCache] 'http://localhost:8000/unity/Build/unity.data.unityweb' successfully revalidated and served from the browser cache @ http://localhost:8000/unity/Build/unity.loader.js:0
+[   57959ms] [LOG] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.data.unityweb" file. @ http://localhost:8000/unity/Build/unity.loader.js:0
+[   58702ms] [LOG] [UnityMemory] Configuration Parameters - Can be set up in boot.config
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58702ms] [LOG]     "memorysetup-allocator-temp-initial-block-size-main=262144"
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58702ms] [LOG]     "memorysetup-allocator-temp-initial-block-size-worker=262144"
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58703ms] [LOG]     "memorysetup-temp-allocator-size-audio-worker=65536"
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58703ms] [LOG]     "memorysetup-temp-allocator-size-background-worker=32768"
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58703ms] [LOG]     "memorysetup-bucket-allocator-granularity=16"
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58703ms] [LOG]     "memorysetup-bucket-allocator-bucket-count=8"
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58703ms] [LOG]     "memorysetup-bucket-allocator-block-size=4194304"
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58703ms] [LOG]     "memorysetup-bucket-allocator-block-count=1"
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58703ms] [LOG]     "memorysetup-main-allocator-block-size=16777216"
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58703ms] [LOG]     "memorysetup-thread-allocator-block-size=16777216"
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58703ms] [LOG]     "memorysetup-gfx-main-allocator-block-size=16777216"
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58703ms] [LOG]     "memorysetup-gfx-thread-allocator-block-size=16777216"
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58703ms] [LOG]     "memorysetup-cache-allocator-block-size=4194304"
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58703ms] [LOG]     "memorysetup-typetree-allocator-block-size=2097152"
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58703ms] [LOG]     "memorysetup-profiler-bucket-allocator-granularity=16"
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58703ms] [LOG]     "memorysetup-profiler-bucket-allocator-bucket-count=8"
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58703ms] [LOG]     "memorysetup-profiler-bucket-allocator-block-size=4194304"
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58703ms] [LOG]     "memorysetup-profiler-bucket-allocator-block-count=1"
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58703ms] [LOG]     "memorysetup-profiler-allocator-block-size=16777216"
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58703ms] [LOG]     "memorysetup-profiler-editor-allocator-block-size=1048576"
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58703ms] [LOG]     "memorysetup-temp-allocator-size-main=4194304"
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58703ms] [LOG]     "memorysetup-job-temp-allocator-block-size=2097152"
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58703ms] [LOG]     "memorysetup-job-temp-allocator-block-size-background=1048576"
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58703ms] [LOG]     "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58745ms] [LOG] Input System module state changed to: Initialized.
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58746ms] [LOG] [Physics::Module] Initialized fallback backend.
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58747ms] [LOG] [Physics::Module] Id: 0xdecafbad
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58748ms] [LOG] Loading player data from data.unity3d
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58753ms] [LOG] Initialize engine version: 6000.3.22f1 (1c726e1fb402)
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58755ms] [LOG] Creating WebGL 2.0 context. @ http://localhost:8000/unity/Build/unity.loader.js:0
+[   58769ms] [LOG] Renderer: WebKit WebGL
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58769ms] [LOG] Vendor:   WebKit
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58769ms] [LOG] Version:  OpenGL ES 3.0 (WebGL 2.0 (OpenGL ES 3.0 Chromium))
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58769ms] [LOG] GLES:     3
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58769ms] [LOG]  EXT_clip_control EXT_color_buffer_float EXT_color_buffer_half_float EXT_conservative_depth EXT_depth_clamp EXT_disjoint_timer_query_webgl2 EXT_float_blend EXT_polygon_offset_clamp EXT_render_snorm EXT_texture_compression_bptc EXT_texture_compression_rgtc EXT_texture_filter_anisotropic EXT_texture_mirror_clamp_to_edge EXT_texture_norm16 KHR_parallel_shader_compile NV_shader_noperspective_interpolation OES_draw_buffers_indexed OES_sample_variables OES_shader_multisample_interpolation OES_texture_float_linear OVR_multiview2 WEBGL_blend_func_extended WEBGL_clip_cull_distance WEBGL_compressed_texture_s3tc WEBGL_compressed_texture_s3tc_srgb WEBGL_debug_renderer_info WEBGL_debug_shaders WEBGL_lose_context WEBGL_multi_draw WEBGL_polygon_mode WEBGL_provoking_vertex WEBGL_stencil_texturing GL_EXT_clip_control GL_EXT_color_buffer_float GL_EXT_color_buffer_half_float GL_EXT_conservative_depth GL_EXT_depth_clamp GL_EXT_disjoint_timer_query_webgl2 GL_EXT_float_blend GL_EXT_polygon_offset_clamp GL_EXT_render_snorm GL_EXT_
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58769ms] [LOG] texture_compression_bptc GL_EXT_texture_compression_rgtc GL_EXT_texture_filter_anisotropic GL_EXT_texture_mirror_clamp_to_edge GL_EXT_texture_norm16 GL_KHR_parallel_shader_compile GL_NV_shader_noperspective_interpolation GL_OES_draw_buffers_indexed GL_OES_sample_variables GL_OES_shader_multisample_interpolation GL_OES_texture_float_linear GL_OVR_multiview2 GL_WEBGL_blend_func_extended GL_WEBGL_clip_cull_distance GL_WEBGL_compressed_texture_s3tc GL_WEBGL_compressed_texture_s3tc_srgb GL_WEBGL_debug_renderer_info GL_WEBGL_debug_shaders GL_WEBGL_lose_context GL_WEBGL_multi_draw GL_WEBGL_polygon_mode GL_WEBGL_provoking_vertex GL_WEBGL_stencil_texturing
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58771ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58771ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58771ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58771ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58772ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58772ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58775ms] [LOG] OPENGL LOG: Creating OpenGL ES 3.0 graphics device ; Context level  <OpenGL ES 3.0> ; Context handle 1
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58839ms] [LOG] [Physics::Module] Selected backend.
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58840ms] [LOG] [Physics::Module] Name: PhysX
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58840ms] [LOG] [Physics::Module] Id: 0xf2b8ea05
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58840ms] [LOG] [Physics::Module] SDK Version: 4.1.2
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58840ms] [LOG] [Physics::Module] Integration Version: 1.0.0
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58840ms] [LOG] [Physics::Module] Threading Mode: Single-Threaded
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58874ms] [LOG] Input Manager initialize...
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58875ms] [LOG] Input System initialize...
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   58891ms] [LOG] UnloadTime: 1.800000 ms
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   59206ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   59607ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   60007ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   60407ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   60808ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   60962ms] [LOG] [GameManager] state=Playing
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   61061ms] [LOG] [App] Unity ready @ http://localhost:8000/js/app.js:30
+[   61061ms] [LOG] [Bridge] ready
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   61205ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   61606ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   62008ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   62408ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   62809ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   63206ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   63608ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   64008ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   64408ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   64806ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   65208ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   65608ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   66008ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   66405ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   66808ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   67208ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   67608ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   68027ms] [LOG] Audio context resumed after 9.221 seconds. @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   70063ms] [LOG] [PlayerHealth] damage=12 hp=88/100
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   71062ms] [LOG] [PlayerHealth] damage=12 hp=76/100
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   72081ms] [LOG] [PlayerHealth] damage=12 hp=64/100
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   73081ms] [LOG] [PlayerHealth] damage=12 hp=52/100
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   74105ms] [LOG] [PlayerHealth] damage=12 hp=40/100
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   75123ms] [LOG] [PlayerHealth] damage=12 hp=28/100
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   76141ms] [LOG] [PlayerHealth] damage=12 hp=16/100
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   77141ms] [LOG] [PlayerHealth] damage=12 hp=4/100
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   78141ms] [LOG] [PlayerHealth] damage=12 hp=0/100
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   78142ms] [LOG] [GameManager] state=Lost survived=17.1s score=170
+ @ blob:http://localhost:8000/906b5285-8e04-48c9-a95b-2829568227ac:8
+[   89707ms] [LOG] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.framework.js.unityweb" file. @ http://localhost:8000/unity/Build/unity.loader.js:0
+[   89729ms] [LOG] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.wasm.unityweb" file. @ http://localhost:8000/unity/Build/unity.loader.js:0
+[   89736ms] [LOG] [UnityCache] 'http://localhost:8000/unity/Build/unity.data.unityweb' successfully revalidated and served from the browser cache @ http://localhost:8000/unity/Build/unity.loader.js:0
+[   89737ms] [LOG] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.data.unityweb" file. @ http://localhost:8000/unity/Build/unity.loader.js:0
+[   90442ms] [LOG] [UnityMemory] Configuration Parameters - Can be set up in boot.config
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90442ms] [LOG]     "memorysetup-allocator-temp-initial-block-size-main=262144"
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90442ms] [LOG]     "memorysetup-allocator-temp-initial-block-size-worker=262144"
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90442ms] [LOG]     "memorysetup-temp-allocator-size-audio-worker=65536"
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90442ms] [LOG]     "memorysetup-temp-allocator-size-background-worker=32768"
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90442ms] [LOG]     "memorysetup-bucket-allocator-granularity=16"
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90442ms] [LOG]     "memorysetup-bucket-allocator-bucket-count=8"
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90442ms] [LOG]     "memorysetup-bucket-allocator-block-size=4194304"
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90442ms] [LOG]     "memorysetup-bucket-allocator-block-count=1"
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90442ms] [LOG]     "memorysetup-main-allocator-block-size=16777216"
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90442ms] [LOG]     "memorysetup-thread-allocator-block-size=16777216"
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90442ms] [LOG]     "memorysetup-gfx-main-allocator-block-size=16777216"
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90442ms] [LOG]     "memorysetup-gfx-thread-allocator-block-size=16777216"
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90442ms] [LOG]     "memorysetup-cache-allocator-block-size=4194304"
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90442ms] [LOG]     "memorysetup-typetree-allocator-block-size=2097152"
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90443ms] [LOG]     "memorysetup-profiler-bucket-allocator-granularity=16"
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90443ms] [LOG]     "memorysetup-profiler-bucket-allocator-bucket-count=8"
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90443ms] [LOG]     "memorysetup-profiler-bucket-allocator-block-size=4194304"
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90443ms] [LOG]     "memorysetup-profiler-bucket-allocator-block-count=1"
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90443ms] [LOG]     "memorysetup-profiler-allocator-block-size=16777216"
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90443ms] [LOG]     "memorysetup-profiler-editor-allocator-block-size=1048576"
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90443ms] [LOG]     "memorysetup-temp-allocator-size-main=4194304"
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90443ms] [LOG]     "memorysetup-job-temp-allocator-block-size=2097152"
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90443ms] [LOG]     "memorysetup-job-temp-allocator-block-size-background=1048576"
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90443ms] [LOG]     "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90483ms] [LOG] Input System module state changed to: Initialized.
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90484ms] [LOG] [Physics::Module] Initialized fallback backend.
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90484ms] [LOG] [Physics::Module] Id: 0xdecafbad
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90485ms] [LOG] Loading player data from data.unity3d
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90491ms] [LOG] Initialize engine version: 6000.3.22f1 (1c726e1fb402)
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90492ms] [LOG] Creating WebGL 2.0 context. @ http://localhost:8000/unity/Build/unity.loader.js:0
+[   90507ms] [LOG] Renderer: WebKit WebGL
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90507ms] [LOG] Vendor:   WebKit
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90507ms] [LOG] Version:  OpenGL ES 3.0 (WebGL 2.0 (OpenGL ES 3.0 Chromium))
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90508ms] [LOG] GLES:     3
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90508ms] [LOG]  EXT_clip_control EXT_color_buffer_float EXT_color_buffer_half_float EXT_conservative_depth EXT_depth_clamp EXT_disjoint_timer_query_webgl2 EXT_float_blend EXT_polygon_offset_clamp EXT_render_snorm EXT_texture_compression_bptc EXT_texture_compression_rgtc EXT_texture_filter_anisotropic EXT_texture_mirror_clamp_to_edge EXT_texture_norm16 KHR_parallel_shader_compile NV_shader_noperspective_interpolation OES_draw_buffers_indexed OES_sample_variables OES_shader_multisample_interpolation OES_texture_float_linear OVR_multiview2 WEBGL_blend_func_extended WEBGL_clip_cull_distance WEBGL_compressed_texture_s3tc WEBGL_compressed_texture_s3tc_srgb WEBGL_debug_renderer_info WEBGL_debug_shaders WEBGL_lose_context WEBGL_multi_draw WEBGL_polygon_mode WEBGL_provoking_vertex WEBGL_stencil_texturing GL_EXT_clip_control GL_EXT_color_buffer_float GL_EXT_color_buffer_half_float GL_EXT_conservative_depth GL_EXT_depth_clamp GL_EXT_disjoint_timer_query_webgl2 GL_EXT_float_blend GL_EXT_polygon_offset_clamp GL_EXT_render_snorm GL_EXT_
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90508ms] [LOG] texture_compression_bptc GL_EXT_texture_compression_rgtc GL_EXT_texture_filter_anisotropic GL_EXT_texture_mirror_clamp_to_edge GL_EXT_texture_norm16 GL_KHR_parallel_shader_compile GL_NV_shader_noperspective_interpolation GL_OES_draw_buffers_indexed GL_OES_sample_variables GL_OES_shader_multisample_interpolation GL_OES_texture_float_linear GL_OVR_multiview2 GL_WEBGL_blend_func_extended GL_WEBGL_clip_cull_distance GL_WEBGL_compressed_texture_s3tc GL_WEBGL_compressed_texture_s3tc_srgb GL_WEBGL_debug_renderer_info GL_WEBGL_debug_shaders GL_WEBGL_lose_context GL_WEBGL_multi_draw GL_WEBGL_polygon_mode GL_WEBGL_provoking_vertex GL_WEBGL_stencil_texturing
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90509ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90510ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90510ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90510ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90510ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90510ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90514ms] [LOG] OPENGL LOG: Creating OpenGL ES 3.0 graphics device ; Context level  <OpenGL ES 3.0> ; Context handle 1
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90571ms] [LOG] [Physics::Module] Selected backend.
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90571ms] [LOG] [Physics::Module] Name: PhysX
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90572ms] [LOG] [Physics::Module] Id: 0xf2b8ea05
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90572ms] [LOG] [Physics::Module] SDK Version: 4.1.2
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90572ms] [LOG] [Physics::Module] Integration Version: 1.0.0
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90572ms] [LOG] [Physics::Module] Threading Mode: Single-Threaded
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90604ms] [LOG] Input Manager initialize...
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90604ms] [LOG] Input System initialize...
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90623ms] [LOG] UnloadTime: 1.599999 ms
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   90942ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   91342ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   91742ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   92142ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   92542ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   92697ms] [LOG] [GameManager] state=Playing
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   92804ms] [LOG] [App] Unity ready @ http://localhost:8000/js/app.js:30
+[   92804ms] [LOG] [Bridge] ready
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   92943ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   93343ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   93743ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   94143ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   94542ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   94943ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   95343ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   95743ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   96143ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   96543ms] [WARNING] The AudioContext was not allowed to start. It must be resumed (or created) after a user gesture on the page. https://developer.chrome.com/blog/autoplay/#web_audio @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   96720ms] [LOG] [GameManager] state=Paused
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[   96958ms] [LOG] Audio context resumed after 6.418 seconds. @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[  108215ms] [LOG] [GameManager] state=Playing (resume)
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[  111804ms] [LOG] [PlayerHealth] damage=12 hp=88/100
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[  112803ms] [LOG] [PlayerHealth] damage=12 hp=76/100
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[  113804ms] [LOG] [PlayerHealth] damage=12 hp=64/100
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[  114803ms] [LOG] [PlayerHealth] damage=12 hp=52/100
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[  115821ms] [LOG] [PlayerHealth] damage=12 hp=40/100
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[  116846ms] [LOG] [PlayerHealth] damage=12 hp=28/100
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[  117846ms] [LOG] [PlayerHealth] damage=12 hp=16/100
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[  118864ms] [LOG] [PlayerHealth] damage=12 hp=4/100
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[  119882ms] [LOG] [PlayerHealth] damage=12 hp=0/100
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8
+[  119883ms] [LOG] [GameManager] state=Lost survived=15.6s score=150
+ @ blob:http://localhost:8000/af409b1a-1094-42d4-af4f-7653868a5e35:8

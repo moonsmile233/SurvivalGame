@@ -1,0 +1,132 @@
+[    4239ms] [WARNING] [UnityCache] Response is served without Content-Length header. Please reconfigure server to include valid Content-Length for better download performance. @ https://survivalgame-m0.netlify.app/unity/Build/unity.loader.js:0
+[    4347ms] [WARNING] [UnityCache] Response is served without Content-Length header. Please reconfigure server to include valid Content-Length for better download performance. @ https://survivalgame-m0.netlify.app/unity/Build/unity.loader.js:0
+[    4375ms] [WARNING] [UnityCache] Response is served without Content-Length header. Please reconfigure server to include valid Content-Length for better download performance. @ https://survivalgame-m0.netlify.app/unity/Build/unity.loader.js:0
+[    4648ms] [LOG] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.framework.js.unityweb" file. @ https://survivalgame-m0.netlify.app/unity/Build/unity.loader.js:0
+[    7293ms] [LOG] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.data.unityweb" file. @ https://survivalgame-m0.netlify.app/unity/Build/unity.loader.js:0
+[    7303ms] [LOG] [UnityCache] 'https://survivalgame-m0.netlify.app/unity/Build/unity.data.unityweb' successfully downloaded and stored in the browser cache @ https://survivalgame-m0.netlify.app/unity/Build/unity.loader.js:0
+[    9934ms] [LOG] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.wasm.unityweb" file. @ https://survivalgame-m0.netlify.app/unity/Build/unity.loader.js:0
+[   10537ms] [LOG] [UnityMemory] Configuration Parameters - Can be set up in boot.config
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10537ms] [LOG]     "memorysetup-allocator-temp-initial-block-size-main=262144"
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10537ms] [LOG]     "memorysetup-allocator-temp-initial-block-size-worker=262144"
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10537ms] [LOG]     "memorysetup-temp-allocator-size-audio-worker=65536"
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10537ms] [LOG]     "memorysetup-temp-allocator-size-background-worker=32768"
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10537ms] [LOG]     "memorysetup-bucket-allocator-granularity=16"
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10537ms] [LOG]     "memorysetup-bucket-allocator-bucket-count=8"
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10537ms] [LOG]     "memorysetup-bucket-allocator-block-size=4194304"
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10537ms] [LOG]     "memorysetup-bucket-allocator-block-count=1"
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10537ms] [LOG]     "memorysetup-main-allocator-block-size=16777216"
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10537ms] [LOG]     "memorysetup-thread-allocator-block-size=16777216"
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10537ms] [LOG]     "memorysetup-gfx-main-allocator-block-size=16777216"
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10537ms] [LOG]     "memorysetup-gfx-thread-allocator-block-size=16777216"
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10537ms] [LOG]     "memorysetup-cache-allocator-block-size=4194304"
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10537ms] [LOG]     "memorysetup-typetree-allocator-block-size=2097152"
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10537ms] [LOG]     "memorysetup-profiler-bucket-allocator-granularity=16"
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10538ms] [LOG]     "memorysetup-profiler-bucket-allocator-bucket-count=8"
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10538ms] [LOG]     "memorysetup-profiler-bucket-allocator-block-size=4194304"
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10538ms] [LOG]     "memorysetup-profiler-bucket-allocator-block-count=1"
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10538ms] [LOG]     "memorysetup-profiler-allocator-block-size=16777216"
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10538ms] [LOG]     "memorysetup-profiler-editor-allocator-block-size=1048576"
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10538ms] [LOG]     "memorysetup-temp-allocator-size-main=4194304"
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10538ms] [LOG]     "memorysetup-job-temp-allocator-block-size=2097152"
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10538ms] [LOG]     "memorysetup-job-temp-allocator-block-size-background=1048576"
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10538ms] [LOG]     "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10577ms] [LOG] Input System module state changed to: Initialized.
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10579ms] [LOG] [Physics::Module] Initialized fallback backend.
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10579ms] [LOG] [Physics::Module] Id: 0xdecafbad
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10580ms] [LOG] Loading player data from data.unity3d
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10586ms] [LOG] Initialize engine version: 6000.3.22f1 (1c726e1fb402)
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10587ms] [LOG] Creating WebGL 2.0 context. @ https://survivalgame-m0.netlify.app/unity/Build/unity.loader.js:0
+[   10601ms] [LOG] Renderer: WebKit WebGL
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10601ms] [LOG] Vendor:   WebKit
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10601ms] [LOG] Version:  OpenGL ES 3.0 (WebGL 2.0 (OpenGL ES 3.0 Chromium))
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10601ms] [LOG] GLES:     3
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10601ms] [LOG]  EXT_clip_control EXT_color_buffer_float EXT_color_buffer_half_float EXT_conservative_depth EXT_depth_clamp EXT_disjoint_timer_query_webgl2 EXT_float_blend EXT_polygon_offset_clamp EXT_render_snorm EXT_texture_compression_bptc EXT_texture_compression_rgtc EXT_texture_filter_anisotropic EXT_texture_mirror_clamp_to_edge EXT_texture_norm16 KHR_parallel_shader_compile NV_shader_noperspective_interpolation OES_draw_buffers_indexed OES_sample_variables OES_shader_multisample_interpolation OES_texture_float_linear OVR_multiview2 WEBGL_blend_func_extended WEBGL_clip_cull_distance WEBGL_compressed_texture_s3tc WEBGL_compressed_texture_s3tc_srgb WEBGL_debug_renderer_info WEBGL_debug_shaders WEBGL_lose_context WEBGL_multi_draw WEBGL_polygon_mode WEBGL_provoking_vertex WEBGL_stencil_texturing GL_EXT_clip_control GL_EXT_color_buffer_float GL_EXT_color_buffer_half_float GL_EXT_conservative_depth GL_EXT_depth_clamp GL_EXT_disjoint_timer_query_webgl2 GL_EXT_float_blend GL_EXT_polygon_offset_clamp GL_EXT_render_snorm GL_EXT_
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10601ms] [LOG] texture_compression_bptc GL_EXT_texture_compression_rgtc GL_EXT_texture_filter_anisotropic GL_EXT_texture_mirror_clamp_to_edge GL_EXT_texture_norm16 GL_KHR_parallel_shader_compile GL_NV_shader_noperspective_interpolation GL_OES_draw_buffers_indexed GL_OES_sample_variables GL_OES_shader_multisample_interpolation GL_OES_texture_float_linear GL_OVR_multiview2 GL_WEBGL_blend_func_extended GL_WEBGL_clip_cull_distance GL_WEBGL_compressed_texture_s3tc GL_WEBGL_compressed_texture_s3tc_srgb GL_WEBGL_debug_renderer_info GL_WEBGL_debug_shaders GL_WEBGL_lose_context GL_WEBGL_multi_draw GL_WEBGL_polygon_mode GL_WEBGL_provoking_vertex GL_WEBGL_stencil_texturing
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10603ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10604ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10604ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10604ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10604ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10605ms] [WARNING] WebGL: INVALID_ENUM: getInternalformatParameter: invalid internalformat @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10608ms] [LOG] OPENGL LOG: Creating OpenGL ES 3.0 graphics device ; Context level  <OpenGL ES 3.0> ; Context handle 1
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10672ms] [LOG] [Physics::Module] Selected backend.
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10673ms] [LOG] [Physics::Module] Name: PhysX
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10673ms] [LOG] [Physics::Module] Id: 0xf2b8ea05
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10673ms] [LOG] [Physics::Module] SDK Version: 4.1.2
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10673ms] [LOG] [Physics::Module] Integration Version: 1.0.0
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10673ms] [LOG] [Physics::Module] Threading Mode: Single-Threaded
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10703ms] [LOG] Input Manager initialize...
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10704ms] [LOG] Input System initialize...
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10721ms] [LOG] UnloadTime: 1.900000 ms
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   10780ms] [LOG] Audio context resumed after 0.141 seconds. @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   12795ms] [LOG] [GameManager] state=Playing
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   12902ms] [LOG] [App] Unity ready @ https://survivalgame-m0.netlify.app/js/app.js:30
+[   12903ms] [LOG] [Bridge] ready
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   17585ms] [LOG] [PlayerHealth] damage=12 hp=88/100
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   18603ms] [LOG] [PlayerHealth] damage=12 hp=76/100
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   19627ms] [LOG] [PlayerHealth] damage=12 hp=64/100
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   20627ms] [LOG] [PlayerHealth] damage=12 hp=52/100
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   21645ms] [LOG] [PlayerHealth] damage=12 hp=40/100
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   22664ms] [LOG] [PlayerHealth] damage=12 hp=28/100
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   23682ms] [LOG] [PlayerHealth] damage=12 hp=16/100
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   24706ms] [LOG] [PlayerHealth] damage=12 hp=4/100
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   25706ms] [LOG] [PlayerHealth] damage=12 hp=0/100
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8
+[   25707ms] [LOG] [GameManager] state=Lost survived=12.8s score=120
+ @ blob:https://survivalgame-m0.netlify.app/a1440849-2f2b-4750-ba08-9d269e56903c:8

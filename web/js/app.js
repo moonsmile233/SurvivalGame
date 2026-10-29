@@ -25,8 +25,10 @@
     },
 
     onReady: function () {
-      this.showOverlay('Unity Ready');
+      // 必须隐藏遮罩，否则它会盖住 canvas：既看不到画面，点击也会被吞掉、canvas 拿不到键盘焦点
+      this.showOverlay(null);
       if (btnPing) btnPing.disabled = false;
+      console.log('[App] Unity ready');
     },
 
     onPong: function (message) {
