@@ -5,8 +5,9 @@
 
 ## 文档索引
 - 完整设计规范：`docs/项目规范.md`（实现前先读第 5、6、7、11 节）
-- 当前任务：M0 已完成（`docs/tickets/M0.md`、`docs/M0-执行记录.md`）；M1 ticket 待提供
+- 当前任务：M0、M1 已完成（`docs/tickets/M0.md`、`docs/M0-执行记录.md`；`docs/tickets/M1.md`、`docs/M1-执行记录.md`）；M2 ticket 待提供
 - 通信协议：规范第 7 节（M0 通过后抽成 `docs/bridge-protocol.md`）
+- **执行前先看：`docs/遗留问题.md`**（输入后端、autoStart、临时暂停键等）
 
 ## 环境（已确认，不要猜）
 - 工程根 = 仓库根：`D:\unityFile\SurvivalGame`
@@ -28,9 +29,10 @@
   新站点默认「需登录访问」，必须在后台 **Project configuration → General → Visitor access → Visibility** 改成 **Public**
 - npm 默认缓存 `D:\nodejs\node_cache` 当前用户不可写，`npx` 需带 `npm_config_cache="D:/agent使用学习/浏览器相关/.npm-cache"`
 
-## 当前里程碑：M1（未开始）
-M0（打通链路）已于 2026-10-29 完成并通过验收，执行记录见 `docs/M0-执行记录.md`。
-M1 ticket 尚未提供，**不要自行开始 M1**。
+## 当前里程碑：M2（未开始）
+M0（打通链路）与 M1（核心玩法）已于 2026-10-29 完成，执行记录见 `docs/M0-执行记录.md`、`docs/M1-执行记录.md`。
+M1 验收结果：Editor 内完整跑通移动、生成、追踪、掉血、计时、胜负、重开；WebGL 构建成功。
+M2 ticket 尚未提供，**不要自行开始 M2**（HUD、暂停面板、结算面板等）。
 
 ## 硬约束
 1. **一个状态一个作者**：静态结构（相机、Canvas、玩家、生成器）放在场景里；动态物体（敌人、特效、飘字）运行时生成。禁止两边各生成一份。
