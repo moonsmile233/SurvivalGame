@@ -5,10 +5,11 @@
 
 ## 文档索引
 - 完整设计规范：`docs/项目规范.md`（实现前先读第 5、6、7、11 节）
-- 当前任务：**M4（待任务包）**；M0~M3 已完成（`docs/tickets/`、`docs/M0~M3-执行记录.md`）
+- 当前任务：**M4（`docs/tickets/M4.md`）**；M0~M3 已完成（`docs/tickets/`、`docs/M0~M3-执行记录.md`）
 - 通信协议：`docs/bridge-protocol.md`（实现契约，改代码必须同步）
 - **执行前先看：`docs/遗留问题.md`**（输入后端、构建产物、字体与测试环境注意事项）
-- **玩法增强（排 M4，不得挤占 M3/M5）：`docs/玩法增强.md`**
+- **玩法增强（M4 P1/P2）：`docs/玩法增强.md`**
+- **测试门槛：`docs/测试计划.md`；验收矩阵：`docs/acceptance.md`**
 
 ## 环境（已确认，不要猜）
 - 工程根 = 仓库根：`D:\unityFile\SurvivalGame`
@@ -40,7 +41,9 @@ M0（打通链路）、M1（核心玩法）、M2（表现层）、M3（H5 闭环
   `onReady / onStateChange / onGameOver`，详见 `docs/bridge-protocol.md`。
 - `_autoStart = false`，Ready 状态玩家冻结、敌人不生成；昵称只在 H5 渲染。
 - Editor 状态机 + Playwright 浏览器闭环均已验证；线上 <https://survivalgame-demo.netlify.app> 为 M3 构建。
-- 下一步 M4：触控、音效、正式美术、敌人行为增强（见 `docs/玩法增强.md`）。**不要提前做 M5 的最终打磨/收尾。**
+- M3 未关闭：浏览器自然 60 秒胜利、Edge 单跑（见 `docs/acceptance.md` 第 4 节）；M4 开工先补。
+- 下一步 M4（`docs/tickets/M4.md`）：手机触控、手机 HUD 缩放、结算 UI 去重、操作提示、敌人分离/速度/回收、正式素材、测试门禁。
+  **不要提前做 M5 的交付报告/zip。**
 
 ## 硬约束
 1. **一个状态一个作者**：静态结构（相机、Canvas、玩家、生成器）放在场景里；动态物体（敌人、特效、飘字）运行时生成。禁止两边各生成一份。
