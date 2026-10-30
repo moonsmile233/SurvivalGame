@@ -1,6 +1,7 @@
-# 架构说明（M2）
+# 架构说明（M3）
 
-> 对应规范第 5、6、7、11 节与 `docs/tickets/M2.md`。代码为唯一事实来源，本文只做导航。
+> 对应规范第 5、6、7、8、9、11 节与 `docs/tickets/M3.md`。代码为唯一事实来源，本文只做导航。
+> 通信协议细节见 `docs/bridge-protocol.md`。
 
 ## 1. 状态机
 
@@ -18,7 +19,9 @@ Playing ──计时 ≥ 60s──▶ Won ──RestartGame──▶ Playing（�
 - `Paused` / `Won` / `Lost` 三者都统一 `Time.timeScale = 0`；`ResetRound` 里先恢复 1。
 - 玩法逻辑全部用 `Time.deltaTime`，暂停 / 结算时自然冻结；UI 用 uGUI，不受 timeScale 影响。
 - 重开不走 `SceneManager.LoadScene`，而是 `GameManager.RestartGame()` → 各系统 `Reset()`。
-- M2 仍保留 `GameManager._autoStart = true`（Play 即开局）方便自测；M3 接 H5 时关闭。
+- **M3 起 `_autoStart = false`**：`Ready` 由 H5 的 `StartGame` 驱动进入 `Playing`；`Ready` 下 `PlayerController` 速度强制为 0、`EnemySpawner` 不生成。
+- **可见性暂停**：H5 在 `visibilitychange` 时发 `SetPausedByVisibility`。只有「因隐藏而暂停」才自动恢复；手动暂停不设标记，切回标签页不会自动继续。
+- **结算只发一次**：`WebGLBridge._reported` 守卫，每次进入 `Playing` 清零（`StartGame` / `RestartGame` / Unity 结算面板重开都会触发）。
 
 ## 2. 模块职责
 
@@ -38,7 +41,10 @@ Playing ──计时 ≥ 60s──▶ Won ──RestartGame──▶ Playing（�
 | 暂停面板 | `UI/PausePanel.cs` | 按状态显隐，`继续` → `ResumeGame()` | 不直接改 `timeScale` |
 | 结算面板 | `UI/ResultPanel.cs` | 按状态显隐，胜负/得分/明细，`重新开始` → `RestartGame()` | 不写分数算法 |
 | 文案 | `UI/UiStrings.cs` | 全部中文 UI 文案的 const + `AllCharacters` | 不写逻辑 |
-| 桥接 | `Bridge/WebGLBridge.cs` | H5 ↔ Unity 边界转换 | 不写玩法逻辑 |
+| 桥接 | `Bridge/WebGLBridge.cs` + `.jslib` | H5 ↔ Unity 边界：消息解析、昵称保存、状态/结算转发、可见性暂停策略 | 不写玩法逻辑，不改状态 |
+| H5 外壳 | `web/js/bridge.js` | 注册 `window.SurvivalGameBridge`、加载 Unity、转发事件 | 不渲染业务 UI |
+| H5 页面 | `web/js/app.js` | 页面状态机、按钮/昵称/结算渲染、可见性事件 | 不轮询 Unity、不写存储细节 |
+| H5 存储 | `web/js/storage.js` | `survival.*` 读写封装、不可用回退内存 | 业务代码不得直接碰 `localStorage` |
 | 场景生成 | `Editor/SceneSetup.cs` | 一键生成 `Game.unity`（含整套 UI） | — |
 | 字体 | `Editor/FontAssetBuilder.cs` | 用脚本生成 TMP 字体图集 | 不写玩法 |
 | 构建 | `Editor/BuildScript.cs` | 构建前重建字体 + 场景，产出 `web/unity/` 与 `build-info.json` | — |
@@ -65,7 +71,24 @@ GameManager.Update ─▶ 计时 + ScoreService.SetSurvivedSeconds + OnTimeChang
 
 GameManager.OnStateChanged ─▶ HudView（暂停按钮显隐）
                             ├▶ PausePanel（Paused 时显示「已暂停」）
-                            └▶ ResultPanel（Won/Lost 时显示「胜利 / 失败」+ 明细）
+                            ├▶ ResultPanel（Won/Lost 时显示「胜利 / 失败」+ 明细）
+                            └▶ WebGLBridge → jslib → window.SurvivalGameBridge.onStateChange
+                                                       └ Won/Lost + !_reported → onGameOver（一次）
+```
+
+H5 ↔ Unity（M3）：
+
+```text
+H5 点击「开始游戏」
+  └─ SendMessage('WebGLBridge','StartGame', '{"nickname":"…"}')
+       └─ WebGLBridge 解析昵称 → GameManager.StartGame() → Playing
+            └─ OnStateChanged → jslib → onStateChange(Playing)
+H5 标签页隐藏/恢复
+  └─ SendMessage SetPausedByVisibility("true"/"false") → 条件暂停/恢复
+Unity 结算
+  └─ onGameOver(JSON) → H5 更新最高分（score > best 才写）→ 显示结果
+H5 重新开始
+  └─ SendMessage RestartGame("") → 全量重置 → onStateChange(Playing) → 关闭结果
 ```
 
 事件清单（全部在 `Start` 订阅、`OnDestroy` 退订）：
@@ -99,6 +122,11 @@ PlayerHealth.OnDied          // ()
 - **接触判定**：敌人是 Kinematic Rigidbody2D + Trigger Collider，玩家是 Dynamic Rigidbody2D，`OnTriggerStay2D` 触发；无敌帧由 `PlayerHealth` 内部处理。
 - **输入后端**：`activeInputHandler = 2`（Both），规范 5.5 用内置 `Input`，同时保留新 Input System 可用性。
 - **暂停只由 UI / H5 触发**：M1 的 `Esc` 调试键已在 M2 删除。
+- **昵称只在 H5 渲染**：Unity 只保存并回传，不进入任何 TMP 文本（避免中文子集字体约束与 XSS 面）。
+- **H5 不猜状态**：页面状态完全由 `onReady` / `onStateChange` / `onGameOver` 驱动，不做轮询；开始按钮在 `onReady` 前 disabled，点击后立即禁用防连点。
+- **存储集中封装**：所有读写走 `web/js/storage.js`（`survival.bestScore` / `survival.nickname`），不可用时回退内存并在页面提示；最高分只在 `score > best` 时更新。
+- **缓存必须失效**：Unity 产物文件名跨构建不变，`netlify.toml` 对 `/unity/Build/*`、`build-info.json`、HTML/JS/CSS 全部 no-cache；H5 的 js/css 另带 `?v=` 版本串，避免部署后还跑旧脚本。
+- **本地打开限制**：`file://` 下直接提示用本地服务器，不尝试加载 Unity（浏览器跨域限制）。
 
 ## 6. 数值一览（`GameConfig`）
 

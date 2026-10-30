@@ -5,9 +5,9 @@
 
 ## 文档索引
 - 完整设计规范：`docs/项目规范.md`（实现前先读第 5、6、7、11 节）
-- 当前任务：**M2（`docs/tickets/M2.md`）**；M0、M1 已完成（`docs/tickets/M0.md`、`docs/M0-执行记录.md`；`docs/tickets/M1.md`、`docs/M1-执行记录.md`）
-- 通信协议：规范第 7 节（M0 通过后抽成 `docs/bridge-protocol.md`）
-- **执行前先看：`docs/遗留问题.md`**（输入后端、autoStart、临时暂停键等）
+- 当前任务：**M4（待任务包）**；M0~M3 已完成（`docs/tickets/`、`docs/M0~M3-执行记录.md`）
+- 通信协议：`docs/bridge-protocol.md`（实现契约，改代码必须同步）
+- **执行前先看：`docs/遗留问题.md`**（输入后端、构建产物、字体与测试环境注意事项）
 - **玩法增强（排 M4，不得挤占 M3/M5）：`docs/玩法增强.md`**
 
 ## 环境（已确认，不要猜）
@@ -24,22 +24,23 @@
   - `web/unity/Build/unity.framework.js.unityweb`
   - `web/unity/Build/unity.wasm.unityweb`
   - `web/unity/build-info.json` 由 `BuildScript` **扫描实际产物生成**，不要手改；换 Unity 版本后重跑构建即可自适应
-- 构建耗时：约 5~6 分钟；产物约 9 MB（M2，含 TMP 中文字体图集）
+- 构建耗时：约 4 分钟（M3 实测 3:46~4:01）；产物约 9 MB（含 TMP 中文字体图集）
 - 构建方式验证情况：**菜单 `Survival/Build WebGL` 已实测成功**；batchmode 命令路径已核对，但**尚未实测**（编辑器开着时无法跑，会撞工程锁）
 - 发布：Netlify，线上 <https://survivalgame-demo.netlify.app>，部署命令 `bash scripts/deploy-netlify.sh`。
   新站点默认「需登录访问」，必须在后台 **Project configuration → General → Visitor access → Visibility** 改成 **Public**
 - npm 默认缓存 `D:\nodejs\node_cache` 当前用户不可写，`npx` 需带 `npm_config_cache="D:/agent使用学习/浏览器相关/.npm-cache"`
 
-## 当前里程碑：M2 已完成（2026-10-30），下一步 M3
+## 当前里程碑：M3 已完成（2026-10-30），下一步 M4
 
-M0（打通链路）、M1（核心玩法）、M2（表现层）均已完成，执行记录见
-`docs/M0-执行记录.md`、`docs/M1-执行记录.md`、`docs/M2-执行记录.md`。
+M0（打通链路）、M1（核心玩法）、M2（表现层）、M3（H5 闭环）均已完成，执行记录见
+`docs/M0-执行记录.md`、`docs/M1-执行记录.md`、`docs/M2-执行记录.md`、`docs/M3-执行记录.md`。
 
-- M2 内容：中文 HUD（生命/时间/分数）、暂停面板、结算面板、重新开始、受击红闪、胜负冻结；
-  TMP + 内置 CJK 子集字体（`Assets/Fonts/`，图集由 `Editor/FontAssetBuilder.cs` 脚本生成，构建前自动重烤）。
-- Editor + 浏览器（Playwright）均已验证；线上 <https://survivalgame-demo.netlify.app> **仍是 M1 构建**，M2 尚未部署。
-- M3 之前不要做 H5 桥接、昵称、最高分、触控、音效。
-- 下一步 M3（H5 闭环）是交付硬要求；敌人分离/速度扰动/回收/近战变体一律排 M4，见 `docs/玩法增强.md`，**不得挤占 M3/M5**。
+- M3 内容：昵称 → 开始 → 玩 → 结算 → 最高分（localStorage）→ 刷新仍在；标签页隐藏自动暂停；
+  协议 `StartGame / PauseGame / ResumeGame / RestartGame / SetPausedByVisibility` +
+  `onReady / onStateChange / onGameOver`，详见 `docs/bridge-protocol.md`。
+- `_autoStart = false`，Ready 状态玩家冻结、敌人不生成；昵称只在 H5 渲染。
+- Editor 状态机 + Playwright 浏览器闭环均已验证；线上 <https://survivalgame-demo.netlify.app> 为 M3 构建。
+- 下一步 M4：触控、音效、正式美术、敌人行为增强（见 `docs/玩法增强.md`）。**不要提前做 M5 的最终打磨/收尾。**
 
 ## 硬约束
 1. **一个状态一个作者**：静态结构（相机、Canvas、玩家、生成器）放在场景里；动态物体（敌人、特效、飘字）运行时生成。禁止两边各生成一份。
@@ -65,6 +66,17 @@ M0（打通链路）、M1（核心玩法）、M2（表现层）均已完成，�
 
 停下时不要只问「可以吗」，要给：现象 + 报错 + 已尝试 + 2~3 个选项和你的建议。
 MCP 连不上时优先走文件 + batchmode；仍不行就停，不要猜着改 ProjectSettings。
+
+## 代码注释约定
+
+注释写给"下一个改这段代码的人/Agent"，只写代码本身看不出来的信息：
+
+- 写 **why / 不变量 / 约束 / 非显而易见的时序**；不要逐行复述代码。
+- 类与公共方法用 XML `summary`；事件写清触发时机（如 `OnDamaged` 只在实际扣血时触发）。
+- 必须注释的地方：WebGL 受限点、`SceneSetup` 的资产卸载顺序、`Time.timeScale` 冻结、暂停/重开时序、`Update` 无分配约束、`SendMessage` 单参数与 JSON 边界。
+- 不留会过期的注释（如"M2 临时"）；TODO 写清条件，不留裸 TODO。
+- 注释与代码同一次改动更新；**过期注释比没有注释更糟**。
+- 不写注释掉的死代码；不为了"注释多"而加注释。
 
 ## 构建与预览
 

@@ -1,13 +1,16 @@
 (function () {
   'use strict';
 
-  // 必须在 Unity 加载之前注册：Unity 的 .jslib 会直接查这个对象。
+  // 必须在加载 unity.loader.js 之前注册：Unity 的 .jslib 会直接查这个对象（规范 7.2）。
   window.SurvivalGameBridge = {
-    onReady: function () {
-      if (window.SurvivalApp) window.SurvivalApp.onReady();
+    onReady: function (json) {
+      forward('onReady', json);
     },
-    onPong: function (message) {
-      if (window.SurvivalApp) window.SurvivalApp.onPong(message);
+    onStateChange: function (json) {
+      forward('onStateChange', json);
+    },
+    onGameOver: function (json) {
+      forward('onGameOver', json);
     }
   };
 
@@ -15,9 +18,21 @@
     return window.SurvivalApp || null;
   }
 
+  function forward(name, json) {
+    var target = app();
+    if (target && typeof target[name] === 'function') {
+      target[name](json);
+      return;
+    }
+    console.warn('[Bridge] SurvivalApp.' + name + ' 未注册，事件已丢弃：' + json);
+  }
+
   function fail(message) {
     console.error('[Bridge]', message);
-    if (app()) app().onError(message);
+    var target = app();
+    if (target && target.onFatalError) {
+      target.onFatalError(message);
+    }
   }
 
   function loadScript(src) {
@@ -31,6 +46,14 @@
   }
 
   function boot() {
+    if (window.location.protocol === 'file:') {
+      var target = app();
+      if (target && target.onFileProtocol) {
+        target.onFileProtocol();
+      }
+      return;
+    }
+
     var canvas = document.getElementById('unity-canvas');
     if (!canvas) {
       fail('页面缺少 #unity-canvas');
@@ -39,11 +62,14 @@
 
     fetch('unity/build-info.json', { cache: 'no-store' })
       .then(function (response) {
-        if (!response.ok) throw new Error('build-info.json HTTP ' + response.status);
+        if (!response.ok) {
+          throw new Error('读取构建信息失败（HTTP ' + response.status + '）');
+        }
         return response.json();
       })
       .then(function (info) {
-        if (app() && app().setVersion) app().setVersion(info);
+        var current = app();
+        if (current && current.setBuildInfo) current.setBuildInfo(info);
 
         var config = {
           dataUrl: 'unity/' + info.dataUrl,
@@ -62,14 +88,20 @@
             throw new Error('createUnityInstance 未定义（loader 未生效）');
           }
           return createUnityInstance(canvas, config, function (progress) {
-            if (app() && app().onProgress) app().onProgress(progress);
+            var instance = app();
+            if (instance && instance.onProgress) instance.onProgress(progress);
           });
         }).then(function (instance) {
-          if (app()) app().unityInstance = instance;
+          var currentApp = app();
+          if (currentApp && currentApp.setInstance) currentApp.setInstance(instance);
         });
       })
       .catch(function (error) {
-        fail(error && error.message ? error.message : String(error));
+        var message = error && error.message ? error.message : String(error);
+        if (/failed to fetch|networkerror|load failed/i.test(message)) {
+          message = '无法读取构建信息（网络错误），请确认 web/unity 已构建并可访问';
+        }
+        fail(message);
       });
   }
 

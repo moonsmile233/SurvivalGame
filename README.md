@@ -7,8 +7,9 @@
 - **M0（打通链路）已完成**（2026-10-29）：空场景 → WebGL 构建 → H5 加载 → 双向一条消息
 - **M1（核心玩法）已完成**（2026-10-29）：移动、生成、追踪、掉血、计时、胜负、重开；Editor + 浏览器（Playwright）已验证
 - **M2（表现层）已完成**（2026-10-30）：中文 HUD（生命/时间/分数）、暂停面板、结算面板、重新开始、受击红闪、胜负冻结；TMP + 内置 CJK 子集字体
-- **线上地址**：<https://survivalgame-demo.netlify.app>（当前是 M1 构建，M2 未部署）
-- 验收证据与偏差记录：`docs/M0-执行记录.md`、`docs/M1-执行记录.md`、`docs/M2-执行记录.md`
+- **M3（H5 闭环）已完成**（2026-10-30）：昵称 → 开始 → 结算 → 最高分（localStorage）→ 刷新仍在；标签页隐藏自动暂停；协议见 `docs/bridge-protocol.md`
+- **线上地址**：<https://survivalgame-demo.netlify.app>（M3 构建）
+- 验收证据与偏差记录：`docs/M0-执行记录.md`、`docs/M1-执行记录.md`、`docs/M2-执行记录.md`、`docs/M3-执行记录.md`
 
 **构建**（编辑器打开时点菜单；关闭时用 batchmode，详见下文「构建」）：
 
@@ -41,7 +42,7 @@ SurvivalGame/
 ├── web/                           # H5 外壳（静态站点根目录）
 │   ├── index.html
 │   ├── css/style.css
-│   ├── js/bridge.js  js/app.js
+│   ├── js/bridge.js  js/app.js  js/storage.js
 │   └── unity/                     # WebGL 构建产物 + build-info.json
 └── docs/                          # 规范、ticket、执行记录、evidence
 ```
@@ -53,10 +54,20 @@ cd "D:/unityFile/SurvivalGame/web"
 python -m http.server 8000
 ```
 
-打开 <http://localhost:8000>。必须用 HTTP 服务，直接双击 `index.html` 会因 `file://` 跨域失败。
+打开 <http://localhost:8000>。必须用 HTTP 服务，直接双击 `index.html` 会显示「请用本地服务器打开」的提示（`file://` 无法加载 Unity WebGL）。
 
-页面按钮「测试通信」会调用 `SendMessage('WebGLBridge', 'Ping', 'hello-from-h5')`，
-Unity 回显后页面显示 `Pong: hello-from-h5`。
+页面流程（M3）：
+
+```text
+加载 Unity → onReady → 输入昵称 → 开始游戏 → 玩 → 结算（本次得分 / 历史最高分 / 新纪录）
+                                                  └─ 重新开始 → 新一局
+刷新页面 → 最高分与上次昵称从 localStorage 读回
+```
+
+- 昵称空 → 「玩家」；最多 16 个字符；渲染一律 `textContent`，不会执行 HTML/脚本。
+- 最高分只在 `score > best` 时更新，相等不算新纪录。
+- 标签页隐藏会自动暂停，回到页面只恢复「因隐藏而暂停」的那次；手动暂停不会自动恢复。
+- 浏览器禁用 localStorage 时游戏仍可玩，页面会提示成绩无法保存。
 
 ## 构建
 
@@ -169,12 +180,16 @@ bash scripts/deploy-netlify.sh
 
 Pages 同理需要产物在仓库里；`web/` 作为站点根即可。当前方案不依赖它。
 
-## 游戏内 UI（M2）
+## 游戏内 UI 与 H5 外壳（M2 / M3）
 
 ```text
-HUD       生命 100/100（血条 + 数字）｜时间 00:60｜分数 0｜暂停
-已暂停    遮罩 + 标题 + 继续
-失败/胜利  遮罩 + 标题 + 得分 + 明细（存活 / 击杀 / 胜利奖励）+ 重新开始
+Unity HUD       生命 100/100（血条 + 数字）｜时间 00:60｜分数 0｜暂停
+Unity 已暂停     遮罩 + 标题 + 继续
+Unity 结算       遮罩 + 标题 + 得分 + 明细（存活 / 击杀 / 胜利奖励）+ 重新开始
+H5 顶部         标题 + 昵称输入（最多 16 字）
+H5 中部         16:9 Unity 画布 + 加载遮罩 / 进度 + 错误卡片（重试）
+H5 底部         开始游戏 / 重新开始 + 结果（本次得分 / 历史最高分 / 昵称 / 存活 / 新纪录）
+H5 页脚         版本号 · 构建时间（来自 web/unity/build-info.json）
 ```
 
 - 文案全部在 `Assets/Scripts/UI/UiStrings.cs`，字体是 TMP + `Assets/Fonts/NotoSansSC-UI-SDF.asset`
@@ -189,4 +204,5 @@ HUD       生命 100/100（血条 + 数字）｜时间 00:60｜分数 0｜暂停
 - 跨边界只传 JSON 字符串；`SendMessage` 每次只能传一个参数。
 - 场景静态结构（相机、Canvas、玩家、生成器、整套 UI）放场景里，由 `SceneSetup` 生成；
   动态物体运行时生成。
-- 通信协议详见 `docs/项目规范.md` 第 7 节（M1 时抽成 `docs/bridge-protocol.md`）。
+- 通信协议见 `docs/bridge-protocol.md`（设计依据为 `docs/项目规范.md` 第 7 节）。
+- H5 存储键：`survival.bestScore`、`survival.nickname`；业务代码只能通过 `web/js/storage.js` 读写。

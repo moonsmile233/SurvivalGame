@@ -13,6 +13,7 @@ namespace Survival.Player
         [SerializeField] private GameConfig _config;
         [SerializeField] private PlayerInputController _input;
         [SerializeField] private Camera _camera;
+        [SerializeField] private GameManager _gameManager;
 
         private Rigidbody2D _rb;
         private Vector2 _startPosition;
@@ -32,6 +33,11 @@ namespace Survival.Player
             if (_camera == null)
             {
                 _camera = Camera.main;
+            }
+
+            if (_gameManager == null)
+            {
+                _gameManager = FindFirstObjectByType<GameManager>();
             }
 
             float scale = Mathf.Max(transform.lossyScale.x, transform.lossyScale.y);
@@ -56,7 +62,9 @@ namespace Survival.Player
                 return;
             }
 
-            Vector2 move = _input != null ? _input.Move : Vector2.zero;
+            // Ready / Paused / Won / Lost 一律不许移动；只有 Playing 才接受输入（M3 第 1.2 节）。
+            bool canMove = _gameManager != null && _gameManager.State == GameState.Playing;
+            Vector2 move = canMove && _input != null ? _input.Move : Vector2.zero;
             _rb.linearVelocity = move * _config.PlayerSpeed;
 
             if (_camera == null)

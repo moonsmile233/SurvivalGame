@@ -93,10 +93,14 @@ public static class SceneSetup
 
         EnemySpawner spawner = CreateEnemySpawner(config, player.transform, playerHealth, cam, enemySprite);
         GameManager manager = CreateGameManager(config, playerController, playerHealth, spawner);
+
+        // Ready 状态禁止移动：PlayerController 需要读 GameManager.State（M3 第 1.2 节）。
+        SetObjectReference(playerController, "_gameManager", manager);
+
         CreateHud(manager, playerHealth);
 
-        CreateBridge();
-        CreateBootstrap();
+        WebGLBridge bridge = CreateBridge(manager);
+        CreateBootstrap(bridge);
 
         EditorSceneManager.SaveScene(scene, ScenePath);
 
@@ -200,21 +204,26 @@ public static class SceneSetup
         SetObjectReference(manager, "_playerController", playerController);
         SetObjectReference(manager, "_playerHealth", playerHealth);
         SetObjectReference(manager, "_enemySpawner", spawner);
-        SetSerializedBool(manager, "_autoStart", true);
+
+        // M3 起由 H5 的 StartGame 驱动，不再 Play 即开局（docs/遗留问题.md 第 2 条）。
+        SetSerializedBool(manager, "_autoStart", false);
 
         return manager;
     }
 
-    private static void CreateBridge()
+    private static WebGLBridge CreateBridge(GameManager manager)
     {
         var go = new GameObject("WebGLBridge");
-        go.AddComponent<WebGLBridge>();
+        var bridge = go.AddComponent<WebGLBridge>();
+        SetObjectReference(bridge, "_gameManager", manager);
+        return bridge;
     }
 
-    private static void CreateBootstrap()
+    private static void CreateBootstrap(WebGLBridge bridge)
     {
         var go = new GameObject("Bootstrap");
-        go.AddComponent<GameBootstrap>();
+        var bootstrap = go.AddComponent<GameBootstrap>();
+        SetObjectReference(bootstrap, "_bridge", bridge);
     }
 
     // ---------- HUD / 面板（ticket M2 第 1 节，全部代码生成） ----------

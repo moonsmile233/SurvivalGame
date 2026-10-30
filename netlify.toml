@@ -13,3 +13,19 @@
   for = "/unity/build-info.json"
   [headers.values]
     Cache-Control = "no-cache"
+
+# H5 外壳（HTML / JS / CSS）每次都要重新校验，避免部署后仍跑旧脚本
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/css/*"
+  [headers.values]
+    Cache-Control = "no-cache"

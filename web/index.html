@@ -3,35 +3,72 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>SurvivalGame</title>
+  <meta name="theme-color" content="#1e1e2e">
+  <title>SurvivalGame — 2D 生存挑战</title>
   <!-- 空的 favicon，避免浏览器自动请求 /favicon.ico 产生 404 -->
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/style.css?v=0.1.0-m3">
 </head>
 <body>
   <main class="shell">
     <header class="header">
       <h1 class="title">SurvivalGame</h1>
+      <div class="nickname-field">
+        <label class="nickname-label" for="nickname">昵称</label>
+        <input id="nickname" class="nickname-input" type="text" maxlength="16" autocomplete="nickname"
+               placeholder="玩家" spellcheck="false" disabled>
+      </div>
     </header>
 
     <section class="game-frame" aria-label="游戏画面">
-      <canvas id="unity-canvas" tabindex="-1"></canvas>
+      <canvas id="unity-canvas" tabindex="0"></canvas>
       <div id="overlay" class="overlay">
-        <p id="overlay-text" class="overlay-text">Loading...</p>
+        <p id="overlay-text" class="overlay-text">加载中…</p>
+        <div id="error-card" class="error-card" hidden>
+          <p id="error-text" class="error-text"></p>
+          <button id="btn-retry" class="btn" type="button">重试</button>
+        </div>
       </div>
     </section>
 
     <section class="controls">
-      <button id="btn-ping" class="btn" type="button" disabled>测试通信</button>
-      <p id="bridge-log" class="bridge-log">（尚未收到 Unity 消息）</p>
+      <button id="btn-start" class="btn" type="button" disabled>开始游戏</button>
+      <button id="btn-restart" class="btn" type="button" hidden>重新开始</button>
+      <p id="status-hint" class="status-hint" aria-live="polite"></p>
+    </section>
+
+    <section id="result" class="result" aria-live="polite" hidden>
+      <p id="result-title" class="result-title"></p>
+      <dl class="result-grid">
+        <div class="result-item">
+          <dt>本次得分</dt>
+          <dd id="result-score">0</dd>
+        </div>
+        <div class="result-item">
+          <dt>历史最高分</dt>
+          <dd id="result-best">0</dd>
+        </div>
+        <div class="result-item">
+          <dt>昵称</dt>
+          <dd id="result-nickname"></dd>
+        </div>
+        <div class="result-item">
+          <dt>存活</dt>
+          <dd id="result-survived">0 秒</dd>
+        </div>
+      </dl>
+      <p id="result-record" class="record" hidden>新纪录</p>
     </section>
 
     <footer class="footer">
       <span id="version">v-</span>
+      <span class="dot" aria-hidden="true">·</span>
+      <span id="build-time">-</span>
     </footer>
   </main>
 
-  <script src="js/app.js"></script>
-  <script src="js/bridge.js"></script>
+  <script src="js/storage.js?v=0.1.0-m3"></script>
+  <script src="js/app.js?v=0.1.0-m3"></script>
+  <script src="js/bridge.js?v=0.1.0-m3"></script>
 </body>
 </html>

@@ -17,8 +17,8 @@ namespace Survival.Core
         [SerializeField] private PlayerHealth _playerHealth;
         [SerializeField] private EnemySpawner _enemySpawner;
 
-        [Tooltip("M1 自测用：Play 后自动进入 Playing。M3 接 H5 后应关闭，由 StartGame 驱动。")]
-        [SerializeField] private bool _autoStart = true;
+        [Tooltip("仅编辑器自测用：Play 后自动进入 Playing。M3 起默认关闭，由 H5 的 StartGame 驱动。")]
+        [SerializeField] private bool _autoStart = false;
 
         private float _elapsed;
 
@@ -78,7 +78,13 @@ namespace Survival.Core
             }
         }
 
-        /// <summary>Ready → Playing（M1 的 Play 入口；M3 由 H5 StartGame 调用）。</summary>
+        /// <summary>编辑器/自测入口：在 Play 之前调用即可恢复 M1 的自动开局行为。</summary>
+        public void SetAutoStart(bool enabled)
+        {
+            _autoStart = enabled;
+        }
+
+        /// <summary>Ready → Playing（M3 由 H5 StartGame 调用）。</summary>
         public void StartGame()
         {
             if (State != GameState.Ready)
