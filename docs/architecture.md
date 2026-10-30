@@ -1,6 +1,6 @@
-# 架构说明（M3）
+# 架构说明（M4）
 
-> 对应规范第 5、6、7、8、9、11 节与 `docs/tickets/M3.md`。代码为唯一事实来源，本文只做导航。
+> 对应规范第 5、6、7、8、9、11 节与 `docs/tickets/M4.md`。代码为唯一事实来源，本文只做导航。
 > 通信协议细节见 `docs/bridge-protocol.md`。
 
 ## 1. 状态机
@@ -20,8 +20,13 @@ Playing ──计时 ≥ 60s──▶ Won ──RestartGame──▶ Playing（�
 - 玩法逻辑全部用 `Time.deltaTime`，暂停 / 结算时自然冻结；UI 用 uGUI，不受 timeScale 影响。
 - 重开不走 `SceneManager.LoadScene`，而是 `GameManager.RestartGame()` → 各系统 `Reset()`。
 - **M3 起 `_autoStart = false`**：`Ready` 由 H5 的 `StartGame` 驱动进入 `Playing`；`Ready` 下 `PlayerController` 速度强制为 0、`EnemySpawner` 不生成。
-- **可见性暂停**：H5 在 `visibilitychange` 时发 `SetPausedByVisibility`。只有「因隐藏而暂停」才自动恢复；手动暂停不设标记，切回标签页不会自动继续。
+- **失焦暂停 + 倒计时恢复（M4）**：H5 监听 `blur` / `focus` / `visibilitychange`（H5 侧按最后发送值去重）发
+  `SetPausedByVisibility`。自动暂停切回后不立即恢复：`GameManager.RequestCountdownResume()` → `PausePanel` 用
+  `Time.unscaledDeltaTime` 走 3-2-1，结束才 `ResumeGame()`。倒计时期间再次失焦会
+  `CancelCountdownResume()` 停住倒计时（下次切回重新从 3 开始），手动暂停不设标记，切回不会自动继续。
 - **结算只发一次**：`WebGLBridge._reported` 守卫，每次进入 `Playing` 清零（`StartGame` / `RestartGame` / Unity 结算面板重开都会触发）。
+- **结算只画一套（M4）**：WebGL 构建里 `WebGLBridge.IsEmbedded = true`，`ResultPanel` 不再显示；
+  H5 卡片是唯一结算。Editor 里 `IsEmbedded = false`，Unity 面板保留自测。
 
 ## 2. 模块职责
 
@@ -31,15 +36,21 @@ Playing ──计时 ≥ 60s──▶ Won ──RestartGame──▶ Playing（�
 | 状态 | `Core/GameState.cs` | 状态枚举 | — |
 | 状态机 | `Core/GameManager.cs` | 计时、胜负、暂停、重开、冻结、事件广播 | 不处理输入、不写分数算法、不碰 UI 文本 |
 | 计分 | `Core/ScoreService.cs` | 存活分 / 击杀分 / 胜利奖励，并提供只读明细 | 不碰 UI |
-| 输入 | `Player/PlayerInputController.cs` | 键盘 → `Vector2 Move` | 不直接移动 |
-| 移动 | `Player/PlayerController.cs` | 刚体移动、相机边界钳制 | 不改状态机 |
+| 输入抽象 | `Player/PlayerInputSource.cs` | 抽象 `Vector2 Move`，PlayerController 只依赖它 | 不移动 |
+| 键盘 | `Player/KeyboardInput.cs` | WASD / 方向键 → `Move` | 不移动 |
+| 触控 | `Player/TouchInput.cs` | 全屏拖动（触摸优先，鼠标拖动兼容 Editor/桌面）→ `Move` | 不移动 |
+| 输入路由 | `Player/PlayerInputRouter.cs` | 触控有输入就用触控，否则键盘；设备判断集中在这里 | 不做平台分支散布到其它类 |
+| 移动 | `Player/PlayerController.cs` | 刚体移动、**地图边界**钳制（36×20，不再用相机视野） | 不改状态机 |
+| 相机 | `World/CameraFollow.cs` | `LateUpdate` 指数平滑跟随玩家，钳制在地图内；重开距离 >8 直接 snap | 不读输入、不改状态 |
 | 生命 | `Player/PlayerHealth.cs` | HP、受伤、无敌帧、`OnDamaged` / `OnDied` 事件 | 不直接调 UI |
 | 表现 | `Player/PlayerView.cs` | 订阅 `OnDamaged` / `OnHealthChanged`，做红闪 + 10Hz 闪烁 | 不改 HP、不改状态 |
-| 生成 | `Enemy/EnemySpawner.cs` | 定时生成、间隔递减、上限、清场 | 不追踪玩家 |
-| 敌人 | `Enemy/EnemyAI.cs` | 追踪玩家、接触伤害 | 不判断胜负 |
+| 生成 | `Enemy/EnemySpawner.cs` | 按 `EnemyDefinition` 生成（玩家周围 1.15×相机半对角线、视野外）、间隔递减、上限、`Register/Unregister/Forget`、`ActiveEnemies`、`RoundElapsed`、**每帧 1–2 轮两两位置修正** | 不追踪玩家 |
+| 敌人 | `Enemy/EnemyAI.cs` | seek 到自己的站位环（12 槽位 + 停距 ~0.7）+ 压力曲线 + 视野外回收计时、接触伤害、`OnDestroy` 兜底注销 | 不做分离力、不判断胜负 |
+| 敌人定义 | `Enemy/EnemyDefinition.cs` | 单类型资产：sprite / 速度 / 伤害 / 碰撞半径（分离半径派生） | 不管全局生成节奏 |
 | HUD | `UI/HudView.cs` | HP 条/数字、剩余时间、分数、暂停按钮显隐 | 不改状态机、不写分数算法 |
-| 暂停面板 | `UI/PausePanel.cs` | 按状态显隐，`继续` → `ResumeGame()` | 不直接改 `timeScale` |
-| 结算面板 | `UI/ResultPanel.cs` | 按状态显隐，胜负/得分/明细，`重新开始` → `RestartGame()` | 不写分数算法 |
+| HUD 缩放 | `UI/HudCanvasScaler.cs` | `Screen.width`（设备像素）< 1000 时切 640×360 参考分辨率（手机 HUD/面板一起放大），`Update` 里比对 | 不改游戏状态 |
+| 暂停面板 | `UI/PausePanel.cs` | 按状态显隐，`继续` → `ResumeGame()`；失焦恢复走 3-2-1（unscaled） | 不直接改 `timeScale` |
+| 结算面板 | `UI/ResultPanel.cs` | 按状态显隐（嵌入模式不显示），胜负/得分/明细，`重新开始` → `RestartGame()` | 不写分数算法 |
 | 文案 | `UI/UiStrings.cs` | 全部中文 UI 文案的 const + `AllCharacters` | 不写逻辑 |
 | 桥接 | `Bridge/WebGLBridge.cs` + `.jslib` | H5 ↔ Unity 边界：消息解析、昵称保存、状态/结算转发、可见性暂停策略 | 不写玩法逻辑，不改状态 |
 | H5 外壳 | `web/js/bridge.js` | 注册 `window.SurvivalGameBridge`、加载 Unity、转发事件 | 不渲染业务 UI |
@@ -52,17 +63,28 @@ Playing ──计时 ≥ 60s──▶ Won ──RestartGame──▶ Playing（�
 ## 3. 事件与数据流
 
 ```text
-键盘 Input ─▶ PlayerInputController.Move
-                    │
-                    ▼
-             PlayerController.FixedUpdate ─▶ Rigidbody2D（边界钳制）
+键盘 Input ─▶ KeyboardInput.Move ─┐
+触摸/拖动 ─▶ TouchInput.Move ─────┼▶ PlayerInputRouter.Move
+                                  │        │
+                                  ▼        ▼
+                       PlayerController.FixedUpdate ─▶ Rigidbody2D（地图 36×20 边界钳制）
+                                                        │
+                                                        ▼
+                                     CameraFollow.LateUpdate（指数平滑，钳在地图内）
 
 EnemySpawner.Update（Time.deltaTime）
-   ├─ 定时在相机视口 ±0.15 外生成 EnemyAI
+   ├─ 定时在「玩家周围 1.15×相机半对角线、且相机视野外」生成 EnemyAI（按 EnemyDefinition 组装）
    └─ 每隔 10s 间隔 −0.15s，下限 0.5s，上限 20 只
 
-EnemyAI.Update ─▶ MoveTowards(player)
-EnemyAI.OnTriggerStay2D ─▶ PlayerHealth.TakeDamage(12)
+EnemyAI.Update（Time.deltaTime）
+   ├─ 目标点 = 玩家 + 站位角方向 × 停距（玩家半径 + 敌人半径 − 0.08 ≈ 0.7）
+   ├─ 距目标 > 0.25 才移动（到达容差，吸收 Spawner 的位置修正，避免推回去又追上来）
+   ├─ 速度 = 生成时 ±12% 扰动 × 压力曲线 1.0→1.15，上限 2.2
+   └─ 离相机视野（margin 0.05）持续 3s → Spawner.Unregister(this)（进入过视野后才计时）
+
+EnemySpawner.Update（Time.deltaTime > 0 时）
+   └─ ApplySpacingCorrection：1–2 轮两两修正，距离 < 0.95 的一对各推开一半（O(n²)、无分配）
+EnemyAI.OnTriggerStay2D ─▶ PlayerHealth.TakeDamage(definition.ContactDamage)
 PlayerHealth：无敌 1s 内忽略伤害；真正扣血时 OnDamaged → PlayerView 红闪/闪烁
 
 PlayerHealth.OnDied ─▶ GameManager.HandlePlayerDied ─▶ Lost（冻结）
@@ -83,10 +105,13 @@ H5 点击「开始游戏」
   └─ SendMessage('WebGLBridge','StartGame', '{"nickname":"…"}')
        └─ WebGLBridge 解析昵称 → GameManager.StartGame() → Playing
             └─ OnStateChanged → jslib → onStateChange(Playing)
-H5 标签页隐藏/恢复
-  └─ SendMessage SetPausedByVisibility("true"/"false") → 条件暂停/恢复
+H5 失焦 / 隐藏（blur、visibilitychange）
+  └─ SendMessage SetPausedByVisibility("true") → 条件暂停 + 暂停面板
+H5 切回
+  └─ SendMessage SetPausedByVisibility("false") → GameManager.RequestCountdownResume
+       └─ PausePanel 3-2-1（unscaled）→ ResumeGame() → onStateChange(Playing)
 Unity 结算
-  └─ onGameOver(JSON) → H5 更新最高分（score > best 才写）→ 显示结果
+  └─ onGameOver(JSON) → H5 更新最高分（score > best 才写）→ 显示结果（Unity 面板在嵌入模式不显示）
 H5 重新开始
   └─ SendMessage RestartGame("") → 全量重置 → onStateChange(Playing) → 关闭结果
 ```
@@ -96,6 +121,7 @@ H5 重新开始
 ```csharp
 GameManager.OnStateChanged   // (GameState)
 GameManager.OnTimeChanged    // (float remainingSeconds)
+GameManager.OnResumeCountdownRequested // () 失焦恢复请求：PausePanel 收到后走 3-2-1
 ScoreService.OnScoreChanged  // (int score)
 PlayerHealth.OnHealthChanged // (int current, int max)
 PlayerHealth.OnDamaged       // ()  仅真正扣血
@@ -108,8 +134,13 @@ PlayerHealth.OnDied          // ()
 - **字体**：TMP + `Assets/Fonts/NotoSansSC-UI-SDF.asset`（由 `ui-chars.txt` 裁的 121 字符，1024×1024 Static SDF，Sampling 64 / Padding 8 / SDFAA）。
   - 禁止 legacy `Text` + `LegacyRuntime.ttf`（WebGL 下中文字体的坑）。
   - 图集由 `Editor/FontAssetBuilder.cs` 生成：`Survival/Rebuild Font Asset` 手动；`Setup Scene` 缺资产时自动；`Build WebGL` 构建前无条件重烤。
-- **显示规则**：剩余时间 `ceil(60 - elapsed)` → `时间 00:60 ~ 00:00`；分数 `分数 N`；结算 `得分 N` + `存活 X`，击杀为 0 时不显示「击杀」行，`胜利奖励` 仅胜利显示。
+- **显示规则**：剩余时间 `ceil(60 - elapsed)` → `时间 00:60 ~ 00:00`；分数 `分数 N`；结算 `得分 N` + `存活分 X`（是分数，H5 的「存活 16.6 秒」是时长），击杀为 0 时不显示「击杀」行，`胜利奖励` 仅胜利显示。
 - **性能**：时间文本只在整秒变化时重建；分数 / HP 只在事件回调重建；`Update` 里不做字符串拼接、不 `GetComponent` / `Find`。
+- **布局（M4）**：HUD 顶行 HP 左 / 时间中 / 暂停右上，分数在暂停按钮下方。
+  `HudCanvasScaler` 在 `Screen.width`（设备像素，DPR 已由 H5 限制到 ≤2）< 1000 时把
+  `CanvasScaler.referenceResolution` 从 1280×720 切到 640×360，手机竖屏 HUD 与面板一起放大；
+  两套分辨率共用同一份锚点布局。判定放在 `Update` 里（等比例缩放不会触发 RectTransform 尺寸回调）。
+- **操作提示**：在 H5 DOM 里（`.op-hint`），用 `pointer: coarse` 切「拖动屏幕」/「WASD」，不进 Unity HUD。
 
 ## 5. 关键决策
 
@@ -130,40 +161,43 @@ PlayerHealth.OnDied          // ()
 
 ## 6. 数值一览（`GameConfig`）
 
-| 参数 | 值 |
-|---|---|
-| 玩家 HP / 速度 / 无敌 | 100 / 3.2 / 1.0s |
-| 敌人速度 / 接触伤害 | 1.8 / 12 |
-| 生成间隔 / 每 10s 递减 / 下限 / 上限 | 1.5s / 0.15s / 0.5s / 20 |
-| 胜利时间 | 60s |
-| 存活分 / 击杀分 / 胜利奖励 | 10/s / 20/个 / 200 |
+| 参数 | 值 | 出处 |
+|---|---|---|
+| 地图尺寸 | 36 × 20（约 2×2 屏，相机跟随并钳制） | `GameConfig` |
+| 玩家 HP / 速度 / 无敌 | 100 / 3.2 / 1.0s | `GameConfig` |
+| 敌人速度 / 接触伤害 / 碰撞半径 | 1.8 / 12 / 0.38 | `Assets/Configs/def_Enemy_Chaser.asset` |
+| 生成间隔 / 每 10s 递减 / 下限 / 上限 | 1.5s / 0.15s / 0.5s / 20 | `GameConfig` |
+| 生成位置 | 玩家周围 1.15×相机半对角线、视野外 0.05 | `EnemySpawner`（常量） |
+| 速度扰动 / 速度上限 | ±12% / 2.2 | `GameConfig` |
+| 压力曲线 | 1.0 → 1.15（按局内时间，作用于已存在敌人） | `GameConfig` |
+| 敌人间距 / 位置修正轮数 | 0.95 / 2（Spawner 两两修正） | `GameConfig` |
+| 停距 / 站位槽位 | 0.7 / 12（+ 抖动） | `EnemyAI` |
+| 回收 | 离开相机视野（±0.05）持续 3s | `GameConfig` |
+| 胜利时间 | 60s | `GameConfig` |
+| 存活分 / 击杀分 / 胜利奖励 | 10/s / 20/个 / 200 | `GameConfig` |
 
 > 仍无击杀手段，击杀分接口保留给后续里程碑；结算面板因此不显示「击杀」行。
 
-## 7. 敌人行为扩展接缝（规划，M4）
+## 7. 敌人行为扩展接缝（M4 已落地第一阶段）
 
 > 目标：以后加"不同速度/不同外观/近战挥砍"的敌人，只加数据和组件，不改 `GameManager` / `ScoreService` / `PlayerHealth` / `PlayerController`。详细参数与验收见 `docs/玩法增强.md`。
 
-现状的三个硬编码点：
+M4 已实现：
 
-- `EnemySpawner.SpawnEnemy()` 在代码里拼 `SpriteRenderer + Rigidbody2D + CircleCollider2D + EnemyAI`，速度/伤害读全局 `GameConfig`；
-- `EnemyAI` 同时负责"追踪"和"接触伤害"；
-- `EnemySpawner._enemies` 只有 `ClearEnemies()`，没有死亡/回收注销路径。
+1. **`EnemyDefinition` ScriptableObject**：`sprite / moveSpeed / contactDamage / colliderRadius`
+   （分离半径由碰撞半径派生）。资产 `Assets/Configs/def_Enemy_Chaser.asset` 由 `SceneSetup` 自动创建，
+   构建时重指一次精灵。`GameConfig` 继续管全局：生成间隔、上限、速度扰动、分离权重、回收阈值。
+2. **Spawner 按定义组装 + 可注销**：`EnemyDefinition[] _enemyDefinitions`（当前 1 个，随机选取但只有一个）；
+   暴露只读 `ActiveEnemies` 给分离力使用；`Recycle(EnemyAI)` 从列表移除并销毁，释放 20 上限名额。
+3. **追踪增强在 `EnemyAI` 内**：软分离（O(n²)、无分配）、速度扰动、包围站位、远距离回收。
+   接触伤害仍在 `EnemyAI.OnTriggerStay2D`（伤害值来自定义）。
 
-要留的三个接缝：
+尚未拆分的部分（M5/P2 再做，不阻塞当前验收）：
 
-1. **`EnemyDefinition` ScriptableObject**（每个敌人类型一个资产）
-   - `sprite / scale / moveSpeed / contactDamage / attackType(Contact|Melee) / attackRange / windup / cooldown / damage / stopDistance / maxHp(预留)`
-   - `GameConfig` 继续管全局：生成间隔、上限、胜利时间、玩家数值。敌人个体数值进定义，避免全局单值。
-2. **攻击与移动拆开**
-   - `EnemyAI` 只做"追到 `stopDistance` 为止"，不再直接调 `TakeDamage`。
-   - `ContactAttack`：现有 `OnTriggerStay2D` 迁移过去。
-   - `MeleeAttack`（以后新增）：`Approach → Windup → Strike → Recover → Cooldown`，出手帧做距离 + 朝向夹角判定，一次挥砍只结算一次。
-   - 两种攻击都是独立组件，按 `EnemyDefinition.attackType` 组装；互不继承。
-3. **Spawner 按定义组装 + 可注销**
-   - `[SerializeField] EnemyDefinition[] _enemyTypes`（先放 1 个），按权重选。
-   - 暴露只读 `ActiveEnemies` 给分离力使用。
-   - `Unregister(EnemyAI)`：敌人死亡/远距离回收时从列表移除，释放 20 上限名额。
+- 攻击与移动仍未拆组件：`EnemyAI` 同时负责移动与接触伤害。
+  `ContactAttack` / `MeleeAttack`（`Approach → Windup → Strike → Recover → Cooldown`）按
+  `EnemyDefinition.attackType` 组装的设计见 `docs/玩法增强.md` 第 4 节。
+- `EnemyDefinition` 还没有 `attackType / attackRange / windup / cooldown / scale / maxHp` 字段。
 
 表现层接缝：`EnemyView` 订阅前摇/出手/受伤事件做变色、缩放或 Animator；逻辑不直接操作 `SpriteRenderer`。
 

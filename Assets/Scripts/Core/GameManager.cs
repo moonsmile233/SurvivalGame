@@ -25,6 +25,18 @@ namespace Survival.Core
         public event Action<GameState> OnStateChanged;
         public event Action<float> OnTimeChanged;
 
+        /// <summary>
+        /// 切回页面/窗口时的「延时恢复」请求：PausePanel 收到后走 3-2-1 倒计时再 Resume，
+        /// 避免切回来的一瞬间就被围死（M4 第 1.5 节）。只在 Paused 时有效。
+        /// </summary>
+        public event Action OnResumeCountdownRequested;
+
+        /// <summary>
+        /// 倒计时期间再次失焦：取消这次延时恢复，避免在玩家看不见的时候自动继续。
+        /// PausePanel 收到后停止倒计时；下次切回重新从 3 开始。
+        /// </summary>
+        public event Action OnResumeCountdownCancelled;
+
         public GameState State { get; private set; } = GameState.Booting;
         public ScoreService Score { get; private set; }
         public GameConfig Config => _config;
@@ -108,6 +120,28 @@ namespace Survival.Core
             Time.timeScale = 0f;
             SetState(GameState.Paused);
             Debug.Log("[GameManager] state=Paused");
+        }
+
+        /// <summary>失焦恢复：不立即继续，交给 PausePanel 倒计时（M4 第 1.5 节）。</summary>
+        public void RequestCountdownResume()
+        {
+            if (State != GameState.Paused)
+            {
+                return;
+            }
+
+            OnResumeCountdownRequested?.Invoke();
+        }
+
+        /// <summary>倒计时期间再次失焦：取消倒计时，暂停状态保持不变。</summary>
+        public void CancelCountdownResume()
+        {
+            if (State != GameState.Paused)
+            {
+                return;
+            }
+
+            OnResumeCountdownCancelled?.Invoke();
         }
 
         /// <summary>Paused → Playing。</summary>

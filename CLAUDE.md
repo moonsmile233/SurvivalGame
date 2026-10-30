@@ -1,14 +1,19 @@
 # SurvivalGame — 2D 生存挑战（Unity WebGL + H5）
 
+> 文档版本：2026-10-31T15:25+08 · 作者：军师 · 改前必须从磁盘重读；上下文旧副本作废。
+> 协作与存档规则见 `docs/协作协议.md`（单一写者、写前重读、每步 checkpoint）。
+
 ## 一句话
 玩家在 2D 场景中移动、躲避追踪敌人，存活 60 秒获胜。Unity 构建 WebGL，由 H5 页面承载，H5 显示并保存最高分。
 
 ## 文档索引
 - 完整设计规范：`docs/项目规范.md`（实现前先读第 5、6、7、11 节）
-- 当前任务：**M4（`docs/tickets/M4.md`）**；M0~M3 已完成（`docs/tickets/`、`docs/M0~M3-执行记录.md`）
+- 当前任务：**M4（`docs/tickets/M4.md`）**；M0~M3 已完成，M4 执行记录见 `docs/M4-执行记录.md`
 - 通信协议：`docs/bridge-protocol.md`（实现契约，改代码必须同步）
 - **执行前先看：`docs/遗留问题.md`**（输入后端、构建产物、字体与测试环境注意事项）
 - **玩法增强（M4 P1/P2）：`docs/玩法增强.md`**
+- **托管与离线：`docs/部署与托管.md`**（WebGL 不能 `file://` 双击；国内托管选项）
+- **协作协议：`docs/协作协议.md`**（单一写者、写前重读、每步 checkpoint）
 - **测试门槛：`docs/测试计划.md`；验收矩阵：`docs/acceptance.md`**
 
 ## 环境（已确认，不要猜）
@@ -31,23 +36,21 @@
   新站点默认「需登录访问」，必须在后台 **Project configuration → General → Visitor access → Visibility** 改成 **Public**
 - npm 默认缓存 `D:\nodejs\node_cache` 当前用户不可写，`npx` 需带 `npm_config_cache="D:/agent使用学习/浏览器相关/.npm-cache"`
 
-## 当前里程碑：M3 已完成（2026-10-30），下一步 M4
+## 当前里程碑：M4 进行中（2026-10-31）— B0 已完成，B1 拥挤修复待做
 
-M0（打通链路）、M1（核心玩法）、M2（表现层）、M3（H5 闭环）均已完成，执行记录见
-`docs/M0-执行记录.md`、`docs/M1-执行记录.md`、`docs/M2-执行记录.md`、`docs/M3-执行记录.md`。
+M0（打通链路）、M1（核心玩法）、M2（表现层）、M3（H5 闭环）均已完成。M4 已完成：
 
-- M3 内容：昵称 → 开始 → 玩 → 结算 → 最高分（localStorage）→ 刷新仍在；标签页隐藏自动暂停；
-  协议 `StartGame / PauseGame / ResumeGame / RestartGame / SetPausedByVisibility` +
-  `onReady / onStateChange / onGameOver`，详见 `docs/bridge-protocol.md`。
-- `_autoStart = false`，Ready 状态玩家冻结、敌人不生成；昵称只在 H5 渲染。
-- Editor 状态机 + Playwright 浏览器闭环均已验证；线上 <https://survivalgame-demo.netlify.app> 为 M3 构建。
-- M3 门禁已补测（2026-10-30）：真实 Chrome + 自动走位脚本 60.1s 胜利（800 分，**自动化非人工**）、Edge 通过；
-  门禁发现并修复了 H5「SendMessage 同步导致开始按钮被打回 Ready」缺陷（`docs/M3-执行记录.md` 第 9 节）；
-  同日 hotfix：开始兜底 3s → 9s、超时只提示不打回 Ready；两次修复均已部署到 Netlify 并线上复验。
-- 人工 60 秒胜利、切窗暂停/倒计时、H5「游戏中」文案、国内托管评估，都排在 M4 门禁里。
-- 下一步 M4（`docs/tickets/M4.md`）：手机触控、手机 HUD 缩放、结算 UI 去重、操作提示、
-  切窗自动暂停 + 3-2-1 倒计时、H5「游戏中」文案、敌人分离/速度/回收、正式素材、国内托管评估、测试门禁。
-  **不要提前做 M5 的交付报告/zip。**
+- 移动端 P0：锚点相对触控（Keyboard/Touch/Router）、HUD/面板参考分辨率（`Screen.width < 1000` → 640×360）、
+  结算只保留 H5 一套、操作提示、失焦暂停 + 3-2-1（`unscaledDeltaTime`）、H5「游戏中」、DPR 上限 2。
+- **B0：大地图 36×20 + CameraFollow + 玩家边界改为地图 + 视野外生成/回收**；
+  压力曲线代码已落地但未调参。
+- `tools/e2e` Playwright smoke 已有（Chrome/Edge 通过，Firefox 本地通过）；线上 m4.2 需确认是否已含 B0。
+
+**下一步（B1 第一项，必做）**：拥挤抖动修复——位置修正 + 停距/站位环，
+见 `docs/玩法增强.md` 2.1 / `docs/tickets/M4.md` §2.2。完成后才做压力曲线调参、变体/可读性、素材、E2E 全量。
+
+- 真机（iPhone/Android）、人工 60 秒、国内托管仍未完成；**不要宣称 M4 收口**。
+- **不要提前做 M5 的交付报告/zip。**
 
 ## 硬约束
 1. **一个状态一个作者**：静态结构（相机、Canvas、玩家、生成器）放在场景里；动态物体（敌人、特效、飘字）运行时生成。禁止两边各生成一份。
@@ -128,23 +131,35 @@ SurvivalGame/
 └── README.md
 ```
 
-## 版本与发布（每个里程碑收口固定执行）
+## 版本与发布（小步 checkpoint，不再攒到里程碑）
 
-origin：`https://github.com/moonsmile233/SurvivalGame.git`（远端初始为空，已确认）。
+origin：`https://github.com/moonsmile233/SurvivalGame.git`（已确认）。
+协作与存档的完整规则见 `docs/协作协议.md`；以下是执行摘要。
 
-1. 构建 WebGL + 完成本里程碑自测；构建失败不发布。
-2. `jj describe -m "feat(mX): ..."`（Conventional Commits）
-3. `jj bookmark set main -r @`
-4. `jj git push --bookmark main`
-5. `jj new` 开下一个里程碑
+1. **每个逻辑步骤一个提交**（相机/B0、拥挤修复、压力曲线、素材、E2E 各自一个），
+   不要 A + B0 + B1 塞一个。
+2. 步骤完成、构建/自测通过后：
 
-- 首次 push 会弹 Git Credential Manager 浏览器授权；之后凭据由系统记住，不需要重复登录。
-- 推送前先 `jj git fetch`；若远端出现与本仓库不一致的历史，**停止并报告**，禁止 `--force`。
-- 不自动推送未验收的中间状态；只有里程碑通过才 push。
-- M5 之前 `web/unity/` 保持 ignore；M5 最终构建单独一个 `build:` 提交，并同步 GitHub Release。
+   ```bash
+   jj describe -m "feat(m4-b1): ..."
+   jj bookmark set wip -r @
+   jj git push --bookmark wip
+   jj bookmark set main -r @
+   jj git push --bookmark main
+   jj new
+   ```
 
-## 汇报格式（每个里程碑结束时）
-1. 改了哪些文件（路径列表）
+3. **`main` 只放已验证的检查点；`wip` 放最新工作状态**（允许未验收，用于 GitHub 备份）。
+   未验证先只推 `wip`，不动 `main`；不要"改一大堆再存一个"。
+4. 失败/半成品用 `jj undo` / `jj restore` 回退；不要 force push。
+5. 推送前 `jj git fetch`；远端分叉就停，报告，禁止 `--force`。
+6. 首次 push 会弹 Git Credential Manager 授权；之后凭据由系统记住，不需要重复登录。
+7. M5 之前 `web/unity/` 保持 ignore；M5 最终构建单独一个 `build:` 提交，并同步 GitHub Release。
+
+## 汇报格式（每个 checkpoint；里程碑另附完整验收清单）
+
+1. 改了哪些文件（路径列表）+ 相关文档版本行
 2. 构建结果（成功/失败 + 日志路径）
-3. 验收清单逐条勾选结果
+3. 本步自测证据（截图/日志/命令）
 4. 遗留问题 / 需要人决策的点
+5. `jj diff --stat`

@@ -1,0 +1,10 @@
+{
+  "measuredAt": "2026-10-31",
+  "target": "http://127.0.0.1:8000（M4 构建，Chrome 有头，1280x800 窗口，游戏内 6 秒采样）",
+  "method": "requestAnimationFrame 间隔（Unity WebGL 主循环即 rAF）；先预热 3 秒",
+  "frames": 991,
+  "avgFps": 165.1,
+  "avgFrameMs": 6.06,
+  "p95FrameMs": 6.2,
+  "note": "数值受显示器刷新率（165Hz）限制，只说明桌面浏览器 ≥60FPS；中端手机真机帧率仍未测"
+}

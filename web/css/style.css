@@ -30,6 +30,8 @@ body {
 }
 
 .shell {
+  /* dvh 是 iOS 15.4+；先给 vh 兜底，老 Safari 也不至于塌成 0 高。 */
+  min-height: 100vh;
   min-height: 100dvh;
   max-width: 960px;
   margin: 0 auto;
@@ -94,7 +96,11 @@ body {
 
 .game-frame {
   position: relative;
-  width: 100%;
+  /* 16:9 不变形；横屏手机时把宽度压到可用高度内，避免整页出现纵向滚动。
+     dvh 是 iOS 15.4+，先写 vh 让老 Safari 也能拿到尺寸。 */
+  width: min(100%, calc((100vh - 170px) * 16 / 9));
+  width: min(100%, calc((100dvh - 170px) * 16 / 9));
+  margin-inline: auto;
   aspect-ratio: 16 / 9;
   background: #0d0d15;
   border-radius: 12px;
@@ -107,6 +113,11 @@ body {
   height: 100%;
   background: #0d0d15;
   outline: none;
+  /* 全屏拖动移动时不许页面跟着滚动/缩放（M4 第 1.1 节） */
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .overlay {
@@ -198,6 +209,47 @@ body {
   line-height: 1.4;
 }
 
+/* 操作提示：DOM 文本，不塞进 Unity HUD（避免重烤字体图集，M4 第 1.4 节）。
+   触屏设备用 pointer: coarse 判断，不按宽度猜——窄桌面窗口仍然是键盘操作。 */
+.op-hint {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.op-touch {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .op-desktop {
+    display: none;
+  }
+
+  .op-touch {
+    display: inline;
+  }
+}
+
+/* 竖屏手机提示横屏，但不阻塞游戏 */
+.rotate-hint {
+  display: none;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(124, 92, 255, 0.12);
+  color: #cfc6ff;
+  font-size: 14px;
+  text-align: center;
+}
+
+@media (orientation: portrait) and (pointer: coarse) {
+  .rotate-hint {
+    display: block;
+  }
+}
+
 /* ---------- 结算 ---------- */
 
 .result {
@@ -275,6 +327,42 @@ body {
 
   .nickname-input {
     width: 220px;
+  }
+}
+
+/* 横屏手机：屏幕高度只有约 390px，压缩页头/间距，把高度让给 16:9 游戏区。 */
+@media (max-height: 560px) and (orientation: landscape) {
+  .shell {
+    gap: 8px;
+    padding: calc(6px + env(safe-area-inset-top)) calc(8px + env(safe-area-inset-right))
+      calc(6px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left));
+  }
+
+  .title {
+    font-size: 15px;
+  }
+
+  .nickname-input {
+    min-height: 36px;
+    width: 140px;
+    font-size: 14px;
+  }
+
+  .btn {
+    min-height: 36px;
+  }
+
+  .footer {
+    display: none;
+  }
+
+  /* 用高度定尺寸，宽度由 16:9 反推：保证页头+按钮+提示刚好占满一屏，不出现纵向滚动。 */
+  .game-frame {
+    height: calc(100vh - 132px);
+    height: calc(100dvh - 132px);
+    width: auto;
+    max-width: 100%;
+    align-self: center;
   }
 }
 

@@ -1,0 +1,13 @@
+{
+  "name": "survivalgame-e2e",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "M4 E2E smoke：加载 → 昵称 → 开始 → 失焦暂停/倒计时恢复 → 结算 → 重开 → 刷新最高分",
+  "scripts": {
+    "smoke": "node smoke.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.63.0"
+  }
+}

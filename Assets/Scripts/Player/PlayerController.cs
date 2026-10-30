@@ -4,15 +4,14 @@ using UnityEngine;
 namespace Survival.Player
 {
     /// <summary>
-    /// 按输入移动刚体，并把玩家钳制在相机可视范围内。
-    /// 不改状态机（规范 5.2）。
+    /// 按输入移动刚体，并把玩家钳制在**地图边界**内（M4-B0：地图 36×20 大于视野，
+    /// 相机跟随玩家；玩家活动范围不再等于相机视野）。不改状态机（规范 5.2）。
     /// </summary>
     [RequireComponent(typeof(Rigidbody2D))]
     public class PlayerController : MonoBehaviour
     {
         [SerializeField] private GameConfig _config;
-        [SerializeField] private PlayerInputController _input;
-        [SerializeField] private Camera _camera;
+        [SerializeField] private PlayerInputSource _input;
         [SerializeField] private GameManager _gameManager;
 
         private Rigidbody2D _rb;
@@ -23,17 +22,11 @@ namespace Survival.Player
         private float _maxX;
         private float _minY;
         private float _maxY;
-        private float _boundsAspect = -1f;
 
         private void Awake()
         {
             _rb = GetComponent<Rigidbody2D>();
             _startPosition = transform.position;
-
-            if (_camera == null)
-            {
-                _camera = Camera.main;
-            }
 
             if (_gameManager == null)
             {
@@ -44,7 +37,7 @@ namespace Survival.Player
             var collider = GetComponent<CircleCollider2D>();
             _margin = collider != null ? collider.radius * scale : 0.5f;
 
-            // 精灵可能比碰撞体宽，按两者较大的半宽留边，避免贴边时图形露出视野。
+            // 精灵可能比碰撞体宽，按两者较大的半宽留边，避免贴边时图形露出一半。
             var renderer = GetComponent<SpriteRenderer>();
             if (renderer != null && renderer.sprite != null)
             {
@@ -67,17 +60,6 @@ namespace Survival.Player
             Vector2 move = canMove && _input != null ? _input.Move : Vector2.zero;
             _rb.linearVelocity = move * _config.PlayerSpeed;
 
-            if (_camera == null)
-            {
-                return;
-            }
-
-            // Game 视图改分辨率 / 浏览器缩放时重算边界。
-            if (!Mathf.Approximately(_boundsAspect, _camera.aspect))
-            {
-                RefreshBounds();
-            }
-
             Vector2 position = _rb.position;
             position.x = Mathf.Clamp(position.x, _minX, _maxX);
             position.y = Mathf.Clamp(position.y, _minY, _maxY);
@@ -92,26 +74,22 @@ namespace Survival.Player
             transform.position = _startPosition;
         }
 
+        /// <summary>边界 = 地图四周减玩家半宽；固定不变（相机移动不影响）。</summary>
         private void RefreshBounds()
         {
-            if (_camera == null)
+            if (_config == null)
             {
                 return;
             }
 
-            _boundsAspect = _camera.aspect;
-            float distance = Mathf.Abs(_camera.transform.position.z - transform.position.z);
-            Vector3 bottomLeft = _camera.ViewportToWorldPoint(new Vector3(0f, 0f, distance));
-            Vector3 topRight = _camera.ViewportToWorldPoint(new Vector3(1f, 1f, distance));
-
             // 钳制发生在物理积分之前，预留一步位移，避免积分后越过边界。
-            float guard = _config != null ? _config.PlayerSpeed * Time.fixedDeltaTime : 0f;
+            float guard = _config.PlayerSpeed * Time.fixedDeltaTime;
             float inset = _margin + guard;
 
-            _minX = bottomLeft.x + inset;
-            _maxX = topRight.x - inset;
-            _minY = bottomLeft.y + inset;
-            _maxY = topRight.y - inset;
+            _minX = -_config.MapWidth * 0.5f + inset;
+            _maxX = _config.MapWidth * 0.5f - inset;
+            _minY = -_config.MapHeight * 0.5f + inset;
+            _maxY = _config.MapHeight * 0.5f - inset;
         }
     }
 }

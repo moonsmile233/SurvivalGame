@@ -3,6 +3,7 @@ using Survival.Core;
 using Survival.Enemy;
 using Survival.Player;
 using Survival.UI;
+using Survival.World;
 using TMPro;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -22,6 +23,7 @@ public static class SceneSetup
     private const string SceneFolder = "Assets/Scenes";
     private const string ConfigFolder = "Assets/Configs";
     private const string ConfigPath = "Assets/Configs/cfg_GameConfig.asset";
+    private const string EnemyDefinitionPath = "Assets/Configs/def_Enemy_Chaser.asset";
     private const string SpriteFolder = "Assets/Sprites";
     private const string BackgroundSpritePath = "Assets/Sprites/spr_background_grid.png";
     private const string PlayerSpritePath = "Assets/Sprites/spr_player.png";
@@ -73,6 +75,7 @@ public static class SceneSetup
         Sprite playerSprite = EnsureSprite(PlayerSpritePath, CreatePlayerTexture(), false);
         Sprite enemySprite = EnsureSprite(EnemySpritePath, CreateEnemyTexture(), false);
         EnsureSprite(UiSpritePath, CreateWhiteTexture(), false);
+        EnsureEnemyDefinition(enemySprite);
 
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -83,23 +86,30 @@ public static class SceneSetup
         enemySprite = AssetDatabase.LoadAssetAtPath<Sprite>(EnemySpritePath);
         s_uiSprite = AssetDatabase.LoadAssetAtPath<Sprite>(UiSpritePath);
         s_uiFont = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontAssetPath);
+        EnemyDefinition enemyDefinition = AssetDatabase.LoadAssetAtPath<EnemyDefinition>(EnemyDefinitionPath);
 
         Camera cam = CreateMainCamera();
-        CreateBackground(backgroundSprite);
+        CreateBackground(config, backgroundSprite);
 
-        GameObject player = CreatePlayer(config, playerSprite, cam);
+        GameObject player = CreatePlayer(config, playerSprite);
         PlayerController playerController = player.GetComponent<PlayerController>();
         PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
 
-        EnemySpawner spawner = CreateEnemySpawner(config, player.transform, playerHealth, cam, enemySprite);
+        // 大地图（36×20）大于视野，相机在 LateUpdate 跟随并钳在地图内（M4-B0）。
+        var cameraFollow = cam.gameObject.AddComponent<CameraFollow>();
+        SetObjectReference(cameraFollow, "_config", config);
+        SetObjectReference(cameraFollow, "_target", player.transform);
+        SetObjectReference(cameraFollow, "_camera", cam);
+
+        EnemySpawner spawner = CreateEnemySpawner(config, player.transform, playerHealth, cam, enemyDefinition);
         GameManager manager = CreateGameManager(config, playerController, playerHealth, spawner);
 
         // Ready 状态禁止移动：PlayerController 需要读 GameManager.State（M3 第 1.2 节）。
         SetObjectReference(playerController, "_gameManager", manager);
 
-        CreateHud(manager, playerHealth);
-
+        // 先建桥再接 HUD：结算面板要读桥的 IsEmbedded 决定显不显示（M4 第 1.3 节）。
         WebGLBridge bridge = CreateBridge(manager);
+        CreateHud(manager, playerHealth, bridge);
         CreateBootstrap(bridge);
 
         EditorSceneManager.SaveScene(scene, ScenePath);
@@ -128,18 +138,19 @@ public static class SceneSetup
         return camera;
     }
 
-    private static void CreateBackground(Sprite sprite)
+    private static void CreateBackground(GameConfig config, Sprite sprite)
     {
         var go = new GameObject("Background");
         var renderer = go.AddComponent<SpriteRenderer>();
         renderer.sprite = sprite;
         renderer.drawMode = SpriteDrawMode.Tiled;
         renderer.tileMode = SpriteTileMode.Continuous;
-        renderer.size = new Vector2(60f, 30f);
+        // 背景和地图同尺寸：走到边缘能看到网格结束、外面是相机 clear color（不是空气墙）。
+        renderer.size = new Vector2(config.MapWidth, config.MapHeight);
         renderer.sortingOrder = -10;
     }
 
-    private static GameObject CreatePlayer(GameConfig config, Sprite sprite, Camera camera)
+    private static GameObject CreatePlayer(GameConfig config, Sprite sprite)
     {
         var go = new GameObject("Player");
         go.transform.position = Vector3.zero;
@@ -157,14 +168,19 @@ public static class SceneSetup
         var collider = go.AddComponent<CircleCollider2D>();
         collider.radius = 0.4f;
 
-        var input = go.AddComponent<PlayerInputController>();
+        // 键盘 + 触控同时挂在玩家上，由 Router 选当前有输入的那个（M4 第 1.1 节）；
+        // PlayerController 只认抽象基类，不做平台判断。
+        var keyboard = go.AddComponent<KeyboardInput>();
+        var touch = go.AddComponent<TouchInput>();
+        var router = go.AddComponent<PlayerInputRouter>();
         var controller = go.AddComponent<PlayerController>();
         var health = go.AddComponent<PlayerHealth>();
         var view = go.AddComponent<PlayerView>();
 
+        SetObjectReference(router, "_keyboard", keyboard);
+        SetObjectReference(router, "_touch", touch);
         SetObjectReference(controller, "_config", config);
-        SetObjectReference(controller, "_input", input);
-        SetObjectReference(controller, "_camera", camera);
+        SetObjectReference(controller, "_input", router);
         SetObjectReference(health, "_config", config);
         SetObjectReference(view, "_health", health);
         SetObjectReference(view, "_config", config);
@@ -177,7 +193,7 @@ public static class SceneSetup
         Transform playerTarget,
         PlayerHealth playerHealth,
         Camera camera,
-        Sprite enemySprite)
+        EnemyDefinition definition)
     {
         var go = new GameObject("EnemySpawner");
         var spawner = go.AddComponent<EnemySpawner>();
@@ -186,7 +202,7 @@ public static class SceneSetup
         SetObjectReference(spawner, "_playerTarget", playerTarget);
         SetObjectReference(spawner, "_playerHealth", playerHealth);
         SetObjectReference(spawner, "_camera", camera);
-        SetObjectReference(spawner, "_enemySprite", enemySprite);
+        SetObjectReferenceArray(spawner, "_enemyDefinitions", new Object[] { definition });
 
         return spawner;
     }
@@ -228,7 +244,7 @@ public static class SceneSetup
 
     // ---------- HUD / 面板（ticket M2 第 1 节，全部代码生成） ----------
 
-    private static void CreateHud(GameManager manager, PlayerHealth playerHealth)
+    private static void CreateHud(GameManager manager, PlayerHealth playerHealth, WebGLBridge bridge)
     {
         var eventSystemGo = new GameObject("EventSystem");
         eventSystemGo.AddComponent<EventSystem>();
@@ -245,14 +261,18 @@ public static class SceneSetup
 
         canvasGo.AddComponent<GraphicRaycaster>();
 
+        // 手机窄屏（Screen.width < 1000 设备像素）时切到 640×360 参考分辨率，HUD 与面板一起放大（M4 第 1.2 节）。
+        var layout = canvasGo.AddComponent<HudCanvasScaler>();
+        SetObjectReference(layout, "_scaler", scaler);
+
         var canvasRect = (RectTransform)canvasGo.transform;
 
-        // ---- 常驻 HUD ----
+        // ---- 常驻 HUD：顶行 HP 左 / 时间中 / 分数右；暂停挪到右下（拇指可达，也不和分数抢顶行） ----
         RectTransform hud = CreateRect("HUD", canvasRect);
         Stretch(hud);
 
         Image hpBarBg = CreateImage("HPBar", hud, new Color(0.10f, 0.10f, 0.16f, 0.85f));
-        SetAnchored(hpBarBg.rectTransform, TopLeft, TopLeft, new Vector2(24f, -24f), new Vector2(240f, 20f));
+        SetAnchored(hpBarBg.rectTransform, TopLeft, TopLeft, new Vector2(16f, -16f), new Vector2(200f, 18f));
 
         Image hpFill = CreateImage("Fill", hpBarBg.transform, new Color(0.30f, 0.85f, 0.45f, 1f));
         Stretch(hpFill.rectTransform, 2f);
@@ -261,50 +281,59 @@ public static class SceneSetup
         hpFill.fillOrigin = (int)Image.OriginHorizontal.Left;
         hpFill.fillAmount = 1f;
 
-        TMP_Text hpText = CreateText("HPText", hud, $"{UiStrings.HealthLabel} 100/100", 24f,
+        TMP_Text hpText = CreateText("HPText", hud, $"{UiStrings.HealthLabel} 100/100", 22f,
             TextAlignmentOptions.TopLeft);
-        SetAnchored(hpText.rectTransform, TopLeft, TopLeft, new Vector2(24f, -50f), new Vector2(260f, 32f));
+        SetAnchored(hpText.rectTransform, TopLeft, TopLeft, new Vector2(16f, -38f), new Vector2(220f, 30f));
 
-        TMP_Text timeText = CreateText("TimeText", hud, $"{UiStrings.TimeLabel} 00:60", 36f,
+        TMP_Text timeText = CreateText("TimeText", hud, $"{UiStrings.TimeLabel} 00:60", 34f,
             TextAlignmentOptions.Top, true);
-        SetAnchored(timeText.rectTransform, TopCenter, TopCenter, new Vector2(0f, -20f), new Vector2(320f, 48f));
+        SetAnchored(timeText.rectTransform, TopCenter, TopCenter, new Vector2(0f, -14f), new Vector2(260f, 44f));
 
-        TMP_Text scoreText = CreateText("ScoreText", hud, $"{UiStrings.ScoreLabel} 0", 28f,
-            TextAlignmentOptions.TopRight, true);
-        SetAnchored(scoreText.rectTransform, TopRight, TopRight, new Vector2(-160f, -22f), new Vector2(260f, 40f));
-
+        // 暂停在右上（H5 文案点名「右上角」）；分数放到暂停按钮下方，避免窄屏顶行互相挤。
         Button pauseButton = CreateButton("PauseButton", hud, UiStrings.PauseButton, TopRight, TopRight,
-            new Vector2(-24f, -24f), new Vector2(120f, 48f), 24f);
+            new Vector2(-16f, -12f), new Vector2(140f, 56f), 24f);
 
-        // ---- 暂停面板（默认隐藏） ----
+        TMP_Text scoreText = CreateText("ScoreText", hud, $"{UiStrings.ScoreLabel} 0", 24f,
+            TextAlignmentOptions.TopRight, true);
+        SetAnchored(scoreText.rectTransform, TopRight, TopRight, new Vector2(-16f, -78f), new Vector2(220f, 30f));
+
+        // ---- 暂停面板（默认隐藏）：标题 / 3-2-1 倒计时 / 继续 ----
         RectTransform pausePanel = CreatePanel("PausePanel", canvasRect);
         CreateDim(pausePanel);
 
-        TMP_Text pauseTitle = CreateText("Title", pausePanel, UiStrings.PausedTitle, 64f,
+        TMP_Text pauseTitle = CreateText("Title", pausePanel, UiStrings.PausedTitle, 60f,
             TextAlignmentOptions.Center, true);
-        SetAnchored(pauseTitle.rectTransform, Center, Center, new Vector2(0f, 100f), new Vector2(700f, 96f));
+        SetAnchored(pauseTitle.rectTransform, new Vector2(0.5f, 0.68f), Center, Vector2.zero,
+            new Vector2(700f, 90f));
 
-        Button resumeButton = CreateButton("ResumeButton", pausePanel, UiStrings.ResumeButton, Center, Center,
-            new Vector2(0f, -60f), new Vector2(220f, 56f), 28f);
+        TMP_Text countdownText = CreateText("CountdownText", pausePanel, "3", 120f,
+            TextAlignmentOptions.Center, true);
+        SetAnchored(countdownText.rectTransform, Center, Center, Vector2.zero, new Vector2(300f, 160f));
 
-        // ---- 结算面板（默认隐藏） ----
+        Button resumeButton = CreateButton("ResumeButton", pausePanel, UiStrings.ResumeButton,
+            new Vector2(0.5f, 0.32f), Center, Vector2.zero, new Vector2(260f, 72f), 28f);
+
+        // ---- 结算面板（默认隐藏；WebGL 嵌入模式下由 ResultPanel 自己抑制） ----
         RectTransform resultPanel = CreatePanel("ResultPanel", canvasRect);
         CreateDim(resultPanel);
 
-        TMP_Text resultTitle = CreateText("TitleText", resultPanel, UiStrings.VictoryTitle, 72f,
+        TMP_Text resultTitle = CreateText("TitleText", resultPanel, UiStrings.VictoryTitle, 64f,
             TextAlignmentOptions.Center, true);
-        SetAnchored(resultTitle.rectTransform, Center, Center, new Vector2(0f, 160f), new Vector2(700f, 110f));
+        SetAnchored(resultTitle.rectTransform, new Vector2(0.5f, 0.76f), Center, Vector2.zero,
+            new Vector2(700f, 90f));
 
-        TMP_Text resultScore = CreateText("ScoreText", resultPanel, $"{UiStrings.FinalScoreLabel} 0", 40f,
+        TMP_Text resultScore = CreateText("ScoreText", resultPanel, $"{UiStrings.FinalScoreLabel} 0", 38f,
             TextAlignmentOptions.Center, true);
-        SetAnchored(resultScore.rectTransform, Center, Center, new Vector2(0f, 50f), new Vector2(600f, 60f));
+        SetAnchored(resultScore.rectTransform, new Vector2(0.5f, 0.56f), Center, Vector2.zero,
+            new Vector2(600f, 56f));
 
-        TMP_Text resultBreakdown = CreateText("BreakdownText", resultPanel, $"{UiStrings.SurvivalLabel} 0", 28f,
+        TMP_Text resultBreakdown = CreateText("BreakdownText", resultPanel, $"{UiStrings.SurvivalLabel} 0", 26f,
             TextAlignmentOptions.Top);
-        SetAnchored(resultBreakdown.rectTransform, Center, Center, new Vector2(0f, -70f), new Vector2(600f, 150f));
+        SetAnchored(resultBreakdown.rectTransform, new Vector2(0.5f, 0.40f), Center, Vector2.zero,
+            new Vector2(600f, 120f));
 
-        Button restartButton = CreateButton("RestartButton", resultPanel, UiStrings.RestartButton, Center, Center,
-            new Vector2(0f, -220f), new Vector2(260f, 60f), 28f);
+        Button restartButton = CreateButton("RestartButton", resultPanel, UiStrings.RestartButton,
+            new Vector2(0.5f, 0.19f), Center, Vector2.zero, new Vector2(260f, 60f), 26f);
 
         pausePanel.gameObject.SetActive(false);
         resultPanel.gameObject.SetActive(false);
@@ -323,9 +352,12 @@ public static class SceneSetup
         SetObjectReference(pauseController, "_gameManager", manager);
         SetObjectReference(pauseController, "_panel", pausePanel.gameObject);
         SetObjectReference(pauseController, "_resumeButton", resumeButton);
+        SetObjectReference(pauseController, "_titleText", pauseTitle);
+        SetObjectReference(pauseController, "_countdownText", countdownText);
 
         var resultController = canvasGo.AddComponent<ResultPanel>();
         SetObjectReference(resultController, "_gameManager", manager);
+        SetObjectReference(resultController, "_bridge", bridge);
         SetObjectReference(resultController, "_panel", resultPanel.gameObject);
         SetObjectReference(resultController, "_titleText", resultTitle);
         SetObjectReference(resultController, "_scoreText", resultScore);
@@ -464,6 +496,28 @@ public static class SceneSetup
         AssetDatabase.SaveAssets();
         Debug.Log($"[SceneSetup] Created config: {ConfigPath}");
         return config;
+    }
+
+    /// <summary>
+    /// 敌人定义资产（玩法增强 4.1 的接缝）。M4 只有一个基础追击定义，不存在时用占位精灵创建；
+    /// 速度/伤害/碰撞半径用资产字段默认值，换素材只需替换 _sprite。
+    /// </summary>
+    private static void EnsureEnemyDefinition(Sprite enemySprite)
+    {
+        EnsureFolder(ConfigFolder);
+
+        var definition = AssetDatabase.LoadAssetAtPath<EnemyDefinition>(EnemyDefinitionPath);
+        if (definition == null)
+        {
+            definition = ScriptableObject.CreateInstance<EnemyDefinition>();
+            AssetDatabase.CreateAsset(definition, EnemyDefinitionPath);
+            Debug.Log($"[SceneSetup] Created enemy definition: {EnemyDefinitionPath}");
+        }
+
+        // 每次重建都重指一次精灵：换素材时不用手工改资产。
+        SetObjectReference(definition, "_sprite", enemySprite);
+        EditorUtility.SetDirty(definition);
+        AssetDatabase.SaveAssets();
     }
 
     /// <summary>文件不存在时写入 PNG 并配置为 Sprite；返回 Sprite 资源。</summary>
@@ -637,6 +691,25 @@ public static class SceneSetup
         }
 
         property.objectReferenceValue = value;
+        serialized.ApplyModifiedPropertiesWithoutUndo();
+    }
+
+    private static void SetObjectReferenceArray(Object target, string fieldName, Object[] values)
+    {
+        var serialized = new SerializedObject(target);
+        SerializedProperty property = serialized.FindProperty(fieldName);
+        if (property == null)
+        {
+            Debug.LogError($"[SceneSetup] Field not found: {target.GetType().Name}.{fieldName}");
+            return;
+        }
+
+        property.arraySize = values.Length;
+        for (int i = 0; i < values.Length; i++)
+        {
+            property.GetArrayElementAtIndex(i).objectReferenceValue = values[i];
+        }
+
         serialized.ApplyModifiedPropertiesWithoutUndo();
     }
 

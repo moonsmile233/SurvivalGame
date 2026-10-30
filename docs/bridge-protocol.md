@@ -17,17 +17,24 @@
 
 | 方法 | 参数 | 状态迁移 | 说明 |
 |---|---|---|---|
-| `StartGame` | JSON `{"nickname":"..."}` | Ready → Playing | 昵称只保存，不进入 Unity UI；JSON 解析失败或传纯字符串时按空/纯昵称处理 |
+| `StartGame` | JSON `{"nickname":"..."}` | Ready → Playing | 昵称只保存，不进入 Unity UI；JSON 解析失败或传纯字符串时按空/纯昵称处理；同时进入「H5 嵌入模式」（见 2.1） |
 | `PauseGame` | `""` | Playing → Paused | H5 手动暂停；会清除「因隐藏而暂停」标记 |
 | `ResumeGame` | `""` | Paused → Playing | H5 手动继续；会清除标记 |
 | `RestartGame` | `""` | Won/Lost → Playing | 全量重置（血量、计时、分数、敌人、玩家位置），昵称沿用 |
-| `SetPausedByVisibility` | `"true"` / `"false"` | Playing ↔ Paused（条件） | `true`：仅在 Playing 时暂停并记标记；`false`：仅当标记为真且状态为 Paused 时恢复 |
+| `SetPausedByVisibility` | `"true"` / `"false"` | Playing ↔ Paused（条件） | `true`：在 Playing 时暂停并记标记；若已在「自动暂停」且倒计时进行中，则**取消倒计时**并保持暂停。`false`：仅当标记为真且状态为 Paused 时**不立即恢复**，改为让暂停面板走 3-2-1 倒计时，倒计时结束才 Resume（M4） |
 
 状态守卫（由 `GameManager` 保证，桥接层只转发）：
 
 - `StartGame` 只接受 `Ready`；其他状态直接忽略并打 warning。
 - `RestartGame` 只接受 `Won` / `Lost`。
-- 手动暂停后切标签页再回来：不会自动恢复（只有自动暂停才自动恢复）。
+- 手动暂停后切标签页再回来：不会自动恢复（只有自动暂停才走倒计时恢复）。
+
+### 2.1 结算归属（M4）
+
+- WebGL 构建（`#if UNITY_WEBGL && !UNITY_EDITOR`）里 `WebGLBridge.IsEmbedded = true`，`StartGame` 时再置一次。
+- 嵌入模式下 Unity **不显示** ResultPanel（成绩、明细、重开都由 H5 卡片负责）；PausePanel 仍保留在游戏内。
+- Editor 里 `IsEmbedded = false`，Unity 结算面板保留，供自测。
+- 因此 `onGameOver` 是 H5 结算的唯一数据源；Unity 面板上的「重新开始」只用于 Editor 自测。
 
 ## 3. Unity → H5
 
@@ -76,10 +83,15 @@ Unity 首帧
 点击开始
   └─ SendMessage StartGame({"nickname"}) → Playing
      └─ onStateChange(Playing) → H5 隐藏开始按钮、禁用昵称输入
-标签页隐藏
-  └─ SendMessage SetPausedByVisibility("true") → Paused（若在 Playing）
-标签页恢复
-  └─ SendMessage SetPausedByVisibility("false") → 仅恢复自动暂停的那次
+窗口失焦 / 标签页隐藏（blur、visibilitychange）
+  └─ SendMessage SetPausedByVisibility("true") → Paused（若在 Playing），暂停面板出现
+窗口聚焦 / 标签页恢复
+  └─ SendMessage SetPausedByVisibility("false") → 只处理自动暂停的那次：
+     Unity 暂停面板显示 3-2-1（Time.unscaledDeltaTime），倒计时结束才 ResumeGame
+     ——刻意不在切回瞬间恢复，避免回来一帧就被围死
+倒计时期间再次失焦
+  └─ SendMessage SetPausedByVisibility("true") → 取消倒计时（保持 Paused），
+     下次切回重新从 3 开始；不会在玩家看不见的时候自动继续
 HP ≤ 0 / 计时 ≥ 60s
   └─ onStateChange(Won|Lost) + onGameOver（一次）→ H5 显示结算
 点击重新开始
@@ -109,3 +121,6 @@ HP ≤ 0 / 计时 ≥ 60s
 | 版本 | 日期 | 变更 |
 |---|---|---|
 | 1 | 2026-10-30 | M3：移除 M0 的 Ping/Pong 测试接口；新增 StartGame / PauseGame / ResumeGame / RestartGame / SetPausedByVisibility 与 onReady / onStateChange / onGameOver |
+
+> 2026-10-30（M4）：协议版本仍为 1。`SetPausedByVisibility("false")` 从「立即恢复」改为「暂停面板倒计时后恢复」，
+> H5 调用方式不变；嵌入模式下 Unity 不再画结算面板（见 2.1）。

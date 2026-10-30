@@ -8,10 +8,13 @@ namespace Survival.UI
     /// <summary>
     /// 结算面板：Won / Lost 时显示胜负、总分、明细；「重新开始」调 GameManager.RestartGame
     /// （ticket M2 第 2 节）。不写分数算法，明细全部读 ScoreService，文案见 <see cref="UiStrings"/>。
+    /// H5 嵌入模式（WebGL 构建）下隐藏：成绩与重开由页面统一展示，避免两套结算重复（M4 第 1.3 节）；
+    /// Editor 里 <see cref="WebGLBridge.IsEmbedded"/> 为 false，仍可自测本面板。
     /// </summary>
     public class ResultPanel : MonoBehaviour
     {
         [SerializeField] private GameManager _gameManager;
+        [SerializeField] private WebGLBridge _bridge;
         [SerializeField] private GameObject _panel;
         [SerializeField] private TMP_Text _titleText;
         [SerializeField] private TMP_Text _scoreText;
@@ -48,7 +51,8 @@ namespace Survival.UI
 
         private void HandleStateChanged(GameState state)
         {
-            bool show = state == GameState.Won || state == GameState.Lost;
+            bool embedded = _bridge != null && _bridge.IsEmbedded;
+            bool show = (state == GameState.Won || state == GameState.Lost) && !embedded;
             _panel.SetActive(show);
 
             if (!show || _gameManager.Score == null)

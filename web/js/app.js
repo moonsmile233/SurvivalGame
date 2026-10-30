@@ -11,6 +11,7 @@
   var START_RESPONSE_TIMEOUT_MS = 9000;
 
   var storage = window.SurvivalStorage;
+  var canvas = document.getElementById('unity-canvas');
   var overlay = document.getElementById('overlay');
   var overlayText = document.getElementById('overlay-text');
   var errorCard = document.getElementById('error-card');
@@ -133,10 +134,15 @@
       saveHintIfNeeded();
     }
 
+    // 键盘事件要落在画布上（Unity 6 从 document 收键盘，但焦点放对才不会被昵称输入框抢走）。
+    if (canvas && typeof canvas.focus === 'function') {
+      canvas.focus();
+    }
+
     // 顺序不能反：Unity 的 SendMessage 是同步的，onStateChange(Playing) 会在
     // sendMessage() 返回前到达。若先发指令再设 Starting + 兜底计时器，就会把刚到的
     // Playing 覆盖回 Starting，兜底到期再把页面打回 Ready（游戏其实已在跑）。
-    setHint('准备中…');
+    setHint('正在开始…');
     setPage('Starting');
 
     // 兜底只提示、不改状态：Unity 可能已经在跑，只是状态回调没到。
@@ -219,12 +225,14 @@
         window.clearTimeout(state.startTimeout);
         state.gameOverHandled = false;
         setPage('Playing');
-        setHint('');
+        // 开始按钮消失后页面不能一片空白，否则像卡死（M4 第 1.5 节）。
+        setHint('游戏中 · 暂停按钮在游戏内右上角');
         break;
 
       case 'Paused':
         setPage('Paused');
-        setHint('已暂停');
+        // 失焦暂停切回后会自动 3-2-1 继续；手动暂停则等玩家点「继续」。
+        setHint('已暂停 · 切回后 3 秒继续');
         break;
 
       case 'Ready':
@@ -281,6 +289,11 @@
     resultSurvived.textContent = survived.toFixed(1) + ' 秒';
     resultRecord.hidden = !isNewRecord;
     resultEl.hidden = false;
+
+    // 桌面窗口高度不够时结算卡片在首屏之外；直接滚到可见处，避免「结束了却什么都没看到」。
+    if (typeof resultEl.scrollIntoView === 'function') {
+      resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
 
     nicknameInput.value = nickname;
     setPage('Result');
@@ -354,10 +367,33 @@
     });
   }
 
-  // 标签页隐藏自动暂停；恢复时 Unity 只恢复「因隐藏而暂停」的那一次。
-  document.addEventListener('visibilitychange', function () {
+  // 失焦 / 标签页隐藏 → Unity 自动暂停；切回**不瞬时恢复**，由 Unity 暂停面板走 3-2-1 倒计时
+  // （M4 第 1.5 节）。blur/focus 与 visibilitychange 都要监听：桌面 Alt-Tab 只发前两个，
+  // 移动端切 App 通常只有 visibilitychange。
+  // 同一次切换会同时触发 blur/focus 和 visibilitychange，H5 侧先按「最后发出的值」去重；
+  // Unity 侧还有 _pausedByVisibility 标记兜底，两层都幂等（ticket 1.5）。
+  var lastVisibilitySent = null;
+
+  function syncVisibility(hidden) {
     if (!state.ready) return;
-    sendMessage('SetPausedByVisibility', document.hidden ? 'true' : 'false');
+    if (hidden === lastVisibilitySent) return;
+
+    lastVisibilitySent = hidden;
+    if (!sendMessage('SetPausedByVisibility', hidden ? 'true' : 'false')) {
+      lastVisibilitySent = null;
+    }
+  }
+
+  window.addEventListener('blur', function () {
+    syncVisibility(true);
+  });
+
+  window.addEventListener('focus', function () {
+    syncVisibility(false);
+  });
+
+  document.addEventListener('visibilitychange', function () {
+    syncVisibility(document.hidden);
   });
 
   if (storage && !storage.isAvailable()) {

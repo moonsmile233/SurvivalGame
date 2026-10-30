@@ -18,7 +18,8 @@ namespace Survival.UI
         public const string VictoryTitle = "胜利";
         public const string DefeatTitle = "失败";
         public const string FinalScoreLabel = "得分";
-        public const string SurvivalLabel = "存活";
+        // 结算明细里是分数不是秒数；H5 那句「存活 15.7 秒」是时长，避免两者混淆（M4 第 1.3 节）。
+        public const string SurvivalLabel = "存活分";
         public const string KillsLabel = "击杀";
         public const string WinBonusLabel = "胜利奖励";
         public const string RestartButton = "重新开始";

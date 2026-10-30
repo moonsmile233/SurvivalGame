@@ -22,12 +22,22 @@ public class WebGLBridge : MonoBehaviour
     private bool _pausedByVisibility;
     private bool _subscribed;
 
+    /// <summary>
+    /// H5 嵌入模式：WebGL 构建下为 true，结算与重开交给页面，Unity 不显示 ResultPanel
+    /// （M4 第 1.3 节）。Editor 里保持 false，方便自测 Unity 结算面板。
+    /// </summary>
+    public bool IsEmbedded { get; private set; }
+
     private void Awake()
     {
         if (_gameManager == null)
         {
             _gameManager = FindFirstObjectByType<GameManager>();
         }
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+        IsEmbedded = true;
+#endif
     }
 
     private void Start()
@@ -139,6 +149,9 @@ public class WebGLBridge : MonoBehaviour
         _nickname = ParseNickname(payload);
         _pausedByVisibility = false;
         _reported = false;
+
+        // 能收到 StartGame 就说明页面在驱动游戏：结算交给 H5（ticket M4 1.3）。
+        IsEmbedded = true;
         _gameManager.StartGame();
     }
 
@@ -179,8 +192,8 @@ public class WebGLBridge : MonoBehaviour
     }
 
     /// <summary>
-    /// 标签页隐藏时自动暂停；恢复时只恢复「因隐藏而暂停」的那一次。
-    /// 手动暂停不设置标记，因此切回标签页不会自动继续。
+    /// 失焦/标签页隐藏时自动暂停；切回时**不瞬时恢复**，而是请 PausePanel 走 3-2-1 倒计时
+    /// （M4 第 1.5 节）。手动暂停不设置标记，因此切回不会自动继续。
     /// </summary>
     public void SetPausedByVisibility(string payload)
     {
@@ -198,6 +211,11 @@ public class WebGLBridge : MonoBehaviour
                 _gameManager.PauseGame();
                 _pausedByVisibility = true;
             }
+            else if (_gameManager.State == GameState.Paused && _pausedByVisibility)
+            {
+                // 倒计时期间再次失焦：停掉倒计时，不要在玩家看不见的时候自动继续。
+                _gameManager.CancelCountdownResume();
+            }
 
             return;
         }
@@ -207,7 +225,7 @@ public class WebGLBridge : MonoBehaviour
             _pausedByVisibility = false;
             if (_gameManager.State == GameState.Paused)
             {
-                _gameManager.ResumeGame();
+                _gameManager.RequestCountdownResume();
             }
         }
     }

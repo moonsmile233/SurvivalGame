@@ -7,7 +7,7 @@
   <title>SurvivalGame — 2D 生存挑战</title>
   <!-- 空的 favicon，避免浏览器自动请求 /favicon.ico 产生 404 -->
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="css/style.css?v=0.1.0-m3.2">
+  <link rel="stylesheet" href="css/style.css?v=0.1.0-m4.3">
 </head>
 <body>
   <main class="shell">
@@ -19,6 +19,8 @@
                placeholder="玩家" spellcheck="false" disabled>
       </div>
     </header>
+
+    <p class="rotate-hint">横屏体验更佳</p>
 
     <section class="game-frame" aria-label="游戏画面">
       <canvas id="unity-canvas" tabindex="0"></canvas>
@@ -36,6 +38,11 @@
       <button id="btn-restart" class="btn" type="button" hidden>重新开始</button>
       <p id="status-hint" class="status-hint" aria-live="polite"></p>
     </section>
+
+    <p class="op-hint">
+      <span class="op-desktop">操作：WASD / 方向键移动 · 躲开敌人 · 存活 60 秒</span>
+      <span class="op-touch">操作：拖动屏幕移动 · 躲开敌人 · 存活 60 秒</span>
+    </p>
 
     <section id="result" class="result" aria-live="polite" hidden>
       <p id="result-title" class="result-title"></p>
@@ -58,6 +65,10 @@
         </div>
       </dl>
       <p id="result-record" class="record" hidden>新纪录</p>
+      <p class="op-hint">
+        <span class="op-desktop">操作：WASD / 方向键移动 · 躲开敌人 · 存活 60 秒</span>
+        <span class="op-touch">操作：拖动屏幕移动 · 躲开敌人 · 存活 60 秒</span>
+      </p>
     </section>
 
     <footer class="footer">
@@ -67,8 +78,8 @@
     </footer>
   </main>
 
-  <script src="js/storage.js?v=0.1.0-m3.2"></script>
-  <script src="js/app.js?v=0.1.0-m3.2"></script>
-  <script src="js/bridge.js?v=0.1.0-m3.2"></script>
+  <script src="js/storage.js?v=0.1.0-m4.3"></script>
+  <script src="js/app.js?v=0.1.0-m4.3"></script>
+  <script src="js/bridge.js?v=0.1.0-m4.3"></script>
 </body>
 </html>

@@ -77,7 +77,10 @@
           codeUrl: 'unity/' + info.codeUrl,
           companyName: info.companyName,
           productName: info.productName,
-          productVersion: info.productVersion
+          productVersion: info.productVersion,
+          // 高分屏上限 2：手机 DPR 3 时按 2 渲染，平衡清晰度与 GPU；桌面上通常就是 1。
+          // Unity 的 Canvas 尺寸与 Screen.width 都按这个比例走，HudCanvasScaler 的阈值依赖它。
+          devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2)
         };
         if (info.streamingAssetsUrl) {
           config.streamingAssetsUrl = 'unity/' + info.streamingAssetsUrl;

@@ -8,8 +8,13 @@
 - **M1（核心玩法）已完成**（2026-10-29）：移动、生成、追踪、掉血、计时、胜负、重开；Editor + 浏览器（Playwright）已验证
 - **M2（表现层）已完成**（2026-10-30）：中文 HUD（生命/时间/分数）、暂停面板、结算面板、重新开始、受击红闪、胜负冻结；TMP + 内置 CJK 子集字体
 - **M3（H5 闭环）已完成**（2026-10-30）：昵称 → 开始 → 结算 → 最高分（localStorage）→ 刷新仍在；标签页隐藏自动暂停；协议见 `docs/bridge-protocol.md`
-- **线上地址**：<https://survivalgame-demo.netlify.app>（M3 构建）
-- 验收证据与偏差记录：`docs/M0-执行记录.md`、`docs/M1-执行记录.md`、`docs/M2-执行记录.md`、`docs/M3-执行记录.md`
+- **M4（移动端 / 大地图 / UI / 敌人手感）基本完成**（2026-10-31）：
+  全屏锚点拖动触控、手机 HUD/面板放大（DPR 上限 2）、结算只保留 H5 一套、操作提示、
+  失焦暂停 + 3-2-1 倒计时恢复、大地图 36×20 + 相机跟随、敌人软分离/速度扰动/压力曲线/
+  视野外回收/包围站位、E2E smoke（含自动走位 60 秒）。
+  真机（iOS/Android）与正式美术仍未做，见 `docs/M4-执行记录.md` 第 6 节。
+- **线上地址**：<https://survivalgame-demo.netlify.app>（M4 构建，H5/CSS `0.1.0-m4.2`）
+- 验收证据与偏差记录：`docs/M0-执行记录.md`、`docs/M1-执行记录.md`、`docs/M2-执行记录.md`、`docs/M3-执行记录.md`、`docs/M4-执行记录.md`
 
 **构建**（编辑器打开时点菜单；关闭时用 batchmode，详见下文「构建」）：
 
@@ -36,6 +41,7 @@ SurvivalGame/
 ├── Assets/
 │   ├── Scenes/Game.unity          # 由 SceneSetup 一键生成，不要手改
 │   ├── Fonts/                     # NotoSansSC-UI-Subset.otf + ui-chars.txt + 生成的 TMP SDF 图集
+│   ├── Configs/                   # cfg_GameConfig.asset + def_Enemy_Chaser.asset
 │   ├── Scripts/                   # Core / Player / Enemy / UI / Bridge
 │   ├── TextMesh Pro/              # TMP Essentials（一次性导入）
 │   └── Editor/SceneSetup.cs + BuildScript.cs + FontAssetBuilder.cs
@@ -44,6 +50,7 @@ SurvivalGame/
 │   ├── css/style.css
 │   ├── js/bridge.js  js/app.js  js/storage.js
 │   └── unity/                     # WebGL 构建产物 + build-info.json
+├── tools/e2e/                     # Playwright E2E smoke（不进入 web/，不参与发布）
 └── docs/                          # 规范、ticket、执行记录、evidence
 ```
 
@@ -64,10 +71,30 @@ python -m http.server 8000
 刷新页面 → 最高分与上次昵称从 localStorage 读回
 ```
 
+- 桌面：WASD / 方向键移动；也可以按住鼠标拖动。
+- 手机：在游戏画面上**全屏拖动**移动（锚点相对，不画虚拟摇杆），`touch-action: none` 不会带着页面滚动。
+- 地图 36×20，比一屏大；相机平滑跟随玩家并停在地图边缘。
 - 昵称空 → 「玩家」；最多 16 个字符；渲染一律 `textContent`，不会执行 HTML/脚本。
 - 最高分只在 `score > best` 时更新，相等不算新纪录。
-- 标签页隐藏会自动暂停，回到页面只恢复「因隐藏而暂停」的那次；手动暂停不会自动恢复。
+- 窗口失焦 / 标签页隐藏会自动暂停；切回**不会瞬时恢复**，暂停面板显示 3-2-1 倒计时，结束才继续。
+  手动暂停不会被自动恢复。
 - 浏览器禁用 localStorage 时游戏仍可玩，页面会提示成绩无法保存。
+- 结算：WebGL 页面里只显示 H5 卡片（Unity 内部结算面板在嵌入模式下隐藏）；Editor 里仍能看到 Unity 面板。
+
+## E2E 测试（M4）
+
+`tools/e2e/` 是独立的 Playwright smoke，不进入 `web/`、不参与发布：
+
+```bash
+cd tools/e2e
+npm install
+node smoke.mjs                                             # 本地起服务 + 系统 Chrome，3 局
+BASE_URL=https://survivalgame-demo.netlify.app node smoke.mjs   # 打线上
+MOBILE=1 node smoke.mjs                                    # 390×844 + 真实触摸拖动
+```
+
+覆盖：加载 → 昵称 → 开始 → **真实窗口失焦** → 已暂停 → 切回 3-2-1 恢复 → 结算 → 重开 → 刷新最高分，
+并断言 console 无 error。详细环境变量见 `tools/e2e/README.md`。
 
 ## 构建
 
@@ -180,17 +207,22 @@ bash scripts/deploy-netlify.sh
 
 Pages 同理需要产物在仓库里；`web/` 作为站点根即可。当前方案不依赖它。
 
-## 游戏内 UI 与 H5 外壳（M2 / M3）
+## 游戏内 UI 与 H5 外壳（M4）
 
 ```text
-Unity HUD       生命 100/100（血条 + 数字）｜时间 00:60｜分数 0｜暂停
-Unity 已暂停     遮罩 + 标题 + 继续
-Unity 结算       遮罩 + 标题 + 得分 + 明细（存活 / 击杀 / 胜利奖励）+ 重新开始
+Unity HUD       生命 100/100（血条 + 数字，左上）｜时间 00:60（上中）｜暂停（右上）｜分数 0（暂停下方）
+Unity 已暂停     遮罩 + 标题 + 继续；失焦切回时显示大号 3-2-1，倒计时结束自动继续
+Unity 结算       遮罩 + 标题 + 得分 + 明细（存活分 / 击杀 / 胜利奖励）+ 重新开始（仅 Editor 显示；
+                  WebGL 嵌入模式隐藏，由 H5 卡片统一展示）
 H5 顶部         标题 + 昵称输入（最多 16 字）
 H5 中部         16:9 Unity 画布 + 加载遮罩 / 进度 + 错误卡片（重试）
-H5 底部         开始游戏 / 重新开始 + 结果（本次得分 / 历史最高分 / 昵称 / 存活 / 新纪录）
+H5 底部         开始游戏 / 重新开始 + 状态提示（游戏中 / 已暂停）+ 操作提示
+H5 结果卡片     本次得分 / 历史最高分 / 昵称 / 存活秒数 / 新纪录 + 当前设备操作提示
 H5 页脚         版本号 · 构建时间（来自 web/unity/build-info.json）
 ```
+
+- 手机窄屏（画布 CSS 宽度 < 640）时 HUD 自动切 640×360 参考分辨率，字号等效放大；暂停按钮放右下便于拇指。
+- 操作提示是 H5 DOM 文本（`.op-hint`），用 `pointer: coarse` 在「WASD」和「拖动屏幕」之间切换，不占 Unity 字体图集。
 
 - 文案全部在 `Assets/Scripts/UI/UiStrings.cs`，字体是 TMP + `Assets/Fonts/NotoSansSC-UI-SDF.asset`
   （从 `NotoSansSC-UI-Subset.otf` 按 `ui-chars.txt` 裁的 121 字符，1024×1024 Static SDF）。
