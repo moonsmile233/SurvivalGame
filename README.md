@@ -5,9 +5,10 @@
 ## 当前状态
 
 - **M0（打通链路）已完成**（2026-10-29）：空场景 → WebGL 构建 → H5 加载 → 双向一条消息
-- **线上地址**：<https://survivalgame-m0.netlify.app>
-- 玩家、敌人、计分、HUD 美术、音效属于 M1/M2，**尚未开始**
-- 验收证据与偏差记录：`docs/M0-执行记录.md`
+- **M1（核心玩法）已完成**（2026-10-29）：移动、生成、追踪、掉血、计时、胜负、重开；Editor + 浏览器（Playwright）已验证
+- **M2（表现层）进行中**：HUD、暂停、结算、重开、受击反馈
+- **线上地址**：<https://survivalgame-demo.netlify.app>（当前是 M1 构建；M2 完成前不作为最终演示）
+- 验收证据与偏差记录：`docs/M0-执行记录.md`、`docs/M1-执行记录.md`
 
 **构建**（编辑器打开时点菜单；关闭时用 batchmode，详见下文「构建」）：
 
@@ -125,11 +126,11 @@ jj git push --bookmark main
 
 ## 发布（Netlify，本地部署）
 
-**线上地址：<https://survivalgame-m0.netlify.app>**
+**线上地址：<https://survivalgame-demo.netlify.app>**
 
 采用「本地构建 + 本地部署」：构建产物**不进仓库**，每次构建后用 Netlify CLI 上传 `web/`。
 
-站点信息：项目名 `survivalgame-m0`，Site ID `4d183772-2a92-4ff5-8cbc-b77450df46dd`，
+站点信息：项目名 `survivalgame-demo`，Site ID `4d183772-2a92-4ff5-8cbc-b77450df46dd`，
 团队 `moonsmile233`。
 
 > 新站点创建后默认开了「需要登录访问」，必须到

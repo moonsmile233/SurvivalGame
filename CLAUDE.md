@@ -5,7 +5,7 @@
 
 ## 文档索引
 - 完整设计规范：`docs/项目规范.md`（实现前先读第 5、6、7、11 节）
-- 当前任务：M0、M1 已完成（`docs/tickets/M0.md`、`docs/M0-执行记录.md`；`docs/tickets/M1.md`、`docs/M1-执行记录.md`）；M2 ticket 待提供
+- 当前任务：**M2（`docs/tickets/M2.md`）**；M0、M1 已完成（`docs/tickets/M0.md`、`docs/M0-执行记录.md`；`docs/tickets/M1.md`、`docs/M1-执行记录.md`）
 - 通信协议：规范第 7 节（M0 通过后抽成 `docs/bridge-protocol.md`）
 - **执行前先看：`docs/遗留问题.md`**（输入后端、autoStart、临时暂停键等）
 
@@ -25,14 +25,15 @@
   - `web/unity/build-info.json` 由 `BuildScript` **扫描实际产物生成**，不要手改；换 Unity 版本后重跑构建即可自适应
 - 构建耗时：约 6 分钟；产物约 8 MB（M0 空场景）
 - 构建方式验证情况：**菜单 `Survival/Build WebGL` 已实测成功**；batchmode 命令路径已核对，但**尚未实测**（编辑器开着时无法跑，会撞工程锁）
-- 发布：Netlify，线上 <https://survivalgame-m0.netlify.app>，部署命令 `bash scripts/deploy-netlify.sh`。
+- 发布：Netlify，线上 <https://survivalgame-demo.netlify.app>，部署命令 `bash scripts/deploy-netlify.sh`。
   新站点默认「需登录访问」，必须在后台 **Project configuration → General → Visitor access → Visibility** 改成 **Public**
 - npm 默认缓存 `D:\nodejs\node_cache` 当前用户不可写，`npx` 需带 `npm_config_cache="D:/agent使用学习/浏览器相关/.npm-cache"`
 
-## 当前里程碑：M2（未开始）
-M0（打通链路）与 M1（核心玩法）已于 2026-10-29 完成，执行记录见 `docs/M0-执行记录.md`、`docs/M1-执行记录.md`。
-M1 验收结果：Editor 内完整跑通移动、生成、追踪、掉血、计时、胜负、重开；WebGL 构建成功。
-M2 ticket 尚未提供，**不要自行开始 M2**（HUD、暂停面板、结算面板等）。
+## 当前里程碑：M2（进行中）
+M0（打通链路）与 M1（核心玩法）已完成，执行记录见 `docs/M0-执行记录.md`、`docs/M1-执行记录.md`。
+M1 已在 Editor + 浏览器（Playwright）验证，线上已部署 M1 构建。
+M2 任务包：`docs/tickets/M2.md`（HUD、暂停、结算、重开、受击反馈、`Time.maximumDeltaTime`）。
+M2 完成前**不要对外发线上链接**（画面上仍有 GameBootstrap 的 "Unity Ready"，且没有 HUD）。
 
 ## 硬约束
 1. **一个状态一个作者**：静态结构（相机、Canvas、玩家、生成器）放在场景里；动态物体（敌人、特效、飘字）运行时生成。禁止两边各生成一份。
@@ -86,6 +87,21 @@ SurvivalGame/
 ├── docs/
 └── README.md
 ```
+
+## 版本与发布（每个里程碑收口固定执行）
+
+origin：`https://github.com/moonsmile233/SurvivalGame.git`（远端初始为空，已确认）。
+
+1. 构建 WebGL + 完成本里程碑自测；构建失败不发布。
+2. `jj describe -m "feat(mX): ..."`（Conventional Commits）
+3. `jj bookmark set main -r @`
+4. `jj git push --bookmark main`
+5. `jj new` 开下一个里程碑
+
+- 首次 push 会弹 Git Credential Manager 浏览器授权；之后凭据由系统记住，不需要重复登录。
+- 推送前先 `jj git fetch`；若远端出现与本仓库不一致的历史，**停止并报告**，禁止 `--force`。
+- 不自动推送未验收的中间状态；只有里程碑通过才 push。
+- M5 之前 `web/unity/` 保持 ignore；M5 最终构建单独一个 `build:` 提交，并同步 GitHub Release。
 
 ## 汇报格式（每个里程碑结束时）
 1. 改了哪些文件（路径列表）
