@@ -6,6 +6,10 @@
   var BEST_KEY = 'bestScore';
   var NICKNAME_KEY = 'nickname';
 
+  // 点开始后的兜底时限。正常首帧响应 <100ms（SendMessage 同步）；9 秒只覆盖
+  // 「指令真的丢了 / Unity 卡住」的情况，不能短到把慢机器上的正常启动误判。
+  var START_RESPONSE_TIMEOUT_MS = 9000;
+
   var storage = window.SurvivalStorage;
   var overlay = document.getElementById('overlay');
   var overlayText = document.getElementById('overlay-text');
@@ -129,22 +133,26 @@
       saveHintIfNeeded();
     }
 
-    if (!sendMessage('StartGame', JSON.stringify({ nickname: nickname }))) {
-      setHint('开始指令发送失败，请刷新页面重试');
-      return;
-    }
-
+    // 顺序不能反：Unity 的 SendMessage 是同步的，onStateChange(Playing) 会在
+    // sendMessage() 返回前到达。若先发指令再设 Starting + 兜底计时器，就会把刚到的
+    // Playing 覆盖回 Starting，兜底到期再把页面打回 Ready（游戏其实已在跑）。
     setHint('准备中…');
     setPage('Starting');
 
-    // 兜底：消息若丢失，3 秒后恢复按钮，避免页面卡在「准备中」。
+    // 兜底只提示、不改状态：Unity 可能已经在跑，只是状态回调没到。
+    // 打回 Ready 会让玩家误以为没开始而重复点击；保持 Starting 即可（开始按钮禁用）。
     window.clearTimeout(state.startTimeout);
     state.startTimeout = window.setTimeout(function () {
       if (state.page === 'Starting') {
-        setPage('Ready');
-        setHint('开始指令无响应，请再试一次');
+        setHint('启动较慢，若已在游戏中请直接玩；未开始请刷新');
       }
-    }, 3000);
+    }, START_RESPONSE_TIMEOUT_MS);
+
+    if (!sendMessage('StartGame', JSON.stringify({ nickname: nickname }))) {
+      window.clearTimeout(state.startTimeout);
+      setPage('Ready');
+      setHint('开始指令发送失败，请刷新页面重试');
+    }
   }
 
   function restartGame() {

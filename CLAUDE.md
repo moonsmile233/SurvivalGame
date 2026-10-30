@@ -41,8 +41,12 @@ M0（打通链路）、M1（核心玩法）、M2（表现层）、M3（H5 闭环
   `onReady / onStateChange / onGameOver`，详见 `docs/bridge-protocol.md`。
 - `_autoStart = false`，Ready 状态玩家冻结、敌人不生成；昵称只在 H5 渲染。
 - Editor 状态机 + Playwright 浏览器闭环均已验证；线上 <https://survivalgame-demo.netlify.app> 为 M3 构建。
-- M3 未关闭：浏览器自然 60 秒胜利、Edge 单跑（见 `docs/acceptance.md` 第 4 节）；M4 开工先补。
-- 下一步 M4（`docs/tickets/M4.md`）：手机触控、手机 HUD 缩放、结算 UI 去重、操作提示、敌人分离/速度/回收、正式素材、测试门禁。
+- M3 门禁已补测（2026-10-30）：真实 Chrome + 自动走位脚本 60.1s 胜利（800 分，**自动化非人工**）、Edge 通过；
+  门禁发现并修复了 H5「SendMessage 同步导致开始按钮被打回 Ready」缺陷（`docs/M3-执行记录.md` 第 9 节）；
+  同日 hotfix：开始兜底 3s → 9s、超时只提示不打回 Ready；两次修复均已部署到 Netlify 并线上复验。
+- 人工 60 秒胜利、切窗暂停/倒计时、H5「游戏中」文案、国内托管评估，都排在 M4 门禁里。
+- 下一步 M4（`docs/tickets/M4.md`）：手机触控、手机 HUD 缩放、结算 UI 去重、操作提示、
+  切窗自动暂停 + 3-2-1 倒计时、H5「游戏中」文案、敌人分离/速度/回收、正式素材、国内托管评估、测试门禁。
   **不要提前做 M5 的交付报告/zip。**
 
 ## 硬约束
