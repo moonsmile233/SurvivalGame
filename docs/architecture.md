@@ -111,3 +111,40 @@ PlayerHealth.OnDied          // ()
 | 存活分 / 击杀分 / 胜利奖励 | 10/s / 20/个 / 200 |
 
 > 仍无击杀手段，击杀分接口保留给后续里程碑；结算面板因此不显示「击杀」行。
+
+## 7. 敌人行为扩展接缝（规划，M4）
+
+> 目标：以后加"不同速度/不同外观/近战挥砍"的敌人，只加数据和组件，不改 `GameManager` / `ScoreService` / `PlayerHealth` / `PlayerController`。详细参数与验收见 `docs/玩法增强.md`。
+
+现状的三个硬编码点：
+
+- `EnemySpawner.SpawnEnemy()` 在代码里拼 `SpriteRenderer + Rigidbody2D + CircleCollider2D + EnemyAI`，速度/伤害读全局 `GameConfig`；
+- `EnemyAI` 同时负责"追踪"和"接触伤害"；
+- `EnemySpawner._enemies` 只有 `ClearEnemies()`，没有死亡/回收注销路径。
+
+要留的三个接缝：
+
+1. **`EnemyDefinition` ScriptableObject**（每个敌人类型一个资产）
+   - `sprite / scale / moveSpeed / contactDamage / attackType(Contact|Melee) / attackRange / windup / cooldown / damage / stopDistance / maxHp(预留)`
+   - `GameConfig` 继续管全局：生成间隔、上限、胜利时间、玩家数值。敌人个体数值进定义，避免全局单值。
+2. **攻击与移动拆开**
+   - `EnemyAI` 只做"追到 `stopDistance` 为止"，不再直接调 `TakeDamage`。
+   - `ContactAttack`：现有 `OnTriggerStay2D` 迁移过去。
+   - `MeleeAttack`（以后新增）：`Approach → Windup → Strike → Recover → Cooldown`，出手帧做距离 + 朝向夹角判定，一次挥砍只结算一次。
+   - 两种攻击都是独立组件，按 `EnemyDefinition.attackType` 组装；互不继承。
+3. **Spawner 按定义组装 + 可注销**
+   - `[SerializeField] EnemyDefinition[] _enemyTypes`（先放 1 个），按权重选。
+   - 暴露只读 `ActiveEnemies` 给分离力使用。
+   - `Unregister(EnemyAI)`：敌人死亡/远距离回收时从列表移除，释放 20 上限名额。
+
+表现层接缝：`EnemyView` 订阅前摇/出手/受伤事件做变色、缩放或 Animator；逻辑不直接操作 `SpriteRenderer`。
+
+新增一个近战敌人的改动面（验证接缝）：
+
+1. 新建 `EnemyDefinition` 资产（Melee、range 1.2、windup 0.35、cooldown 1.2、damage 15）
+2. Spawner 的定义数组加一项
+3. 新增 `MeleeAttack.cs`
+4. 复用/新增 `EnemyView`
+5. **不改** `GameManager`、`ScoreService`、`PlayerHealth`、`PlayerController`
+
+明确不做：行为树、ECS、`IDamageable`/`DamageInfo`、Prefab 工厂管线、对象池、A*/流场。20 只敌人的分离用 O(n²) 本地计算即可。

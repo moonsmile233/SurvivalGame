@@ -8,6 +8,7 @@
 - 当前任务：**M2（`docs/tickets/M2.md`）**；M0、M1 已完成（`docs/tickets/M0.md`、`docs/M0-执行记录.md`；`docs/tickets/M1.md`、`docs/M1-执行记录.md`）
 - 通信协议：规范第 7 节（M0 通过后抽成 `docs/bridge-protocol.md`）
 - **执行前先看：`docs/遗留问题.md`**（输入后端、autoStart、临时暂停键等）
+- **玩法增强（排 M4，不得挤占 M3/M5）：`docs/玩法增强.md`**
 
 ## 环境（已确认，不要猜）
 - 工程根 = 仓库根：`D:\unityFile\SurvivalGame`
@@ -38,6 +39,7 @@ M0（打通链路）、M1（核心玩法）、M2（表现层）均已完成，�
   TMP + 内置 CJK 子集字体（`Assets/Fonts/`，图集由 `Editor/FontAssetBuilder.cs` 脚本生成，构建前自动重烤）。
 - Editor + 浏览器（Playwright）均已验证；线上 <https://survivalgame-demo.netlify.app> **仍是 M1 构建**，M2 尚未部署。
 - M3 之前不要做 H5 桥接、昵称、最高分、触控、音效。
+- 下一步 M3（H5 闭环）是交付硬要求；敌人分离/速度扰动/回收/近战变体一律排 M4，见 `docs/玩法增强.md`，**不得挤占 M3/M5**。
 
 ## 硬约束
 1. **一个状态一个作者**：静态结构（相机、Canvas、玩家、生成器）放在场景里；动态物体（敌人、特效、飘字）运行时生成。禁止两边各生成一份。
