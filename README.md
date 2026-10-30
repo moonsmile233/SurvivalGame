@@ -6,16 +6,20 @@
 
 - **M0（打通链路）已完成**（2026-10-29）：空场景 → WebGL 构建 → H5 加载 → 双向一条消息
 - **M1（核心玩法）已完成**（2026-10-29）：移动、生成、追踪、掉血、计时、胜负、重开；Editor + 浏览器（Playwright）已验证
-- **M2（表现层）进行中**：HUD、暂停、结算、重开、受击反馈
-- **线上地址**：<https://survivalgame-demo.netlify.app>（当前是 M1 构建；M2 完成前不作为最终演示）
-- 验收证据与偏差记录：`docs/M0-执行记录.md`、`docs/M1-执行记录.md`
+- **M2（表现层）已完成**（2026-10-30）：中文 HUD（生命/时间/分数）、暂停面板、结算面板、重新开始、受击红闪、胜负冻结；TMP + 内置 CJK 子集字体
+- **线上地址**：<https://survivalgame-demo.netlify.app>（当前是 M1 构建，M2 未部署）
+- 验收证据与偏差记录：`docs/M0-执行记录.md`、`docs/M1-执行记录.md`、`docs/M2-执行记录.md`
 
 **构建**（编辑器打开时点菜单；关闭时用 batchmode，详见下文「构建」）：
 
 ```text
-Survival/Setup Scene     # 重建 Assets/Scenes/Game.unity
-Survival/Build WebGL     # 构建到 web/unity
+Survival/Setup Scene        # 重建 Assets/Scenes/Game.unity（缺字体时自动生成）
+Survival/Rebuild Font Asset # 重烤 TMP 中文字体图集（构建时会自动执行，一般不用手动点）
+Survival/Build WebGL        # 构建到 web/unity
 ```
+
+> `Survival/Build WebGL` 会先重烤字体、再用 `SceneSetup` 重建一次场景，然后才出包：
+> 改文案、改场景结构都不用担心「忘了同步」。
 
 **预览**：
 
@@ -30,15 +34,16 @@ cd "D:/unityFile/SurvivalGame/web" && python -m http.server 8000
 SurvivalGame/
 ├── Assets/
 │   ├── Scenes/Game.unity          # 由 SceneSetup 一键生成，不要手改
-│   ├── Scripts/Core/GameBootstrap.cs
-│   ├── Scripts/Bridge/WebGLBridge.cs + WebGLBridge.jslib
-│   └── Editor/SceneSetup.cs + BuildScript.cs
+│   ├── Fonts/                     # NotoSansSC-UI-Subset.otf + ui-chars.txt + 生成的 TMP SDF 图集
+│   ├── Scripts/                   # Core / Player / Enemy / UI / Bridge
+│   ├── TextMesh Pro/              # TMP Essentials（一次性导入）
+│   └── Editor/SceneSetup.cs + BuildScript.cs + FontAssetBuilder.cs
 ├── web/                           # H5 外壳（静态站点根目录）
 │   ├── index.html
 │   ├── css/style.css
 │   ├── js/bridge.js  js/app.js
 │   └── unity/                     # WebGL 构建产物 + build-info.json
-└── docs/                          # 规范与 ticket
+└── docs/                          # 规范、ticket、执行记录、evidence
 ```
 
 ## 本地运行
@@ -164,10 +169,24 @@ bash scripts/deploy-netlify.sh
 
 Pages 同理需要产物在仓库里；`web/` 作为站点根即可。当前方案不依赖它。
 
+## 游戏内 UI（M2）
+
+```text
+HUD       生命 100/100（血条 + 数字）｜时间 00:60｜分数 0｜暂停
+已暂停    遮罩 + 标题 + 继续
+失败/胜利  遮罩 + 标题 + 得分 + 明细（存活 / 击杀 / 胜利奖励）+ 重新开始
+```
+
+- 文案全部在 `Assets/Scripts/UI/UiStrings.cs`，字体是 TMP + `Assets/Fonts/NotoSansSC-UI-SDF.asset`
+  （从 `NotoSansSC-UI-Subset.otf` 按 `ui-chars.txt` 裁的 121 字符，1024×1024 Static SDF）。
+- **改文案不用手动重烤字体**：`Survival/Build WebGL` 构建前会自动重烤图集；
+  若新字不在子集里，构建会报错并列出缺字，需要换完整字体重新裁子集。
+- H5 昵称仍只在网页侧渲染，Unity 不显示昵称。
+
 ## 约定
 
-- 游戏内 UI 只用英文 + 数字；中文文案放在 H5。
+- 游戏内 UI 用中文 + 数字，必须走 TMP + 项目内置 CJK 子集字体（禁止 legacy `Text` / `LegacyRuntime.ttf`）。
 - 跨边界只传 JSON 字符串；`SendMessage` 每次只能传一个参数。
-- 场景静态结构（相机、Canvas、玩家、生成器）放场景里，由 `SceneSetup` 生成；
+- 场景静态结构（相机、Canvas、玩家、生成器、整套 UI）放场景里，由 `SceneSetup` 生成；
   动态物体运行时生成。
 - 通信协议详见 `docs/项目规范.md` 第 7 节（M1 时抽成 `docs/bridge-protocol.md`）。

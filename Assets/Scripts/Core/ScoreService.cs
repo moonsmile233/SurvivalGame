@@ -22,6 +22,15 @@ namespace Survival.Core
         public int Score { get; private set; }
         public int Kills => _kills;
 
+        /// <summary>存活分（已存活整数秒 × 每秒分），供结算明细使用。</summary>
+        public int SurvivalScore => _survivedSeconds * _config.ScorePerSurvivedSecond;
+
+        /// <summary>击杀分（击杀数 × 每个分）。</summary>
+        public int KillScore => _kills * _config.ScorePerKill;
+
+        /// <summary>胜利奖励，仅胜利时非 0。</summary>
+        public int WinBonus => _won ? _config.WinBonus : 0;
+
         public event Action<int> OnScoreChanged;
 
         /// <summary>已存活整数秒（只在整数变化时重算）。</summary>
@@ -64,10 +73,7 @@ namespace Survival.Core
 
         private void Recalculate()
         {
-            int score = _survivedSeconds * _config.ScorePerSurvivedSecond
-                        + _kills * _config.ScorePerKill
-                        + (_won ? _config.WinBonus : 0);
-            SetScore(score);
+            SetScore(SurvivalScore + KillScore + WinBonus);
         }
 
         private void SetScore(int value)

@@ -47,10 +47,19 @@ public static class BuildScript
 
     private static bool RunBuild()
     {
-        if (!File.Exists(ScenePath))
+        // 每次构建都重烤字体图集：改文案后忘记重烤会变成 tofu 方块，这里杜绝该风险。
+        if (!FontAssetBuilder.TryRebuild(out string fontError))
         {
-            Debug.Log("[BuildScript] Game.unity missing, regenerating via SceneSetup.");
-            SceneSetup.GenerateScene();
+            Debug.LogError($"[BuildScript] 字体资产重建失败，已中止构建: {fontError}");
+            return false;
+        }
+
+        // 场景始终由 SceneSetup 现生成一次：保证「代码即场景」，不会出现场景里残留旧组件/旧引用。
+        Debug.Log("[BuildScript] Regenerating scene via SceneSetup.");
+        if (!SceneSetup.GenerateScene())
+        {
+            Debug.LogError("[BuildScript] 场景生成失败，已中止构建。");
+            return false;
         }
 
         EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };

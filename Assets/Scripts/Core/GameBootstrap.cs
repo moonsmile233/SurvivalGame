@@ -2,50 +2,20 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// M0 版本只做三件事：等一帧后通知 H5 就绪、左上角显示 Unity Ready、显示 Pong 回显。
-/// M1 再换成正式 UI。
+/// 只负责「等一帧后通知 H5 就绪」。M2 起不再画任何调试 UI（见 ticket M2 第 2 节）。
 /// </summary>
 public class GameBootstrap : MonoBehaviour
 {
-    private GUIStyle _labelStyle;
-    private string _pongMessage = string.Empty;
+    private void Awake()
+    {
+        // 低帧率下限制单帧 deltaTime，避免一帧位移过大穿透碰撞体或一帧多次判定。
+        Time.maximumDeltaTime = 0.1f;
+    }
 
     private IEnumerator Start()
     {
-        WebGLBridge.PongReceived += HandlePongReceived;
-
         // 等一帧，确保画面已经开始渲染再通知 H5
         yield return null;
         WebGLBridge.NotifyReady();
-    }
-
-    private void OnDestroy()
-    {
-        WebGLBridge.PongReceived -= HandlePongReceived;
-    }
-
-    private void HandlePongReceived(string message)
-    {
-        _pongMessage = message;
-    }
-
-    private void OnGUI()
-    {
-        if (_labelStyle == null)
-        {
-            _labelStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 24,
-                fontStyle = FontStyle.Bold,
-            };
-        }
-
-        GUI.color = Color.white;
-        GUI.Label(new Rect(16f, 16f, 480f, 32f), "Unity Ready", _labelStyle);
-
-        if (!string.IsNullOrEmpty(_pongMessage))
-        {
-            GUI.Label(new Rect(16f, 52f, 480f, 32f), "Pong: " + _pongMessage, _labelStyle);
-        }
     }
 }

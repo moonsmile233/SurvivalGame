@@ -20,6 +20,9 @@ namespace Survival.Player
         public event Action<int, int> OnHealthChanged;
         public event Action OnDied;
 
+        /// <summary>真正扣血时触发（无敌期忽略的那次不触发），供表现层做受击反馈。</summary>
+        public event Action OnDamaged;
+
         private void Awake()
         {
             CurrentHealth = MaxHealth;
@@ -45,6 +48,7 @@ namespace Survival.Player
 
             _invulnerableUntil = Time.time + _config.InvincibleDuration;
             CurrentHealth = Mathf.Max(0, CurrentHealth - damage);
+            OnDamaged?.Invoke();
             OnHealthChanged?.Invoke(CurrentHealth, MaxHealth);
 
             Debug.Log($"[PlayerHealth] damage={damage} hp={CurrentHealth}/{MaxHealth}");

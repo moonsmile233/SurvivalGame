@@ -68,19 +68,6 @@ namespace Survival.Core
                     Win();
                 }
             }
-
-            // M1 临时调试键：M2 起由暂停面板 / H5 调用 PauseGame / ResumeGame 替代。
-            if (Input.GetKeyDown(KeyCode.Escape))
-            {
-                if (State == GameState.Playing)
-                {
-                    PauseGame();
-                }
-                else if (State == GameState.Paused)
-                {
-                    ResumeGame();
-                }
-            }
         }
 
         private void OnDestroy()
@@ -171,6 +158,7 @@ namespace Survival.Core
             Score.SetSurvivedSeconds((int)_elapsed);
             Score.SetWon(true);
             _enemySpawner.StopSpawning();
+            Time.timeScale = 0f;
             OnTimeChanged?.Invoke(0f);
             SetState(GameState.Won);
             Debug.Log($"[GameManager] state=Won survived={_elapsed:F1}s score={Score.Score}");
@@ -184,6 +172,7 @@ namespace Survival.Core
             }
 
             _enemySpawner.StopSpawning();
+            Time.timeScale = 0f;
             SetState(GameState.Lost);
             Debug.Log($"[GameManager] state=Lost survived={_elapsed:F1}s score={Score.Score}");
         }
