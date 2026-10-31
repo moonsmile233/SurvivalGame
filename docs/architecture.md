@@ -20,10 +20,11 @@ Playing ──计时 ≥ 60s──▶ Won ──RestartGame──▶ Playing（�
 - 玩法逻辑全部用 `Time.deltaTime`，暂停 / 结算时自然冻结；UI 用 uGUI，不受 timeScale 影响。
 - 重开不走 `SceneManager.LoadScene`，而是 `GameManager.RestartGame()` → 各系统 `Reset()`。
 - **M3 起 `_autoStart = false`**：`Ready` 由 H5 的 `StartGame` 驱动进入 `Playing`；`Ready` 下 `PlayerController` 速度强制为 0、`EnemySpawner` 不生成。
-- **失焦暂停 + 倒计时恢复（M4）**：H5 监听 `blur` / `focus` / `visibilitychange`（H5 侧按最后发送值去重）发
-  `SetPausedByVisibility`。自动暂停切回后不立即恢复：`GameManager.RequestCountdownResume()` → `PausePanel` 用
-  `Time.unscaledDeltaTime` 走 3-2-1，结束才 `ResumeGame()`。倒计时期间再次失焦会
-  `CancelCountdownResume()` 停住倒计时（下次切回重新从 3 开始），手动暂停不设标记，切回不会自动继续。
+- **失焦保持暂停 + 玩家主动恢复才倒数（M4.6）**：H5 监听 `blur` / `focus` / `visibilitychange`（H5 侧按最后发送值去重）发
+  `SetPausedByVisibility`。失焦自动暂停，切回**只清标记、保持 Paused**，不自动恢复。
+  恢复由玩家触发：暂停面板「继续」或 `PauseHotkey` 的 Esc/P → `GameManager.RequestCountdownResume()` →
+  `PausePanel` 用 `Time.unscaledDeltaTime` 走 3-2-1 → `ResumeGame()`；倒计时中重复按 P 被忽略。
+  倒计时期间再次失焦会 `CancelCountdownResume()` 停表并保持暂停，切回后需玩家重新点继续。
 - **结算只发一次**：`WebGLBridge._reported` 守卫，每次进入 `Playing` 清零（`StartGame` / `RestartGame` / Unity 结算面板重开都会触发）。
 - **结算只画一套（M4）**：WebGL 构建里 `WebGLBridge.IsEmbedded = true`，`ResultPanel` 不再显示；
   H5 卡片是唯一结算。Editor 里 `IsEmbedded = false`，Unity 面板保留自测。
@@ -35,7 +36,7 @@ Playing ──计时 ≥ 60s──▶ Won ──RestartGame──▶ Playing（�
 | 配置 | `Core/GameConfig.cs` | ScriptableObject，所有可调数值 | 不写逻辑 |
 | 状态 | `Core/GameState.cs` | 状态枚举 | — |
 | 状态机 | `Core/GameManager.cs` | 计时、胜负、暂停、重开、冻结、事件广播 | 不处理输入、不写分数算法、不碰 UI 文本 |
-| 暂停快捷键 | `Core/PauseHotkey.cs` | 桌面 Esc/P：Playing ↔ Paused，只发 `PauseGame` / `ResumeGame` 请求 | 不改 timeScale、不碰 UI、不处理移动 |
+| 暂停快捷键 | `Core/PauseHotkey.cs` | 桌面 Esc/P：Playing → `PauseGame()`；Paused → `RequestCountdownResume()`（M4.6，不直接恢复） | 不改 timeScale、不碰 UI、不处理移动 |
 | 计分 | `Core/ScoreService.cs` | 存活分 / 击杀分 / 胜利奖励，并提供只读明细 | 不碰 UI |
 | 输入抽象 | `Player/PlayerInputSource.cs` | 抽象 `Vector2 Move`，PlayerController 只依赖它 | 不移动 |
 | 键盘 | `Player/KeyboardInput.cs` | WASD / 方向键 → `Move` | 不移动 |
@@ -50,7 +51,7 @@ Playing ──计时 ≥ 60s──▶ Won ──RestartGame──▶ Playing（�
 | 敌人定义 | `Enemy/EnemyDefinition.cs` | 单类型资产：sprite / 速度 / 伤害 / 碰撞半径（分离半径派生） | 不管全局生成节奏 |
 | HUD | `UI/HudView.cs` | HP 条/数字、剩余时间、分数、暂停按钮显隐 | 不改状态机、不写分数算法 |
 | HUD 缩放 | `UI/HudCanvasScaler.cs` | `Screen.width`（设备像素）< 1000 时切 640×360 参考分辨率（手机 HUD/面板一起放大），`Update` 里比对 | 不改游戏状态 |
-| 暂停面板 | `UI/PausePanel.cs` | 按状态显隐，`继续` → `ResumeGame()`；失焦恢复走 3-2-1（unscaled） | 不直接改 `timeScale` |
+| 暂停面板 | `UI/PausePanel.cs` | 按状态显隐，`继续` → `RequestCountdownResume()`；玩家主动恢复后走 3-2-1（unscaled），结束才 `ResumeGame()` | 不直接改 `timeScale`、不在失焦切回时自动开始 |
 | 结算面板 | `UI/ResultPanel.cs` | 按状态显隐（嵌入模式不显示），胜负/得分/明细，`重新开始` → `RestartGame()` | 不写分数算法 |
 | 文案 | `UI/UiStrings.cs` | 全部中文 UI 文案的 const + `AllCharacters` | 不写逻辑 |
 | 桥接 | `Bridge/WebGLBridge.cs` + `.jslib` | H5 ↔ Unity 边界：消息解析、昵称保存、状态/结算转发、可见性暂停策略 | 不写玩法逻辑，不改状态 |
@@ -107,10 +108,11 @@ H5 点击「开始游戏」
        └─ WebGLBridge 解析昵称 → GameManager.StartGame() → Playing
             └─ OnStateChanged → jslib → onStateChange(Playing)
 H5 失焦 / 隐藏（blur、visibilitychange）
-  └─ SendMessage SetPausedByVisibility("true") → 条件暂停 + 暂停面板
+  └─ SendMessage SetPausedByVisibility("true") → 条件暂停 + 暂停面板（倒计时中则停表）
 H5 切回
-  └─ SendMessage SetPausedByVisibility("false") → GameManager.RequestCountdownResume
-       └─ PausePanel 3-2-1（unscaled）→ ResumeGame() → onStateChange(Playing)
+  └─ SendMessage SetPausedByVisibility("false") → 只清标记，保持 Paused（M4.6，不自动恢复）
+玩家点「继续」/ 按 Esc/P
+  └─ RequestCountdownResume → PausePanel 3-2-1（unscaled）→ ResumeGame() → onStateChange(Playing)
 Unity 结算
   └─ onGameOver(JSON) → H5 更新最高分（score > best 才写）→ 显示结果（Unity 面板在嵌入模式不显示）
 H5 重新开始
@@ -122,7 +124,7 @@ H5 重新开始
 ```csharp
 GameManager.OnStateChanged   // (GameState)
 GameManager.OnTimeChanged    // (float remainingSeconds)
-GameManager.OnResumeCountdownRequested // () 失焦恢复请求：PausePanel 收到后走 3-2-1
+GameManager.OnResumeCountdownRequested // () 玩家主动恢复请求（继续/Esc/P）：PausePanel 收到后走 3-2-1
 ScoreService.OnScoreChanged  // (int score)
 PlayerHealth.OnHealthChanged // (int current, int max)
 PlayerHealth.OnDamaged       // ()  仅真正扣血
@@ -153,7 +155,8 @@ PlayerHealth.OnDied          // ()
 - **敌人不做对象池**：上限 20，直接 Instantiate/Destroy，保持简单。
 - **接触判定**：敌人是 Kinematic Rigidbody2D + Trigger Collider，玩家是 Dynamic Rigidbody2D，`OnTriggerStay2D` 触发；无敌帧由 `PlayerHealth` 内部处理。
 - **输入后端**：`activeInputHandler = 2`（Both），规范 5.5 用内置 `Input`，同时保留新 Input System 可用性。
-- **暂停触发来源（M4）**：Unity HUD 按钮、H5 `blur`/`focus`（自动暂停）、桌面 `Esc`/`P`（`Core/PauseHotkey.cs`，M4 §1.7）。
+- **暂停/恢复触发来源（M4.6）**：暂停 = Unity HUD 按钮、H5 `blur`/`focus`（自动暂停）、桌面 `Esc`/`P`；
+  **恢复只由玩家主动触发**（继续按钮 / Esc / P → 3-2-1），失焦切回不会自动继续。
   状态权威仍是 `GameManager`，H5 不绑键盘；`Esc` 在浏览器全屏时可能被用于退出全屏，所以 `P` 必须同时可用。
 - **昵称只在 H5 渲染**：Unity 只保存并回传，不进入任何 TMP 文本（避免中文子集字体约束与 XSS 面）。
 - **H5 不猜状态**：页面状态完全由 `onReady` / `onStateChange` / `onGameOver` 驱动，不做轮询；开始按钮在 `onReady` 前 disabled，点击后立即禁用防连点。

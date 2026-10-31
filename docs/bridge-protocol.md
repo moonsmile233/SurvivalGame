@@ -19,15 +19,16 @@
 |---|---|---|---|
 | `StartGame` | JSON `{"nickname":"..."}` | Ready → Playing | 昵称只保存，不进入 Unity UI；JSON 解析失败或传纯字符串时按空/纯昵称处理；同时进入「H5 嵌入模式」（见 2.1） |
 | `PauseGame` | `""` | Playing → Paused | H5 手动暂停；会清除「因隐藏而暂停」标记 |
-| `ResumeGame` | `""` | Paused → Playing | H5 手动继续；会清除标记 |
+| `ResumeGame` | `""` | Paused → 3-2-1 → Playing | H5 手动继续；M4.6 起只请求倒计时（`RequestCountdownResume`），不直接恢复；会清除标记。当前 H5 无人调用 |
 | `RestartGame` | `""` | Won/Lost → Playing | 全量重置（血量、计时、分数、敌人、玩家位置），昵称沿用 |
-| `SetPausedByVisibility` | `"true"` / `"false"` | Playing ↔ Paused（条件） | `true`：在 Playing 时暂停并记标记；若已在「自动暂停」且倒计时进行中，则**取消倒计时**并保持暂停。`false`：仅当标记为真且状态为 Paused 时**不立即恢复**，改为让暂停面板走 3-2-1 倒计时，倒计时结束才 Resume（M4） |
+| `SetPausedByVisibility` | `"true"` / `"false"` | Playing ↔ Paused（条件） | `true`：Playing → 暂停并记标记；只要处于 Paused 就**取消倒计时**并保持暂停。`false`：**只清标记**，保持 Paused，不自动倒数、不自动恢复（M4.6） |
 
 状态守卫（由 `GameManager` 保证，桥接层只转发）：
 
 - `StartGame` 只接受 `Ready`；其他状态直接忽略并打 warning。
 - `RestartGame` 只接受 `Won` / `Lost`。
-- 手动暂停后切标签页再回来：不会自动恢复（只有自动暂停才走倒计时恢复）。
+- 失焦自动暂停后切回：**保持 Paused**，不自动恢复；恢复必须由玩家主动触发
+  （暂停面板「继续」/ Esc / P）→ 3-2-1 → Playing。手动暂停同理（M4.6）。
 
 ### 2.1 结算归属（M4）
 
@@ -86,12 +87,15 @@ Unity 首帧
 窗口失焦 / 标签页隐藏（blur、visibilitychange）
   └─ SendMessage SetPausedByVisibility("true") → Paused（若在 Playing），暂停面板出现
 窗口聚焦 / 标签页恢复
-  └─ SendMessage SetPausedByVisibility("false") → 只处理自动暂停的那次：
-     Unity 暂停面板显示 3-2-1（Time.unscaledDeltaTime），倒计时结束才 ResumeGame
-     ——刻意不在切回瞬间恢复，避免回来一帧就被围死
+  └─ SendMessage SetPausedByVisibility("false") → 只清标记，**保持 Paused**；
+     不自动倒数、不自动恢复（M4.6）
+玩家点「继续」/ 按 Esc/P（主动恢复）
+  └─ Unity RequestCountdownResume() → 暂停面板 3-2-1（Time.unscaledDeltaTime）
+     → ResumeGame() → onStateChange(Playing)
+     ——3 秒留给手机把手指挪回触控区；倒计时中重复按 P 被忽略
 倒计时期间再次失焦
   └─ SendMessage SetPausedByVisibility("true") → 取消倒计时（保持 Paused），
-     下次切回重新从 3 开始；不会在玩家看不见的时候自动继续
+     切回后仍需玩家重新点继续；不会在玩家看不见的时候自动继续
 HP ≤ 0 / 计时 ≥ 60s
   └─ onStateChange(Won|Lost) + onGameOver（一次）→ H5 显示结算
 点击重新开始
@@ -124,3 +128,6 @@ HP ≤ 0 / 计时 ≥ 60s
 
 > 2026-10-30（M4）：协议版本仍为 1。`SetPausedByVisibility("false")` 从「立即恢复」改为「暂停面板倒计时后恢复」，
 > H5 调用方式不变；嵌入模式下 Unity 不再画结算面板（见 2.1）。
+> 2026-10-31（M4.6）：协议版本仍为 1。`SetPausedByVisibility("false")` **不再自动倒数**，只清标记、保持 Paused；
+> 3-2-1 改为玩家主动恢复（「继续」/ Esc / P → `RequestCountdownResume`）才触发，`ResumeGame` 也只请求倒计时。
+> H5 调用方式与字段不变。
