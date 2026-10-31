@@ -35,7 +35,7 @@
 | Windows | Firefox 最新 | ✅ | 2026-10-31 | 线上 M4-B1 一局 PASS（Firefox 跳过失焦自动化）；本地 M4-B0 也已跑通 |
 | macOS | Safari 最新 | ⏳ 待测 | — | 有设备则测 |
 | iOS | Safari 15+ | ⏳ 待测 | — | 真机门禁（触控/HUD/最高分） |
-| Android | Chrome 最新 | ⏳ 待测 | — | 真机门禁（触控/HUD/最高分） |
+| Android | Chrome 最新 | ⚠️ 加载受阻 | 2026-10-31 | Honor 90 Pro 打开线上 URL 基本加载不出来；初步判断为境外 CDN 带宽（直连实测 wasm ~31KB/s），待局域网服务确认设备侧；触控/HUD/最高分仍未测 |
 
 ## 3. M3 已验证项（摘要）
 
@@ -85,8 +85,10 @@
 
 1. **线上人工 / 真机门禁未跑**：B1 构建已部署（deploy `6ae5a42c…`）并通过 Chrome/Edge/Firefox smoke；
    线上**人工** 60 秒胜利、iPhone Safari / Android Chrome 真机仍未测（见第 2、3 条）。
-2. **手机真机**（iPhone Safari / Android Chrome）：触控、HUD、安全区、DPR/帧率仍未测；目前只有 390×844 / 844×390 / 768×1024 的浏览器视口证据
-3. **人工 60 秒胜利 + 5 局平衡数据**：自动化脚本（M3 60.1s、M4 60.0s）只证明功能链路，胜率/首次受击统计需要人手
+2. **手机真机**（iPhone Safari / Android Chrome）：触控、HUD、安全区、DPR/帧率仍未测；目前只有 390×844 / 844×390 / 768×1024 的浏览器视口证据。
+   Honor 90 Pro 线上加载受阻（2026-10-31），先排查是 CDN 带宽还是设备侧，见 `docs/遗留问题.md` 第 6 节
+3. **人工 5 局平衡数据**：用户决定延后到难度分级/敌人变体之后（单局体感「偏简单」，非正式统计）；
+   自动化脚本（M3 60.1s、M4 60.0s）只证明功能链路，不算难度验收
 4. **正式美术 / 音效**：仍是占位圆点 + 网格；素材接缝已在 `EnemyDefinition`
 5. **加载性能**：WebGL 产物约 9.3MB（wasm 6.97MB + data 2.45MB + framework/loader），Netlify 实测约 165KB/s、首次加载 50～61s；国内托管评估见 `docs/部署与托管.md`
 6. **M5 交付**：`web/unity` 入库/Release zip、README/交付报告、干净克隆构建
