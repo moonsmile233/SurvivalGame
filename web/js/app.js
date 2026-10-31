@@ -94,6 +94,12 @@
     btnRestart.hidden = page !== 'Result';
     btnRestart.disabled = page !== 'Result';
 
+    // 全屏只在局内（Playing/Paused）开放：Ready 进全屏会隐藏 .controls（开始按钮不可见），
+    // Result 进全屏会隐藏 .result 结算卡，玩家只能被迫退出全屏。退出按钮在画面内单独控制。
+    if (btnFullscreen) {
+      btnFullscreen.hidden = page !== 'Playing' && page !== 'Paused';
+    }
+
     nicknameInput.disabled = page !== 'Ready';
   }
 
