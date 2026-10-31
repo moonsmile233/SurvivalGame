@@ -287,7 +287,19 @@ async function main() {
       const scrollY = await page.evaluate(() => window.scrollY);
       check(scrollY === 0, `拖动时页面不滚动（scrollY=${scrollY}）`);
     } else {
-      log('\n[3/8] 桌面跳过触摸（键盘路径由人工/其它用例覆盖）');
+      // M4 §1.7：桌面 Esc/P 暂停。这里用 Esc 暂停、P 恢复，两个键都覆盖；
+      // 全屏下 Esc 可能被浏览器吞掉，P 的兜底靠人工在全屏里另测。
+      // 键盘事件走 document 级监听，不经过 H5 绑定。
+      log('\n[3/8] 桌面键盘 Esc 暂停 / P 恢复');
+      await page.keyboard.press('Escape');
+      await waitForHint(page, '已暂停', 5000);
+      check((await hintOf(page)).includes('已暂停'), '按 Esc 暂停后 H5 显示「已暂停」');
+      await screenshot(page, 'hotkey-paused');
+
+      await page.keyboard.press('p');
+      await waitForHint(page, '游戏中', 5000);
+      check((await hintOf(page)).includes('游戏中'), '按 P 恢复「游戏中」');
+      await screenshot(page, 'hotkey-resumed');
     }
 
     // 真实窗口失焦：另开一个浏览器窗口并聚焦它（不是改 document.hidden）。

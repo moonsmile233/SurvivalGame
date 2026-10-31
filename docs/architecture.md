@@ -35,6 +35,7 @@ Playing ──计时 ≥ 60s──▶ Won ──RestartGame──▶ Playing（�
 | 配置 | `Core/GameConfig.cs` | ScriptableObject，所有可调数值 | 不写逻辑 |
 | 状态 | `Core/GameState.cs` | 状态枚举 | — |
 | 状态机 | `Core/GameManager.cs` | 计时、胜负、暂停、重开、冻结、事件广播 | 不处理输入、不写分数算法、不碰 UI 文本 |
+| 暂停快捷键 | `Core/PauseHotkey.cs` | 桌面 Esc/P：Playing ↔ Paused，只发 `PauseGame` / `ResumeGame` 请求 | 不改 timeScale、不碰 UI、不处理移动 |
 | 计分 | `Core/ScoreService.cs` | 存活分 / 击杀分 / 胜利奖励，并提供只读明细 | 不碰 UI |
 | 输入抽象 | `Player/PlayerInputSource.cs` | 抽象 `Vector2 Move`，PlayerController 只依赖它 | 不移动 |
 | 键盘 | `Player/KeyboardInput.cs` | WASD / 方向键 → `Move` | 不移动 |
@@ -152,7 +153,8 @@ PlayerHealth.OnDied          // ()
 - **敌人不做对象池**：上限 20，直接 Instantiate/Destroy，保持简单。
 - **接触判定**：敌人是 Kinematic Rigidbody2D + Trigger Collider，玩家是 Dynamic Rigidbody2D，`OnTriggerStay2D` 触发；无敌帧由 `PlayerHealth` 内部处理。
 - **输入后端**：`activeInputHandler = 2`（Both），规范 5.5 用内置 `Input`，同时保留新 Input System 可用性。
-- **暂停只由 UI / H5 触发**：M1 的 `Esc` 调试键已在 M2 删除。
+- **暂停触发来源（M4）**：Unity HUD 按钮、H5 `blur`/`focus`（自动暂停）、桌面 `Esc`/`P`（`Core/PauseHotkey.cs`，M4 §1.7）。
+  状态权威仍是 `GameManager`，H5 不绑键盘；`Esc` 在浏览器全屏时可能被用于退出全屏，所以 `P` 必须同时可用。
 - **昵称只在 H5 渲染**：Unity 只保存并回传，不进入任何 TMP 文本（避免中文子集字体约束与 XSS 面）。
 - **H5 不猜状态**：页面状态完全由 `onReady` / `onStateChange` / `onGameOver` 驱动，不做轮询；开始按钮在 `onReady` 前 disabled，点击后立即禁用防连点。
 - **存储集中封装**：所有读写走 `web/js/storage.js`（`survival.bestScore` / `survival.nickname`），不可用时回退内存并在页面提示；最高分只在 `score > best` 时更新。

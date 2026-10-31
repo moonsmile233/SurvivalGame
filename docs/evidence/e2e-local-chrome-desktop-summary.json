@@ -2,8 +2,8 @@
   "browser": "chrome",
   "mobile": false,
   "baseUrl": "http://127.0.0.1:8123",
-  "finishedAt": "2026-10-31T07:45:58.161Z",
+  "finishedAt": "2026-10-31T09:00:20.529Z",
   "rounds": 3,
-  "maxScore": 170,
+  "maxScore": 160,
   "failures": []
 }

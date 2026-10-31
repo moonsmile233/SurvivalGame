@@ -56,6 +56,11 @@
     if (statusHint) statusHint.textContent = text || '';
   }
 
+  // 操作提示按输入设备区分（和 CSS 的 pointer: coarse 保持一致），不要在桌面提示里写「点暂停」。
+  function isCoarsePointer() {
+    return !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  }
+
   function parseJson(json) {
     if (typeof json !== 'string' || json === '') {
       return null;
@@ -231,8 +236,9 @@
 
       case 'Paused':
         setPage('Paused');
-        // 失焦暂停切回后会自动 3-2-1 继续；手动暂停则等玩家点「继续」。
-        setHint('已暂停 · 切回后 3 秒继续');
+        // 失焦暂停切回后由 Unity 走 3-2-1；手动暂停（按钮或 Esc/P）只能点「继续」或按 P。
+        // 这里统一文案，避免给手动暂停显示「切回后 3 秒继续」——手动暂停并没有倒计时。
+        setHint(isCoarsePointer() ? '已暂停 · 点「继续」恢复' : '已暂停 · 点「继续」或按 P 恢复');
         break;
 
       case 'Ready':

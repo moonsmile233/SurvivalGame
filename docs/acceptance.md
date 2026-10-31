@@ -1,6 +1,6 @@
 # 验收记录（living document）
 
-> 最后更新：2026-10-31（M4：触控/HUD/结算去重/失焦倒计时/大地图与相机/敌人手感；B1 构建已部署，线上 Chrome/Edge/Firefox 通过；真机/人工待测）
+> 最后更新：2026-10-31（M4：触控/HUD/结算去重/失焦倒计时/大地图与相机/敌人手感/键盘暂停；B1 构建已部署，§1.7 本地通过；真机/人工待测）
 > 规则：只写实际跑过的结果；没跑就写「待测」。证据放 `docs/evidence/`。
 > 测试用例与门槛见 `docs/测试计划.md`。
 
@@ -59,6 +59,9 @@
 - **线上 B1 构建 smoke（2026-10-31 16:20–16:23，deploy `6ae5a42c…`）**：Chrome 3 局 / Edge 1 局 / Firefox 1 局全部 PASS；
   覆盖加载 → 昵称 → 开始 → 真实窗口失焦 → 暂停 → 3-2-1 恢复 → 结算/重开 → 刷新最高分，console 0 error；
   证据 `e2e-online-{chrome,edge,firefox}-desktop-*`。
+- **键盘暂停（M4 §1.7）**：真实 Chrome 本地 E2E，**Esc 暂停 → P 恢复**，暂停面板同步；H5 暂停文案按输入设备区分；
+  390×844 DPR2 回归通过（键盘改动不影响触控）；证据 `e2e-local-chrome-desktop-hotkey-paused/resumed.png`。
+  全屏下 P / Esc 行为随 M4.5 全屏一起验。
 - **E2E smoke 可重复跑通**（`tools/e2e/smoke.mjs`）：
   - 线上 Chrome（2026-10-30，部署 `6ae4b4bf…`）：加载 → 昵称 → 开始 → **真实窗口失焦**（关掉 Playwright 焦点模拟 + 另开窗口）→ 已暂停 → 切回 3-2-1 → 恢复 → 3 局结算/重开 → 刷新最高分，全部 PASS，console 0 error。
   - 线上 Edge（同日）：同一流程 1 局，PASS。
@@ -92,6 +95,8 @@
 4. **正式美术 / 音效**：仍是占位圆点 + 网格；素材接缝已在 `EnemyDefinition`
 5. **加载性能**：WebGL 产物约 9.3MB（wasm 6.97MB + data 2.45MB + framework/loader），Netlify 实测约 165KB/s、首次加载 50～61s；国内托管评估见 `docs/部署与托管.md`
 6. **M5 交付**：`web/unity` 入库/Release zip、README/交付报告、干净克隆构建
+7. **全屏 / 暂停菜单 / 主菜单 + 难度（M4.5，可选）**：见 `docs/tickets/M4.5-入口主菜单与全屏.md`；
+   全屏下 P/Esc 的行为要在全屏功能落地后补验；不得挤占 M5 必需交付
 
 ## 5. 结论
 

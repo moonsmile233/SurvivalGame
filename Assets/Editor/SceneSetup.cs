@@ -224,6 +224,10 @@ public static class SceneSetup
         // M3 起由 H5 的 StartGame 驱动，不再 Play 即开局（docs/遗留问题.md 第 2 条）。
         SetSerializedBool(manager, "_autoStart", false);
 
+        // 桌面 Esc / P 暂停（M4 §1.7）；和 GameManager 同物体，注入引用，不自己建状态。
+        var hotkey = go.AddComponent<PauseHotkey>();
+        SetObjectReference(hotkey, "_gameManager", manager);
+
         return manager;
     }
 
