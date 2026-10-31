@@ -57,8 +57,8 @@
 ## 3.1 M4 已验证项（摘要，2026-10-31）
 
 - **线上 B1 构建 smoke（2026-10-31 16:20–16:23，deploy `6ae5a42c…`）**：Chrome 3 局 / Edge 1 局 / Firefox 1 局全部 PASS；
-  覆盖加载 → 昵称 → 开始 → 真实窗口失焦 → 暂停 → 3-2-1 恢复 → 结算/重开 → 刷新最高分，console 0 error；
-  证据 `e2e-online-{chrome,edge,firefox}-desktop-*`。
+  覆盖加载 → 昵称 → 开始 → 真实窗口失焦 → 暂停 → 3-2-1 恢复 → 结算/重开 → 刷新最高分，console 0 error
+  （旧语义：切回自动 3-2-1；M4.6 已改为切回保持暂停）；证据 `e2e-online-{chrome,edge,firefox}-desktop-*`。
 - **键盘暂停 + 暂停恢复语义（M4 §1.7 / M4.6）**：Esc 暂停、P 主动恢复；恢复**先 3-2-1**（倒计时中重复 P 忽略），
   失焦切回**保持暂停**、不自动恢复；手机点「继续」也走 3-2-1。本地 Chrome 桌面 3 局 + 390×844 1 局、
   线上 M4.6 构建（deploy `6ae5bd3b…`）Chrome/Edge/Firefox 全 PASS；证据
@@ -71,7 +71,8 @@
   - 本地 Firefox（Playwright 内置版）：加载、开始、1 局结算、刷新最高分，PASS（Firefox 没有焦点模拟开关，失焦用例跳过）。
   - 本地连续 **10 局**重开：每局都能重新进入 Playing、分数不累加、无回调丢失、console 0 error（`e2e-local-chrome-desktop-summary-10rounds.json`）。
   - 说明：`docs/evidence/` 里带 `local` 前缀的截图来自本地构建；线上那次的截图没有单独留档（之后被本地运行覆盖，已改为按目标命名），线上结果以执行记录中的运行输出为准。
-- **失焦暂停 + 3-2-1 倒计时**：Unity 暂停面板显示大号 3→2→1（`unscaledDeltaTime`，倒计时期间隐藏「已暂停」标题避免叠加），结束才 Resume；切回不瞬时恢复。
+- **失焦暂停 + 3-2-1 倒计时（M4.6 语义）**：失焦切回保持暂停、不自动恢复；**玩家主动恢复**（继续 / Esc / P）后
+  暂停面板才显示大号 3→2→1（`unscaledDeltaTime`，倒计时期间隐藏「已暂停」标题避免叠加），结束才 Resume。
 - **结算只有一套**：WebGL 嵌入模式下 Unity ResultPanel 不再显示，H5 卡片是唯一结算；Editor 仍显示 Unity 面板（`m4-editor-result.png`）。
 - **手机 HUD**：390×844 竖屏 HUD 放大（参考分辨率 1280×720 → 640×360），时间/生命/分数可读不重叠；844×390 横屏无纵向滚动（`m4-landscape-844x390.png`）。
 - **触控**：CDP 真实触摸事件拖动画布，页面 `scrollY` 保持 0；`touch-action: none`。
