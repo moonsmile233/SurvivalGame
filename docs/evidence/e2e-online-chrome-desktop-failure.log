@@ -1,0 +1,41 @@
+[console] Failed to load resource: net::ERR_CONNECTION_CLOSED
+[console] Failed to download file unity/Build/unity.wasm.unityweb
+[console] Failed to load resource: the server responded with a status of 404 ()
+[console] wasm streaming compile failed: TypeError: Failed to execute 'compile' on 'WebAssembly': HTTP status code is not ok
+[console] falling back to ArrayBuffer instantiation
+[console] Failed to load resource: the server responded with a status of 404 ()
+[console] both async and sync fetching of the wasm failed
+[console] [Bridge] abort("both async and sync fetching of the wasm failed") at Error
+    at jsStackTrace (blob:https://survivalgame-demo.netlify.app/85d6ccf0-8402-4ec2-867c-9e7fb7d3e33d:9:203906)
+    at stackTrace (blob:https://survivalgame-demo.netlify.app/85d6ccf0-8402-4ec2-867c-9e7fb7d3e33d:9:318752)
+    at abort (blob:https://survivalgame-demo.netlify.app/85d6ccf0-8402-4ec2-867c-9e7fb7d3e33d:9:2015)
+    at getBinary (blob:https://survivalgame-demo.netlify.app/85d6ccf0-8402-4ec2-867c-9e7fb7d3e33d:9:14368)
+    at blob:https://survivalgame-demo.netlify.app/85d6ccf0-8402-4ec2-867c-9e7fb7d3e33d:9:14701
+[console] [App] abort("both async and sync fetching of the wasm failed") at Error
+    at jsStackTrace (blob:https://survivalgame-demo.netlify.app/85d6ccf0-8402-4ec2-867c-9e7fb7d3e33d:9:203906)
+    at stackTrace (blob:https://survivalgame-demo.netlify.app/85d6ccf0-8402-4ec2-867c-9e7fb7d3e33d:9:318752)
+    at abort (blob:https://survivalgame-demo.netlify.app/85d6ccf0-8402-4ec2-867c-9e7fb7d3e33d:9:2015)
+    at getBinary (blob:https://survivalgame-demo.netlify.app/85d6ccf0-8402-4ec2-867c-9e7fb7d3e33d:9:14368)
+    at blob:https://survivalgame-demo.netlify.app/85d6ccf0-8402-4ec2-867c-9e7fb7d3e33d:9:14701
+[console] failed to asynchronously prepare wasm: TypeError: WebAssembly.instantiate(): Argument 0 must be a buffer source or a WebAssembly.Module object
+
+--- body ---
+SurvivalGame
+昵称
+
+加载失败
+
+abort("both async and sync fetching of the wasm failed") at Error at jsStackTrace (blob:https://survivalgame-demo.netlify.app/85d6ccf0-8402-4ec2-867c-9e7fb7d3e33d:9:203906) at stackTrace (blob:https://survivalgame-demo.netlify.app/85d6ccf0-8402-4ec2-867c-9e7fb7d3e33d:9:318752) at abort (blob:https://survivalgame-demo.netlify.app/85d6ccf0-8402-4ec2-867c-9e7fb7d3e33d:9:2015) at getBinary (blob:https://survivalgame-demo.netlify.app/85d6ccf0-8402-4ec2-867c-9e7fb7d3e33d:9:14368) at blob:https://survivalgame-demo.netlify.app/85d6ccf0-8402-4ec2-867c-9e7fb7d3e33d:9:14701
+
+重试
+
+操作：WASD / 方向键移动 · Esc / P 暂停 · 躲开敌人 · 存活 60 秒
+
+v0.1.0 · 2026-10-31 16:59
+
+--- error ---
+page.waitForSelector: Timeout 300000ms exceeded.
+Call log:
+[2m  - waiting for locator('#btn-start:not([disabled])') to be visible[22m
+
+    at main (D:\unityFile\SurvivalGame\tools\e2e\smoke.mjs:255:16)

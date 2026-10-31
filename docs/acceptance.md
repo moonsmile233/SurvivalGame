@@ -1,6 +1,6 @@
 # 验收记录（living document）
 
-> 最后更新：2026-10-31（M4：触控/HUD/结算去重/失焦倒计时/大地图与相机/敌人手感/键盘暂停；B1 构建已部署，§1.7 本地通过；真机/人工待测）
+> 最后更新：2026-10-31（M4：触控/HUD/结算去重/失焦倒计时/大地图与相机/敌人手感/键盘暂停；B1 与 §1.7 构建已部署，线上三浏览器通过；真机/人工待测）
 > 规则：只写实际跑过的结果；没跑就写「待测」。证据放 `docs/evidence/`。
 > 测试用例与门槛见 `docs/测试计划.md`。
 
@@ -30,9 +30,9 @@
 
 | 平台 | 浏览器 | 状态 | 日期 | 备注 |
 |---|---|---|---|---|
-| Windows | Chrome 最新 | ✅ | 2026-10-31 | 线上 M4-B1（deploy `6ae5a42c…`）：E2E 3 局 + 真实失焦/倒计时 + 刷新，全部 PASS；本地另有 10 局 + 自动绕圈 60s 胜利 |
-| Windows | Edge 最新 | ✅ | 2026-10-31 | 线上 M4-B1：加载、开始、真实失焦暂停/3-2-1、1 局结算、刷新，PASS |
-| Windows | Firefox 最新 | ✅ | 2026-10-31 | 线上 M4-B1 一局 PASS（Firefox 跳过失焦自动化）；本地 M4-B0 也已跑通 |
+| Windows | Chrome 最新 | ✅ | 2026-10-31 | 线上 §1.7（deploy `6ae5b1a0…`）：Esc/P、真实失焦/3-2-1、3 局结算/刷新，PASS；本地另有 10 局 + 自动绕圈 60s 胜利 |
+| Windows | Edge 最新 | ✅ | 2026-10-31 | 线上 §1.7：加载、开始、Esc/P、真实失焦暂停/3-2-1、1 局结算、刷新，PASS |
+| Windows | Firefox 最新 | ✅ | 2026-10-31 | 线上 §1.7 一局 PASS（Firefox 跳过失焦自动化；首次 wasm MIME 失败，重跑通过） |
 | macOS | Safari 最新 | ⏳ 待测 | — | 有设备则测 |
 | iOS | Safari 15+ | ⏳ 待测 | — | 真机门禁（触控/HUD/最高分） |
 | Android | Chrome 最新 | ⚠️ 加载受阻 | 2026-10-31 | Honor 90 Pro 打开线上 URL 基本加载不出来；初步判断为境外 CDN 带宽（直连实测 wasm ~31KB/s），待局域网服务确认设备侧；触控/HUD/最高分仍未测 |
@@ -60,8 +60,9 @@
   覆盖加载 → 昵称 → 开始 → 真实窗口失焦 → 暂停 → 3-2-1 恢复 → 结算/重开 → 刷新最高分，console 0 error；
   证据 `e2e-online-{chrome,edge,firefox}-desktop-*`。
 - **键盘暂停（M4 §1.7）**：真实 Chrome 本地 E2E，**Esc 暂停 → P 恢复**，暂停面板同步；H5 暂停文案按输入设备区分；
-  390×844 DPR2 回归通过（键盘改动不影响触控）；证据 `e2e-local-chrome-desktop-hotkey-paused/resumed.png`。
-  全屏下 P / Esc 行为随 M4.5 全屏一起验。
+  390×844 DPR2 回归通过（键盘改动不影响触控）；**线上 §1.7 构建（deploy `6ae5b1a0…`）Chrome/Edge/Firefox 均通过**
+  （Chrome 3 局，含真实失焦/3-2-1、结算、刷新）；证据 `e2e-local-chrome-desktop-hotkey-*`、
+  `e2e-online-{chrome,edge,firefox}-desktop-hotkey-*`。全屏下 P / Esc 行为随 M4.5 全屏一起验。
 - **E2E smoke 可重复跑通**（`tools/e2e/smoke.mjs`）：
   - 线上 Chrome（2026-10-30，部署 `6ae4b4bf…`）：加载 → 昵称 → 开始 → **真实窗口失焦**（关掉 Playwright 焦点模拟 + 另开窗口）→ 已暂停 → 切回 3-2-1 → 恢复 → 3 局结算/重开 → 刷新最高分，全部 PASS，console 0 error。
   - 线上 Edge（同日）：同一流程 1 局，PASS。
@@ -86,8 +87,9 @@
 
 ## 4. 未关闭项
 
-1. **线上人工 / 真机门禁未跑**：B1 构建已部署（deploy `6ae5a42c…`）并通过 Chrome/Edge/Firefox smoke；
+1. **线上人工 / 真机门禁未跑**：§1.7 构建已部署（deploy `6ae5b1a0…`）并通过 Chrome/Edge/Firefox smoke；
    线上**人工** 60 秒胜利、iPhone Safari / Android Chrome 真机仍未测（见第 2、3 条）。
+   M4.6 暂停语义修正（失焦保持暂停、玩家主动恢复才倒数）尚未实现，最终构建前要做。
 2. **手机真机**（iPhone Safari / Android Chrome）：触控、HUD、安全区、DPR/帧率仍未测；目前只有 390×844 / 844×390 / 768×1024 的浏览器视口证据。
    Honor 90 Pro 线上加载受阻（2026-10-31），先排查是 CDN 带宽还是设备侧，见 `docs/遗留问题.md` 第 6 节
 3. **人工 5 局平衡数据**：用户决定延后到难度分级/敌人变体之后（单局体感「偏简单」，非正式统计）；
@@ -100,8 +102,9 @@
 
 ## 5. 结论
 
-- M0–M4-B1 的演示闭环可用；线上 <https://survivalgame-demo.netlify.app> 已是 **B1 构建**（Unity `2026-10-31T07:36:01Z`，
-  deploy `6ae5a42c…`），Chrome/Edge/Firefox smoke 通过。
-- M4-B0/B1（大地图 + 相机 + 视野外生成/回收 + 拥挤修复 + 压力曲线）已部署并线上验证；**人工 5 局平衡数据与真机门禁未做**，不要宣称 M4 收口。
+- M0–M4-B1 的演示闭环可用；线上 <https://survivalgame-demo.netlify.app> 已是 **§1.7 构建**（Unity `2026-10-31T08:59:11Z`，
+  H5 `0.1.0-m4.4`，deploy `6ae5b1a0…`），Chrome/Edge/Firefox smoke 通过。
+- M4-B0/B1（大地图 + 相机 + 视野外生成/回收 + 拥挤修复 + 压力曲线 + 键盘暂停）已部署并线上验证；
+  **M4.6 暂停语义修正、人工 5 局平衡数据与真机门禁未做**，不要宣称 M4 收口。
 - 17 条中第 16 条（手机适配/触控）已由视口级验证转绿，真机待测；只剩第 17 条（M5 交付）未做。第 5 条人工体验仍待门禁。
 - M5 时把状态改为最终结论并附设备/日期。

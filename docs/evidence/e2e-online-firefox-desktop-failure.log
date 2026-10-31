@@ -1,0 +1,72 @@
+[console] Failed to download file unity/Build/unity.wasm.unityweb
+[console] wasm streaming compile failed: TypeError: WebAssembly: Response has unsupported MIME type 'text/html; charset=utf-8' expected 'application/wasm'
+[console] falling back to ArrayBuffer instantiation
+[console] both async and sync fetching of the wasm failed
+[console] [Bridge] abort("both async and sync fetching of the wasm failed") at jsStackTrace@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:203906
+stackTrace@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:318752
+abort@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:2015
+getBinary@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:14373
+unityFramework/getBinaryPromise/unityFramework<@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:14710
+promise callback*getBinaryPromise@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:14691
+instantiateArrayBuffer@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:14850
+unityFramework/instantiateAsync/unityFramework</<@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:15524
+promise callback*unityFramework/instantiateAsync/unityFramework<@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:15391
+promise callback*instantiateAsync@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:15299
+createWasm@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:16350
+unityFramework@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:344800
+createUnityInstance/N/p<@https://survivalgame-demo.netlify.app/unity/Build/unity.loader.js:1:115318
+promise callback*N@https://survivalgame-demo.netlify.app/unity/Build/unity.loader.js:1:115279
+createUnityInstance/</<@https://survivalgame-demo.netlify.app/unity/Build/unity.loader.js:1:117796
+promise callback*createUnityInstance/<@https://survivalgame-demo.netlify.app/unity/Build/unity.loader.js:1:117780
+createUnityInstance@https://survivalgame-demo.netlify.app/unity/Build/unity.loader.js:1:117150
+boot/</<@https://survivalgame-demo.netlify.app/js/bridge.js?v=0.1.0-m4.4:93:18
+promise callback*boot/<@https://survivalgame-demo.netlify.app/js/bridge.js?v=0.1.0-m4.4:89:54
+promise callback*boot@https://survivalgame-demo.netlify.app/js/bridge.js?v=0.1.0-m4.4:70:8
+EventListener.handleEvent*@https://survivalgame-demo.netlify.app/js/bridge.js?v=0.1.0-m4.4:112:14
+@https://survivalgame-demo.netlify.app/js/bridge.js?v=0.1.0-m4.4:116:3
+
+[console] [App] abort("both async and sync fetching of the wasm failed") at jsStackTrace@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:203906
+stackTrace@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:318752
+abort@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:2015
+getBinary@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:14373
+unityFramework/getBinaryPromise/unityFramework<@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:14710
+promise callback*getBinaryPromise@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:14691
+instantiateArrayBuffer@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:14850
+unityFramework/instantiateAsync/unityFramework</<@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:15524
+promise callback*unityFramework/instantiateAsync/unityFramework<@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:15391
+promise callback*instantiateAsync@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:15299
+createWasm@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:16350
+unityFramework@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:344800
+createUnityInstance/N/p<@https://survivalgame-demo.netlify.app/unity/Build/unity.loader.js:1:115318
+promise callback*N@https://survivalgame-demo.netlify.app/unity/Build/unity.loader.js:1:115279
+createUnityInstance/</<@https://survivalgame-demo.netlify.app/unity/Build/unity.loader.js:1:117796
+promise callback*createUnityInstance/<@https://survivalgame-demo.netlify.app/unity/Build/unity.loader.js:1:117780
+createUnityInstance@https://survivalgame-demo.netlify.app/unity/Build/unity.loader.js:1:117150
+boot/</<@https://survivalgame-demo.netlify.app/js/bridge.js?v=0.1.0-m4.4:93:18
+promise callback*boot/<@https://survivalgame-demo.netlify.app/js/bridge.js?v=0.1.0-m4.4:89:54
+promise callback*boot@https://survivalgame-demo.netlify.app/js/bridge.js?v=0.1.0-m4.4:70:8
+EventListener.handleEvent*@https://survivalgame-demo.netlify.app/js/bridge.js?v=0.1.0-m4.4:112:14
+@https://survivalgame-demo.netlify.app/js/bridge.js?v=0.1.0-m4.4:116:3
+
+[console] failed to asynchronously prepare wasm: TypeError: first argument must be a WebAssembly.Module, ArrayBuffer or typed array object
+
+--- body ---
+SurvivalGame
+昵称
+
+加载失败
+
+abort("both async and sync fetching of the wasm failed") at jsStackTrace@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:203906 stackTrace@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:318752 abort@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:2015 getBinary@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:14373 unityFramework/getBinaryPromise/unityFramework<@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:14710 promise callback*getBinaryPromise@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:14691 instantiateArrayBuffer@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:14850 unityFramework/instantiateAsync/unityFramework</<@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:15524 promise callback*unityFramework/instantiateAsync/unityFramework<@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:15391 promise callback*instantiateAsync@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:15299 createWasm@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:16350 unityFramework@blob:https://survivalgame-demo.netlify.app/c7cf91b1-d5fc-415e-9328-9b17d4e7cdc1:9:344800 createUnityInstance/N/p<@https://survivalgame-demo.netlify.app/unity/Build/unity.loader.js:1:115318 promise callback*N@https://survivalgame-demo.netlify.app/unity/Build/unity.loader.js:1:115279 createUnityInstance/</<@https://survivalgame-demo.netlify.app/unity/Build/unity.loader.js:1:117796 promise callback*createUnityInstance/<@https://survivalgame-demo.netlify.app/unity/Build/unity.loader.js:1:117780 createUnityInstance@https://survivalgame-demo.netlify.app/unity/Build/unity.loader.js:1:117150 boot/</<@https://survivalgame-demo.netlify.app/js/bridge.js?v=0.1.0-m4.4:93:18 promise callback*boot/<@https://survivalgame-demo.netlify.app/js/bridge.js?v=0.1.0-m4.4:89:54 promise callback*boot@https://survivalgame-demo.netlify.app/js/bridge.js?v=0.1.0-m4.4:70:8 EventListener.handleEvent*@https://survivalgame-demo.netlify.app/js/bridge.js?v=0.1.0-m4.4:112:14 @https://survivalgame-demo.netlify.app/js/bridge.js?v=0.1.0-m4.4:116:3
+
+重试
+
+操作：WASD / 方向键移动 · Esc / P 暂停 · 躲开敌人 · 存活 60 秒
+
+v0.1.0 · 2026-10-31 16:59
+
+--- error ---
+page.waitForSelector: Timeout 300000ms exceeded.
+Call log:
+[2m  - waiting for locator('#btn-start:not([disabled])') to be visible[22m
+
+    at main (D:\unityFile\SurvivalGame\tools\e2e\smoke.mjs:260:16)

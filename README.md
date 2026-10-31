@@ -13,7 +13,8 @@
   失焦暂停 + 3-2-1 倒计时恢复、桌面 Esc/P 键盘暂停、大地图 36×20 + 相机跟随、
   敌人站位环/位置修正/速度扰动/压力曲线/视野外回收、E2E smoke（含自动走位 60 秒）。
   真机（iOS/Android）、人工平衡数据与正式美术仍未做，见 `docs/M4-执行记录.md` 第 6 节。
-- **线上地址**：<https://survivalgame-demo.netlify.app>（B1 构建，Unity `2026-10-31T07:36Z`，H5/CSS `0.1.0-m4.3`，deploy `6ae5a42c…`）
+- **线上地址**：<https://survivalgame-demo.netlify.app>（§1.7 构建，Unity `2026-10-31T08:59Z`，H5/CSS `0.1.0-m4.4`，
+  deploy `6ae5b1a0…`；Netlify 国内直连较慢，国内主链接按 M5 换 CloudBase）
 - 验收证据与偏差记录：`docs/M0-执行记录.md`、`docs/M1-执行记录.md`、`docs/M2-执行记录.md`、`docs/M3-执行记录.md`、`docs/M4-执行记录.md`
 
 **构建**（编辑器打开时点菜单；关闭时用 batchmode，详见下文「构建」）：

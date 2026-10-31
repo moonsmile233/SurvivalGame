@@ -15,6 +15,8 @@ node smoke.mjs         # 默认：本地起静态服务 + 系统 Chrome（有头
 | 变量 | 默认 | 说明 |
 |---|---|---|
 | `BASE_URL` | 空 | 给了就打这个地址（如 `https://survivalgame-demo.netlify.app`），不再起本地服务 |
+| `E2E_PROXY` | 空 | 给测试浏览器挂代理（如 `http://127.0.0.1:7897`）。国内直连 Netlify 会在大文件上 `ERR_CONNECTION_CLOSED`，线上跑必须给 |
+| `READY_TIMEOUT` | `180000` | 等 `onReady` 的毫秒数；线上经代理建议 `300000` |
 | `BROWSER` | `chrome` | `chrome` / `edge` / `firefox`（firefox 用 Playwright 自带内核） |
 | `MOBILE` | `0` | `1` → 390×844 触屏上下文，并做一次 CDP 触摸拖动 |
 | `HEADLESS` | `0` | `1` → 无头（Unity WebGL 在无头下帧率低，仅用于快速冒烟） |
@@ -28,7 +30,9 @@ node smoke.mjs         # 默认：本地起静态服务 + 系统 Chrome（有头
 示例：
 
 ```bash
-BASE_URL=https://survivalgame-demo.netlify.app node smoke.mjs
+# 线上（国内必须走代理，否则大文件会被掐断）
+E2E_PROXY=http://127.0.0.1:7897 READY_TIMEOUT=300000 \
+  BASE_URL=https://survivalgame-demo.netlify.app node smoke.mjs
 MOBILE=1 node smoke.mjs
 BROWSER=edge node smoke.mjs
 ```
@@ -37,6 +41,7 @@ BROWSER=edge node smoke.mjs
 
 - 能加载到 `onReady`（开始按钮可用）
 - 昵称 → 开始 → H5 进入「游戏中」
+- 桌面按 `Esc` 暂停、按 `P` 恢复（M4 §1.7；手机用例跳过）
 - 真实窗口失焦（另开一个浏览器窗口并聚焦）→ H5「已暂停」
 - 切回 → 3-2-1 后自动恢复「游戏中」
 - 结算卡片出现：标题、本次得分、最高分、昵称、存活秒数
