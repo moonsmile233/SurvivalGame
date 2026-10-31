@@ -32,9 +32,8 @@ sysinfo.txt
 *.DotSettings.user
 
 # ---- 构建产物 ----
-# 说明：WebGL 产物落在 web/unity/，默认不入库（可随时重建）。
-# 如果改成「提交产物、让 GitHub Pages 直接托管」，删掉下面这一行并重新提交即可。
-/web/unity/
+# 说明：M5 交付起 WebGL 产物 web/unity/ 随仓库入库（独立 build: 提交），便于在线托管与离线 zip；
+# 重建后在同一次 build 提交里更新，不要只改源码不更新产物。
 /[Bb]uild/
 /[Bb]uilds/
 *.apk
