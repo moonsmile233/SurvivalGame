@@ -2,7 +2,7 @@
   "browser": "chrome",
   "mobile": true,
   "baseUrl": "http://127.0.0.1:8123",
-  "finishedAt": "2026-10-31T07:16:48.809Z",
+  "finishedAt": "2026-10-31T12:09:30.019Z",
   "rounds": 1,
   "maxScore": 150,
   "failures": []

@@ -94,6 +94,7 @@ public static class SceneSetup
         GameObject player = CreatePlayer(config, playerSprite);
         PlayerController playerController = player.GetComponent<PlayerController>();
         PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
+        TouchInput touchInput = player.GetComponent<TouchInput>();
 
         // 大地图（36×20）大于视野，相机在 LateUpdate 跟随并钳在地图内（M4-B0）。
         var cameraFollow = cam.gameObject.AddComponent<CameraFollow>();
@@ -109,7 +110,7 @@ public static class SceneSetup
 
         // 先建桥再接 HUD：结算面板要读桥的 IsEmbedded 决定显不显示（M4 第 1.3 节）。
         WebGLBridge bridge = CreateBridge(manager);
-        CreateHud(manager, playerHealth, bridge);
+        CreateHud(manager, playerHealth, bridge, touchInput);
         CreateBootstrap(bridge);
 
         EditorSceneManager.SaveScene(scene, ScenePath);
@@ -248,7 +249,11 @@ public static class SceneSetup
 
     // ---------- HUD / 面板（ticket M2 第 1 节，全部代码生成） ----------
 
-    private static void CreateHud(GameManager manager, PlayerHealth playerHealth, WebGLBridge bridge)
+    private static void CreateHud(
+        GameManager manager,
+        PlayerHealth playerHealth,
+        WebGLBridge bridge,
+        TouchInput touchInput)
     {
         var eventSystemGo = new GameObject("EventSystem");
         eventSystemGo.AddComponent<EventSystem>();
@@ -342,6 +347,16 @@ public static class SceneSetup
         pausePanel.gameObject.SetActive(false);
         resultPanel.gameObject.SetActive(false);
 
+        // ---- 触控浮动摇杆（M4.7，只做可视化；输入仍由 TouchInput 决定） ----
+        // 放成第一个 sibling，保证在 HUD 与暂停/结算面板下层；初始隐藏，由 View 在触摸时显示。
+        Image joystickBase = CreateImage("Joystick", canvasRect, new Color(1f, 1f, 1f, 0f));
+        SetAnchored(joystickBase.rectTransform, Center, Center, Vector2.zero, new Vector2(160f, 160f));
+        joystickBase.rectTransform.SetAsFirstSibling();
+        joystickBase.gameObject.SetActive(false);
+
+        Image joystickKnob = CreateImage("Knob", joystickBase.rectTransform, new Color(1f, 1f, 1f, 0f));
+        SetAnchored(joystickKnob.rectTransform, Center, Center, Vector2.zero, new Vector2(58f, 58f));
+
         // ---- 注入引用（控制器挂在常驻的 Canvas 上，面板自身可以 inactive） ----
         var hudView = canvasGo.AddComponent<HudView>();
         SetObjectReference(hudView, "_gameManager", manager);
@@ -367,6 +382,16 @@ public static class SceneSetup
         SetObjectReference(resultController, "_scoreText", resultScore);
         SetObjectReference(resultController, "_breakdownText", resultBreakdown);
         SetObjectReference(resultController, "_restartButton", restartButton);
+
+        var joystickView = canvasGo.AddComponent<TouchJoystickView>();
+        SetObjectReference(joystickView, "_touchInput", touchInput);
+        SetObjectReference(joystickView, "_gameManager", manager);
+        SetObjectReference(joystickView, "_canvas", canvas);
+        SetObjectReference(joystickView, "_canvasRect", canvasRect);
+        SetObjectReference(joystickView, "_base", joystickBase.rectTransform);
+        SetObjectReference(joystickView, "_knob", joystickKnob.rectTransform);
+        SetObjectReference(joystickView, "_baseImage", joystickBase);
+        SetObjectReference(joystickView, "_knobImage", joystickKnob);
     }
 
     private static RectTransform CreatePanel(string name, Transform parent)

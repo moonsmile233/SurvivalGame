@@ -3,7 +3,8 @@ using UnityEngine;
 namespace Survival.Player
 {
     /// <summary>
-    /// 触控输入：全屏「锚点相对」拖动（不画虚拟摇杆，M4 第 1.1 节）。
+    /// 触控输入：全屏「锚点相对」拖动（M4 第 1.1 节）。
+    /// 不画固定摇杆；M4.7 的浮动摇杆可视化由 <c>TouchJoystickView</c> 只读本类状态渲染，输入逻辑不在这里改。
     ///
     /// 语义：手指按下点就是摇杆中心，之后指到哪就朝哪走，幅度 = 距离 / maxRadius。
     /// 这样连续移动不需要一直拖、也不会拖到屏幕边缘就得抬手；松手才归零。
@@ -18,7 +19,7 @@ namespace Survival.Player
     {
         private const float DeadZonePixels = 8f;
         private const float MinRadiusPixels = 80f;
-        private const float MaxRadiusPixels = 160f;
+        private const float MaxRadiusLimitPixels = 160f;
 
         // 满偏距离 ≈ 0.2 屏高：390×844 手机约 169 设备像素，夹到 160；
         // 拇指移动约 1/5 屏就能到满速，再远也不会更快。
@@ -31,9 +32,18 @@ namespace Survival.Player
 
         public override Vector2 Move => _move;
 
+        // 只读状态给 TouchJoystickView 画浮动摇杆（M4.7）。鼠标拖动不算 TouchActive，桌面不显示摇杆。
+        public bool TouchActive { get; private set; }
+        public int FingerId => _fingerId;
+        public Vector2 AnchorScreen => _anchor;
+        public Vector2 CurrentScreen { get; private set; }
+        public float MaxRadiusPixels { get; private set; }
+
         private void Update()
         {
-            float maxRadius = Mathf.Clamp(Screen.height * RadiusScreenRatio, MinRadiusPixels, MaxRadiusPixels);
+            float maxRadius = Mathf.Clamp(Screen.height * RadiusScreenRatio, MinRadiusPixels, MaxRadiusLimitPixels);
+            MaxRadiusPixels = maxRadius;
+            TouchActive = false;
 
             if (Input.touchCount > 0)
             {
@@ -54,6 +64,8 @@ namespace Survival.Player
                 Touch first = Input.GetTouch(0);
                 _fingerId = first.fingerId;
                 _anchor = first.position;
+                CurrentScreen = first.position;
+                TouchActive = true;
                 _move = Vector2.zero;
                 return;
             }
@@ -72,6 +84,8 @@ namespace Survival.Player
                     return;
                 }
 
+                CurrentScreen = touch.position;
+                TouchActive = true;
                 _move = ComputeMove(touch.position - _anchor, maxRadius);
                 return;
             }
@@ -119,6 +133,7 @@ namespace Survival.Player
         private void ResetTouch()
         {
             _fingerId = -1;
+            TouchActive = false;
             _move = Vector2.zero;
         }
     }
