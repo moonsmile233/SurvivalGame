@@ -211,6 +211,23 @@ async function touchDrag(page) {
   return true;
 }
 
+// M4.6：暂停后只能由玩家主动恢复。桌面按 P；手机点 Unity 暂停面板的「继续」
+// （按钮锚点 0.5/0.32，uGUI y 向上 → 画布内屏幕 y = 0.68；HUD 参考分辨率切换不影响比例）。
+async function resumeFromPause(page) {
+  if (MOBILE && BROWSER !== 'firefox') {
+    const box = await page.locator('#unity-canvas').boundingBox();
+    if (!box) {
+      return false;
+    }
+
+    await page.touchscreen.tap(box.x + box.width * 0.5, box.y + box.height * 0.68);
+    return true;
+  }
+
+  await page.keyboard.press('p');
+  return true;
+}
+
 // ---------- 主流程 ----------
 
 async function main() {
@@ -292,18 +309,27 @@ async function main() {
       const scrollY = await page.evaluate(() => window.scrollY);
       check(scrollY === 0, `拖动时页面不滚动（scrollY=${scrollY}）`);
     } else {
-      // M4 §1.7：桌面 Esc/P 暂停。这里用 Esc 暂停、P 恢复，两个键都覆盖；
+      // M4 §1.7 + M4.6：桌面 Esc 暂停、P 主动恢复；恢复必须先走 3-2-1，不再立即 Playing。
       // 全屏下 Esc 可能被浏览器吞掉，P 的兜底靠人工在全屏里另测。
       // 键盘事件走 document 级监听，不经过 H5 绑定。
-      log('\n[3/8] 桌面键盘 Esc 暂停 / P 恢复');
+      log('\n[3/8] 桌面键盘 Esc 暂停 / P 恢复（3-2-1）');
       await page.keyboard.press('Escape');
       await waitForHint(page, '已暂停', 5000);
       check((await hintOf(page)).includes('已暂停'), '按 Esc 暂停后 H5 显示「已暂停」');
       await screenshot(page, 'hotkey-paused');
 
       await page.keyboard.press('p');
-      await waitForHint(page, '游戏中', 5000);
-      check((await hintOf(page)).includes('游戏中'), '按 P 恢复「游戏中」');
+      await page.waitForTimeout(600);
+      check((await hintOf(page)).includes('已暂停'), '按 P 后先停 3-2-1，H5 仍是「已暂停」');
+      await screenshot(page, 'hotkey-countdown');
+
+      // 倒计时中重复按 P 应被忽略（PausePanel.StartCountdown 在 _countingDown 时直接返回）。
+      await page.keyboard.press('p');
+      await page.waitForTimeout(300);
+      check((await hintOf(page)).includes('已暂停'), '倒计时中再按 P 不会立刻恢复');
+
+      await waitForHint(page, '游戏中', 20000);
+      check((await hintOf(page)).includes('游戏中'), '3-2-1 结束后恢复「游戏中」');
       await screenshot(page, 'hotkey-resumed');
     }
 
@@ -314,7 +340,7 @@ async function main() {
     if (BROWSER === 'firefox') {
       log('\n[4/8] Firefox 跳过失焦自动化（Playwright 无焦点模拟开关）');
     } else {
-      log('\n[4/8] 真实失焦 → 自动暂停 → 切回 → 3-2-1 恢复');
+      log('\n[4/8] 真实失焦 → 暂停 → 切回仍暂停 → 主动恢复 3-2-1');
       // 先把游戏窗口提到最前，否则窗口本来就没焦点，后面再开一个窗口也不会触发 blur。
       await page.bringToFront();
       await page.waitForTimeout(400);
@@ -335,12 +361,18 @@ async function main() {
       await otherContext.close();
       await page.bringToFront();
 
-      // 切回后 Unity 先停在暂停面板走 3-2-1，再自动恢复；趁倒计时没结束截一张。
+      // M4.6：切回只清标记，保持 Paused，不自动倒数、不自动恢复。
+      await page.waitForTimeout(1500);
+      check((await hintOf(page)).includes('已暂停'), '切回后仍保持「已暂停」，不自动恢复');
+      await screenshot(page, 'focus-return-paused');
+
+      // 玩家主动恢复：桌面按 P、手机点 Unity 暂停面板的「继续」→ 3-2-1 → Playing。
+      check(await resumeFromPause(page), '能触发玩家主动恢复');
       await page.waitForTimeout(800);
       await screenshot(page, 'countdown');
 
       await waitForHint(page, '游戏中', 20000);
-      check((await hintOf(page)).includes('游戏中'), '切回后倒计时结束自动恢复「游戏中」');
+      check((await hintOf(page)).includes('游戏中'), '主动恢复的 3-2-1 结束后进入「游戏中」');
       await screenshot(page, 'resumed');
 
       // 失焦用例已验证完，后面批量跑局时重新打开焦点模拟，避免自动化窗口被抢焦点导致整局暂停。
@@ -352,7 +384,15 @@ async function main() {
     if (!(await waitForResult(page, RESULT_TIMEOUT))) {
       throw new Error(`等待结算超时（${RESULT_TIMEOUT}ms）`);
     }
+    // M4.6 §2：结算卡片顶部对齐（block:'start'），重新开始按钮要和明细同屏。
+    await page.waitForTimeout(700);
     await screenshot(page, 'result');
+    const restartBox = await page.locator('#btn-restart').boundingBox();
+    const viewport = page.viewportSize();
+    check(
+      !!restartBox && !!viewport && restartBox.y >= 0 && restartBox.y + restartBox.height <= viewport.height,
+      `结算后「重新开始」在首屏可见（y=${restartBox ? Math.round(restartBox.y) : 'null'}）`
+    );
 
     if (stopAutoMove) {
       await stopAutoMove();

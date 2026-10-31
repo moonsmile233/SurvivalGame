@@ -236,9 +236,10 @@
 
       case 'Paused':
         setPage('Paused');
-        // 失焦暂停切回后由 Unity 走 3-2-1；手动暂停（按钮或 Esc/P）只能点「继续」或按 P。
-        // 这里统一文案，避免给手动暂停显示「切回后 3 秒继续」——手动暂停并没有倒计时。
-        setHint(isCoarsePointer() ? '已暂停 · 点「继续」恢复' : '已暂停 · 点「继续」或按 P 恢复');
+        // M4.6：失焦切回保持暂停，只有玩家点「继续」/按 P 才开始 3-2-1；文案不能暗示自动恢复。
+        setHint(isCoarsePointer()
+          ? '已暂停 · 点「继续」，3 秒后开始'
+          : '已暂停 · 点「继续」或按 P，3 秒后开始');
         break;
 
       case 'Ready':
@@ -296,9 +297,10 @@
     resultRecord.hidden = !isNewRecord;
     resultEl.hidden = false;
 
-    // 桌面窗口高度不够时结算卡片在首屏之外；直接滚到可见处，避免「结束了却什么都没看到」。
+    // 桌面窗口高度不够时结算卡片在首屏之外；对齐卡片顶部，保证「重新开始」和明细同屏。
+    // 用 nearest 只会滚到最近边缘，1280×720 上常只露出上半截（M4.6 §2）。
     if (typeof resultEl.scrollIntoView === 'function') {
-      resultEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     nicknameInput.value = nickname;

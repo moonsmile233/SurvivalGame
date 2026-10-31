@@ -167,7 +167,7 @@ public class WebGLBridge : MonoBehaviour
         _gameManager.PauseGame();
     }
 
-    /// <summary>Paused → Playing（H5 手动继续）。</summary>
+    /// <summary>Paused → 先 3-2-1 再 Playing（H5 手动继续；M4.6 起不直接恢复）。</summary>
     public void ResumeGame(string _)
     {
         if (!EnsureManager("ResumeGame"))
@@ -176,7 +176,7 @@ public class WebGLBridge : MonoBehaviour
         }
 
         _pausedByVisibility = false;
-        _gameManager.ResumeGame();
+        _gameManager.RequestCountdownResume();
     }
 
     /// <summary>Won / Lost → Playing，全量重置；昵称沿用。</summary>
@@ -192,8 +192,9 @@ public class WebGLBridge : MonoBehaviour
     }
 
     /// <summary>
-    /// 失焦/标签页隐藏时自动暂停；切回时**不瞬时恢复**，而是请 PausePanel 走 3-2-1 倒计时
-    /// （M4 第 1.5 节）。手动暂停不设置标记，因此切回不会自动继续。
+    /// 失焦/标签页隐藏时自动暂停，切回**保持暂停**，恢复必须由玩家主动触发（M4.6）。
+    /// 切回只清标记，不请求倒计时、不 ResumeGame；否则玩家看不见时游戏会自己继续。
+    /// 倒计时中再次失焦：停表并保持暂停。
     /// </summary>
     public void SetPausedByVisibility(string payload)
     {
@@ -211,23 +212,17 @@ public class WebGLBridge : MonoBehaviour
                 _gameManager.PauseGame();
                 _pausedByVisibility = true;
             }
-            else if (_gameManager.State == GameState.Paused && _pausedByVisibility)
+            else if (_gameManager.State == GameState.Paused)
             {
-                // 倒计时期间再次失焦：停掉倒计时，不要在玩家看不见的时候自动继续。
+                // 不管是失焦自动暂停还是玩家主动恢复的倒计时，只要再次隐藏就停表、保持暂停。
                 _gameManager.CancelCountdownResume();
             }
 
             return;
         }
 
-        if (_pausedByVisibility)
-        {
-            _pausedByVisibility = false;
-            if (_gameManager.State == GameState.Paused)
-            {
-                _gameManager.RequestCountdownResume();
-            }
-        }
+        // 切回：只清标记，等玩家点「继续」或按 P 再倒数。
+        _pausedByVisibility = false;
     }
 
     private bool EnsureManager(string caller)

@@ -6,9 +6,9 @@ using UnityEngine.UI;
 namespace Survival.UI
 {
     /// <summary>
-    /// 暂停面板：只在 Paused 显示；「继续」调 GameManager.ResumeGame（ticket M2 第 2 节）。
-    /// M4 起增加 3-2-1 倒计时：切回页面时由 GameManager.OnResumeCountdownRequested 触发，
-    /// 倒计时结束才继续，避免切回来瞬间被敌人围死（M4 第 1.5 节）。
+    /// 暂停面板：只在 Paused 显示；「继续」调 GameManager.RequestCountdownResume（M4.6）。
+    /// 3-2-1 倒计时只由玩家主动恢复触发（按钮 / Esc / P），失焦切回不会自动开始；
+    /// 倒计时结束才 ResumeGame，避免切回来瞬间被敌人围死。
     /// 不直接改 Time.timeScale；暂停时 timeScale = 0，倒计时必须用 Time.unscaledDeltaTime。
     /// </summary>
     public class PausePanel : MonoBehaviour
@@ -42,7 +42,7 @@ namespace Survival.UI
             _gameManager.OnStateChanged += HandleStateChanged;
             _gameManager.OnResumeCountdownRequested += StartCountdown;
             _gameManager.OnResumeCountdownCancelled += StopCountdown;
-            _resumeButton.onClick.AddListener(_gameManager.ResumeGame);
+            _resumeButton.onClick.AddListener(_gameManager.RequestCountdownResume);
             HandleStateChanged(_gameManager.State);
         }
 

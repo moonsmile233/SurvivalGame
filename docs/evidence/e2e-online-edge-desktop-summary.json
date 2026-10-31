@@ -2,8 +2,8 @@
   "browser": "edge",
   "mobile": false,
   "baseUrl": "https://survivalgame-demo.netlify.app",
-  "finishedAt": "2026-10-31T09:45:58.463Z",
+  "finishedAt": "2026-10-31T10:14:27.933Z",
   "rounds": 1,
-  "maxScore": 160,
+  "maxScore": 150,
   "failures": []
 }
