@@ -13,6 +13,9 @@ const evidenceDir = path.join(repoRoot, 'docs', 'evidence');
 
 const BASE_URL = (process.env.BASE_URL || '').trim();
 const BROWSER = (process.env.BROWSER || 'chrome').toLowerCase();
+// 线上跑国内直连 Netlify 很慢且大文件会被掐断（Chrome 默认不走系统代理时直接 ERR_CONNECTION_CLOSED）。
+// 用 E2E_PROXY 显式给浏览器挂代理；只影响测试浏览器，不改游戏/H5 的网络行为。
+const E2E_PROXY = (process.env.E2E_PROXY || '').trim();
 const PORT = Number(process.env.PORT || 8123);
 const HEADLESS = process.env.HEADLESS === '1';
 const MOBILE = process.env.MOBILE === '1';
@@ -225,12 +228,14 @@ async function main() {
       log(`目标地址：${baseUrl}`);
     }
 
+    const launchProxy = E2E_PROXY ? { proxy: { server: E2E_PROXY } } : {};
     if (BROWSER === 'firefox') {
-      browser = await firefox.launch({ headless: HEADLESS });
+      browser = await firefox.launch({ headless: HEADLESS, ...launchProxy });
     } else {
       browser = await chromium.launch({
         headless: HEADLESS,
         channel: BROWSER === 'edge' ? 'msedge' : 'chrome',
+        ...launchProxy,
       });
     }
 
