@@ -22,10 +22,10 @@ namespace Survival.UI
         // 外圈画成细圆环（线宽约半径的 10%），比实心大圆视觉重量小；内半径 = 外半径 × 该值。
         private const float RingInnerRatio = 0.9f;
 
-        // 用户真机反馈「外圈太显眼」：可视化直径只占输入 maxRadius 的 65%，整体更淡。
-        // 只影响观感——TouchInput 的 maxRadius/死区/速度完全不变；摇杆头在外圈边缘时约 65% 满速，
-        // 再往外拖仍会加速（外圈不是满速判定的边界，输入逻辑仍按 maxRadius）。
-        private const float VisualRadiusScale = 0.65f;
+        // 可视半径 = Canvas 短边 × 0.07（直径 ≈ 短边 14%），随分辨率/视口等比缩放。
+        // 允许 0.06～0.08 微调；只影响观感，TouchInput 的 maxRadius/死区/速度完全不变。
+        // 外圈只是视觉参考，不是满速边界（继续往外拖仍会加速）。
+        private const float VisualRadiusRatio = 0.07f;
 
         [SerializeField] private TouchInput _touchInput;
         [SerializeField] private GameManager _gameManager;
@@ -122,7 +122,7 @@ namespace Survival.UI
             }
 
             float scale = _canvas.scaleFactor > 0f ? _canvas.scaleFactor : 1f;
-            float radius = _touchInput.MaxRadiusPixels * VisualRadiusScale / scale;
+            float radius = Mathf.Min(_canvasRect.rect.width, _canvasRect.rect.height) * VisualRadiusRatio;
             float diameter = radius * 2f;
 
             // maxRadius 随屏幕高度变化；只在真的变了时改 sizeDelta。
@@ -142,7 +142,9 @@ namespace Survival.UI
                 offset = offset.normalized * maxOffset;
             }
 
-            _knob.anchoredPosition = local + offset;
+            // Knob 是 Base 的子物体：offset 已经是相对底座中心的画布单位，
+            // 不能再加 local（那是底座在 Canvas 里的位置），否则触摸点离开画面中心时摇杆头会被推走。
+            _knob.anchoredPosition = offset;
             SetVisible(true);
         }
 

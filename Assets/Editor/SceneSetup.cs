@@ -299,12 +299,13 @@ public static class SceneSetup
         SetAnchored(timeText.rectTransform, TopCenter, TopCenter, new Vector2(0f, -14f), new Vector2(260f, 44f));
 
         // 暂停在右上（H5 文案点名「右上角」）；分数放到暂停按钮下方，避免窄屏顶行互相挤。
+        // 高 80：在 640×360 参考下，390 手机约 46 CSS px、320 约 37 CSS px，满足触控目标 ≥36（M4.7 响应式矩阵）。
         Button pauseButton = CreateButton("PauseButton", hud, UiStrings.PauseButton, TopRight, TopRight,
-            new Vector2(-16f, -12f), new Vector2(140f, 56f), 24f);
+            new Vector2(-16f, -12f), new Vector2(140f, 80f), 26f);
 
         TMP_Text scoreText = CreateText("ScoreText", hud, $"{UiStrings.ScoreLabel} 0", 24f,
             TextAlignmentOptions.TopRight, true);
-        SetAnchored(scoreText.rectTransform, TopRight, TopRight, new Vector2(-16f, -78f), new Vector2(220f, 30f));
+        SetAnchored(scoreText.rectTransform, TopRight, TopRight, new Vector2(-16f, -102f), new Vector2(220f, 30f));
 
         // ---- 暂停面板（默认隐藏）：标题 / 3-2-1 倒计时 / 继续 ----
         RectTransform pausePanel = CreatePanel("PausePanel", canvasRect);
@@ -319,8 +320,9 @@ public static class SceneSetup
             TextAlignmentOptions.Center, true);
         SetAnchored(countdownText.rectTransform, Center, Center, Vector2.zero, new Vector2(300f, 160f));
 
+        // 高 88：小屏（320 宽）也能有约 41 CSS px 的点击高度；参考 640×360 时随 Canvas 等比缩放。
         Button resumeButton = CreateButton("ResumeButton", pausePanel, UiStrings.ResumeButton,
-            new Vector2(0.5f, 0.32f), Center, Vector2.zero, new Vector2(260f, 72f), 28f);
+            new Vector2(0.5f, 0.32f), Center, Vector2.zero, new Vector2(260f, 88f), 30f);
 
         // ---- 结算面板（默认隐藏；WebGL 嵌入模式下由 ResultPanel 自己抑制） ----
         RectTransform resultPanel = CreatePanel("ResultPanel", canvasRect);

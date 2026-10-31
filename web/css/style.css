@@ -194,6 +194,30 @@ body {
   cursor: not-allowed;
 }
 
+/* 次要按钮（全屏）：不抢「开始游戏」的视觉权重。 */
+.btn-secondary {
+  background: var(--panel-2);
+  color: var(--text);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--line);
+}
+
+/* 全屏时的退出按钮：固定在全屏黑边上，避免和 Unity HUD 的暂停按钮重叠。 */
+.fullscreen-exit {
+  position: fixed;
+  right: calc(12px + env(safe-area-inset-right));
+  bottom: calc(12px + env(safe-area-inset-bottom));
+  z-index: 60;
+  min-width: 0;
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 14px;
+  background: rgba(30, 30, 46, 0.85);
+  border: 1px solid var(--line);
+}
+
 .btn:focus-visible,
 .nickname-input:focus-visible {
   outline: 3px solid #b9a7ff;
@@ -266,6 +290,12 @@ body {
   margin: 0;
   font-size: 24px;
   font-weight: 700;
+}
+
+/* 「重新开始」在结算卡内，滚动到卡顶后与明细同屏；占满卡片宽度便于手指点击。 */
+.result .btn {
+  width: 100%;
+  margin-top: 4px;
 }
 
 .result-grid {
@@ -364,6 +394,48 @@ body {
     max-width: 100%;
     align-self: center;
   }
+}
+
+/* ---------- 全屏（M4.5 §1） ---------- */
+
+/* 只请求 documentElement 全屏；保留 16:9 画面居中，多出来的部分用纯色 letterbox。 */
+html:fullscreen {
+  background: #000;
+  overflow: hidden;
+}
+
+html:fullscreen body {
+  background: #000;
+  overflow: hidden;
+}
+
+html:fullscreen .shell {
+  max-width: none;
+  min-height: 100vh;
+  min-height: 100dvh;
+  padding: 0;
+  gap: 0;
+  align-items: center;
+  justify-content: center;
+}
+
+html:fullscreen .header,
+html:fullscreen .rotate-hint,
+html:fullscreen .controls,
+html:fullscreen .op-hint,
+html:fullscreen .footer,
+html:fullscreen .result {
+  display: none !important;
+}
+
+html:fullscreen .game-frame {
+  width: min(100vw, calc(100vh * 16 / 9));
+  width: min(100vw, calc(100dvh * 16 / 9));
+  height: auto;
+  max-width: none;
+  margin: 0;
+  border-radius: 0;
+  aspect-ratio: 16 / 9;
 }
 
 @media (prefers-reduced-motion: reduce) {

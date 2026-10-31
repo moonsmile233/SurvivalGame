@@ -35,8 +35,9 @@
 
     <section class="controls">
       <button id="btn-start" class="btn" type="button" disabled>开始游戏</button>
-      <button id="btn-restart" class="btn" type="button" hidden>重新开始</button>
+      <button id="btn-fullscreen" class="btn btn-secondary" type="button">全屏</button>
       <p id="status-hint" class="status-hint" aria-live="polite"></p>
+      <p id="fullscreen-hint" class="status-hint" role="status" hidden></p>
     </section>
 
     <p class="op-hint">
@@ -69,6 +70,8 @@
         <span class="op-desktop">操作：WASD / 方向键移动 · Esc / P 暂停 · 躲开敌人 · 存活 60 秒</span>
         <span class="op-touch">操作：拖动屏幕移动 · 点画面内「暂停」 · 躲开敌人 · 存活 60 秒</span>
       </p>
+      <!-- 重开按钮放进结算卡：block:'start' 滚动后卡片与按钮同屏，小屏不会把按钮顶出视口（M4.6/M4.7 响应式）。 -->
+      <button id="btn-restart" class="btn" type="button" hidden>重新开始</button>
     </section>
 
     <footer class="footer">
@@ -76,6 +79,9 @@
       <span class="dot" aria-hidden="true">·</span>
       <span id="build-time">-</span>
     </footer>
+
+    <!-- 全屏时页头/操作区会被隐藏；这个浮动按钮放在画面外的黑边里用于退出（Esc/返回键也可退出）。 -->
+    <button id="btn-exit-fullscreen" class="btn fullscreen-exit" type="button" hidden>退出全屏</button>
   </main>
 
   <script src="js/storage.js?v=1.0.0"></script>

@@ -14,6 +14,10 @@ const evidenceDir = path.resolve(here, '..', '..', 'docs', 'evidence');
 const BASE_URL = (process.env.BASE_URL || 'http://127.0.0.1:8125').replace(/\/$/, '');
 const [width, height] = (process.env.VIEWPORT || '390x844').split('x').map(Number);
 const MOUSE = process.env.MOUSE === '1';
+// 触摸点相对画布的位置（0～1）。默认画布中心；非中心用 0.25～0.30 验证底座圆心是否跟着手指。
+const TOUCH_X = Number(process.env.TOUCH_X || '0.5');
+const TOUCH_Y = Number(process.env.TOUCH_Y || '0.5');
+const MARK_TOUCH = process.env.MARK_TOUCH === '1';
 const label = process.env.LABEL || (MOUSE ? 'desktop' : width > height ? 'landscape' : 'mobile');
 const E2E_PROXY = (process.env.E2E_PROXY || '').trim();
 
@@ -46,16 +50,36 @@ if (!box) {
   throw new Error('找不到 #unity-canvas');
 }
 
-const cx = Math.round(box.x + box.width / 2);
-const cy = Math.round(box.y + box.height / 2);
+const cx = Math.round(box.x + box.width * TOUCH_X);
+const cy = Math.round(box.y + box.height * TOUCH_Y);
 const dx = Math.round(box.width * 0.12);
+
+// 在页面上画一个红圈标记手指坐标（只进截图，不影响 Unity 输入）。
+if (MARK_TOUCH) {
+  await page.evaluate(({ x, y }) => {
+    const marker = document.createElement('div');
+    marker.id = 'e2e-touch-marker';
+    Object.assign(marker.style, {
+      position: 'fixed',
+      left: `${x - 5}px`,
+      top: `${y - 5}px`,
+      width: '10px',
+      height: '10px',
+      border: '1px solid red',
+      borderRadius: '50%',
+      pointerEvents: 'none',
+      zIndex: '2147483647',
+    });
+    document.body.appendChild(marker);
+  }, { x: cx, y: cy });
+}
 
 if (MOUSE) {
   await page.mouse.move(cx, cy);
   await page.mouse.down();
   await page.mouse.move(cx + dx, cy, { steps: 6 });
   await page.waitForTimeout(500);
-  await page.screenshot({ path: path.join(evidenceDir, 'm47-joystick-desktop.png') });
+  await page.screenshot({ path: path.join(evidenceDir, `m47-joystick-${label}.png`) });
   await page.mouse.up();
 } else {
   const client = await context.newCDPSession(page);

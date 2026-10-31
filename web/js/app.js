@@ -19,6 +19,9 @@
   var btnRetry = document.getElementById('btn-retry');
   var btnStart = document.getElementById('btn-start');
   var btnRestart = document.getElementById('btn-restart');
+  var btnFullscreen = document.getElementById('btn-fullscreen');
+  var btnExitFullscreen = document.getElementById('btn-exit-fullscreen');
+  var fullscreenHint = document.getElementById('fullscreen-hint');
   var nicknameInput = document.getElementById('nickname');
   var statusHint = document.getElementById('status-hint');
   var resultEl = document.getElementById('result');
@@ -289,33 +292,59 @@
       }
     }
 
-    resultTitle.textContent = won ? '胜利' : '失败';
-    resultScore.textContent = String(score);
-    resultBest.textContent = String(state.best);
-    resultNickname.textContent = nickname;
-    resultSurvived.textContent = survived.toFixed(1) + ' 秒';
-    resultRecord.hidden = !isNewRecord;
-    resultEl.hidden = false;
+    function showResultCard() {
+      resultTitle.textContent = won ? '胜利' : '失败';
+      resultScore.textContent = String(score);
+      resultBest.textContent = String(state.best);
+      resultNickname.textContent = nickname;
+      resultSurvived.textContent = survived.toFixed(1) + ' 秒';
+      resultRecord.hidden = !isNewRecord;
+      resultEl.hidden = false;
 
-    // 桌面窗口高度不够时结算卡片在首屏之外；对齐卡片顶部，保证「重新开始」和明细同屏。
-    // 用 nearest 只会滚到最近边缘，1280×720 上常只露出上半截（M4.6 §2）。
-    if (typeof resultEl.scrollIntoView === 'function') {
-      resultEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // 结算卡已包含「重新开始」按钮。等两帧让卡片完成布局（直接调用时高度还是旧的，
+      // 滚不到按钮），再只在底部超出视口时对齐卡片底部；短横屏/320 小屏都能看到按钮。
+      if (typeof resultEl.scrollIntoView === 'function') {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            if (resultEl.getBoundingClientRect().bottom > window.innerHeight) {
+              resultEl.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            }
+          });
+        });
+      }
+
+      nicknameInput.value = nickname;
+      setPage('Result');
+      hideOverlay();
+
+      if (storage && !storage.isAvailable()) {
+        setHint('本次成绩无法保存（浏览器存储不可用）');
+      } else if (isNewRecord) {
+        setHint('新纪录已保存');
+      } else {
+        setHint('');
+      }
+
+      console.log('[App] gameOver score=' + score + ' best=' + state.best + ' newRecord=' + isNewRecord);
     }
 
-    nicknameInput.value = nickname;
-    setPage('Result');
-    hideOverlay();
-
-    if (storage && !storage.isAvailable()) {
-      setHint('本次成绩无法保存（浏览器存储不可用）');
-    } else if (isNewRecord) {
-      setHint('新纪录已保存');
-    } else {
-      setHint('');
+    // 全屏下 H5 结算卡被 CSS 隐藏；先退出全屏，等退出完成再显示结算，避免玩家只看到游戏画面。
+    if (isFullscreen()) {
+      var exit = document.exitFullscreen || document.webkitExitFullscreen;
+      if (exit) {
+        try {
+          var pendingExit = exit.call(document);
+          if (pendingExit && typeof pendingExit.finally === 'function') {
+            pendingExit.finally(showResultCard);
+            return;
+          }
+        } catch (error) {
+          // 退出失败就按普通流程显示，状态不丢。
+        }
+      }
     }
 
-    console.log('[App] gameOver score=' + score + ' best=' + state.best + ' newRecord=' + isNewRecord);
+    showResultCard();
   }
 
   function onFatalError(message) {
@@ -364,7 +393,91 @@
     state.unityInstance = instance;
   }
 
+  // ---------- 全屏（H5，M4.5 §1） ----------
+
+  var fullscreenHintTimer = null;
+
+  function isFullscreen() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+
+  function showFullscreenHint(text) {
+    if (!fullscreenHint) return;
+    fullscreenHint.hidden = false;
+    fullscreenHint.textContent = text;
+    window.clearTimeout(fullscreenHintTimer);
+    fullscreenHintTimer = window.setTimeout(function () {
+      fullscreenHint.hidden = true;
+      fullscreenHint.textContent = '';
+    }, 5000);
+  }
+
+  function updateFullscreenUi() {
+    var active = isFullscreen();
+    if (btnExitFullscreen) btnExitFullscreen.hidden = !active;
+    if (btnFullscreen) btnFullscreen.textContent = active ? '退出全屏' : '全屏';
+
+    if (active) {
+      // 横屏锁定是 best-effort：桌面/部分浏览器会 reject，失败就保留 H5 竖屏提示。
+      try {
+        if (screen.orientation && typeof screen.orientation.lock === 'function') {
+          var lock = screen.orientation.lock('landscape');
+          if (lock && typeof lock.catch === 'function') lock.catch(function () {});
+        }
+      } catch (error) {
+        // 不支持 orientation.lock 的浏览器直接忽略。
+      }
+    } else if (screen.orientation && typeof screen.orientation.unlock === 'function') {
+      try { screen.orientation.unlock(); } catch (error) { /* 忽略 */ }
+    }
+  }
+
+  function requestFullscreen() {
+    var element = document.documentElement;
+    var request = element.requestFullscreen || element.webkitRequestFullscreen;
+    if (!request) {
+      showFullscreenHint('当前浏览器不支持网页全屏，请横屏或添加到主屏幕');
+      return;
+    }
+
+    var result;
+    try {
+      result = request.call(element);
+    } catch (error) {
+      showFullscreenHint('当前浏览器不支持网页全屏，请横屏或添加到主屏幕');
+      return;
+    }
+
+    if (result && typeof result.catch === 'function') {
+      result.catch(function () {
+        showFullscreenHint('当前浏览器不支持网页全屏，请横屏或添加到主屏幕');
+      });
+    }
+  }
+
+  function exitFullscreen() {
+    var exit = document.exitFullscreen || document.webkitExitFullscreen;
+    if (!exit) return;
+    try {
+      var result = exit.call(document);
+      if (result && typeof result.catch === 'function') result.catch(function () {});
+    } catch (error) {
+      // 已经不在全屏，忽略。
+    }
+  }
+
+  function toggleFullscreen() {
+    if (isFullscreen()) exitFullscreen();
+    else requestFullscreen();
+  }
+
   // ---------- 初始化 ----------
+
+  if (btnFullscreen) btnFullscreen.addEventListener('click', toggleFullscreen);
+  if (btnExitFullscreen) btnExitFullscreen.addEventListener('click', toggleFullscreen);
+  document.addEventListener('fullscreenchange', updateFullscreenUi);
+  document.addEventListener('webkitfullscreenchange', updateFullscreenUi);
+  updateFullscreenUi();
 
   if (btnStart) btnStart.addEventListener('click', startGame);
   if (btnRestart) btnRestart.addEventListener('click', restartGame);
