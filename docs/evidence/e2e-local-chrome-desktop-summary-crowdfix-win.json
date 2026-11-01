@@ -1,0 +1,9 @@
+{
+  "browser": "chrome",
+  "mobile": false,
+  "baseUrl": "http://127.0.0.1:8123",
+  "finishedAt": "2026-11-01T08:49:54.980Z",
+  "rounds": 1,
+  "maxScore": 800,
+  "failures": []
+}

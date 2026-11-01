@@ -86,6 +86,8 @@
 
   <script src="js/storage.js?v=1.0.0"></script>
   <script src="js/app.js?v=1.0.0"></script>
+  <!-- 压测叠层：没有 ?perf=1&overlay=1 时立即返回，不影响正常页面。必须在 bridge.js 之前。 -->
+  <script src="js/perf-overlay.js?v=1.0.0"></script>
   <script src="js/bridge.js?v=1.0.0"></script>
 </body>
 </html>

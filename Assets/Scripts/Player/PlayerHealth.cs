@@ -14,6 +14,10 @@ namespace Survival.Player
 
         private float _invulnerableUntil;
 
+        // 压测用（M6 §3.4）：只有 PerfProbe 在 ?perf=1 时打开，正常游玩恒为 false。
+        // 不受伤是为了让玩家站着不动也能稳定维持高同屏数量；判定/表现逻辑本身不变。
+        private bool _perfInvincible;
+
         public int CurrentHealth { get; private set; }
         public int MaxHealth => _config != null ? _config.PlayerMaxHealth : 0;
 
@@ -41,7 +45,7 @@ namespace Survival.Player
                 return;
             }
 
-            if (Time.time < _invulnerableUntil)
+            if (_perfInvincible || Time.time < _invulnerableUntil)
             {
                 return;
             }
@@ -58,6 +62,9 @@ namespace Survival.Player
                 OnDied?.Invoke();
             }
         }
+
+        /// <summary>只给压测探针用（M6 §3.4）：打开后 TakeDamage 直接忽略，不扣血、不触发受击表现。</summary>
+        public void SetPerfInvincible(bool value) => _perfInvincible = value;
 
         /// <summary>重开用：满血、清无敌计时。</summary>
         public void ResetHealth()

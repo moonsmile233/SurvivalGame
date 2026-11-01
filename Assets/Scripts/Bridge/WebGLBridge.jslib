@@ -39,5 +39,15 @@ mergeInto(LibraryManager.library, {
     } catch (e) {
       console.error('[Bridge] onGameOver failed', e);
     }
+  },
+
+  // 只给压测探针（PerfProbe，?perf=1）用：WASM 线性内存字节数。
+  // Unity 托管堆就在这块内存里，手机上这是最早撞到的内存上限；取不到就返回 0，不影响其他指标。
+  JsGetWasmHeapBytes: function () {
+    try {
+      return typeof HEAPU8 !== 'undefined' && HEAPU8 ? HEAPU8.length : 0;
+    } catch (e) {
+      return 0;
+    }
   }
 });

@@ -76,7 +76,10 @@ namespace Survival.UI
             }
         }
 
-        /// <summary>剩余时间向上取整，格式固定「时间 00:60」~「时间 00:00」（规范 6.1）。</summary>
+        /// <summary>
+        /// 剩余时间向上取整，按标准 mm:ss 显示（规范 6.1）：60 秒 → 01:00，575 秒 → 09:35。
+        /// 不能硬编码成 `00:{seconds:00}`：压测会把回合拉到 600 秒，那种写法会显示成 00:575。
+        /// </summary>
         private void HandleTimeChanged(float remainingSeconds)
         {
             int seconds = Mathf.CeilToInt(Mathf.Max(0f, remainingSeconds));
@@ -86,7 +89,9 @@ namespace Survival.UI
             }
 
             _lastSecond = seconds;
-            _timeText.text = $"{UiStrings.TimeLabel} 00:{seconds:00}";
+            int minutes = seconds / 60;
+            int remainder = seconds % 60;
+            _timeText.text = $"{UiStrings.TimeLabel} {minutes:00}:{remainder:00}";
         }
 
         private void HandleScoreChanged(int score)

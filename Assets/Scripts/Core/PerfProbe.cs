@@ -1,0 +1,614 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Text;
+using Survival.Enemy;
+using Survival.Player;
+using UnityEngine;
+
+namespace Survival.Core
+{
+    /// <summary>
+    /// 压测探针（M6 §3.4），只在页面 URL 带 <c>?perf=1</c> 时创建，普通游玩完全不创建、不参与。
+    ///
+    /// 支持参数（全部可选）：
+    /// - <c>enemyLimit=N</c>：覆盖同屏上限（压测 20/30/40 用；不用为每个上限重新构建）
+    /// - <c>roundDuration=秒</c>：覆盖回合时长（默认 60 会提前结算，压测要长时间维持上限）
+    /// - <c>invincible=1</c>：玩家不受伤（否则站着不动约 20 秒就死，到不了高上限稳态）
+    /// - <c>perfSeconds=秒</c>：开始后多久打一行 [PERF-SUMMARY]（默认 90）
+    /// - <c>hud=1</c>：在屏幕上画调试条（真机看不到 console 时用；桌面压测不要开，避免 IMGUI 扰动采样）
+    /// - <c>autostart=1</c>：跳过 H5 点击，直接进 Playing（真机一键跑）
+    ///
+    /// 输出：每 2 秒一行 <c>[PERF] {json}</c>，结束时一行 <c>[PERF-SUMMARY] {json}</c>，都进浏览器 console，
+    /// 由 tools/e2e/perf.mjs 收集；真机看屏幕上的 hud。
+    ///
+    /// 为什么用 URL 参数而不是改 GameConfig 资产：同一个构建能一次跑完 20/30/40，
+    /// 避免“到底测的是哪一版”的混淆；普通玩家不会带这些参数，逻辑与数值不变。
+    ///
+    /// 采样口径：只在 Playing 时累计；帧时间用 unscaledDeltaTime（暂停/结算不计）；
+    /// 分配量用 GC.GetTotalMemory 的正增量（负增量是回收，不计），WASM 内存直接读 HEAPU8。
+    /// </summary>
+    public class PerfProbe : MonoBehaviour
+    {
+        private const int MaxSamples = 16384; // 165 FPS 下约 99 秒；够一次 90 秒压测
+        private const float WindowSeconds = 2f;
+        private const float SteadyWindowSeconds = 20f;
+
+        private readonly float[] _ringDt = new float[MaxSamples];
+        private readonly float[] _ringTime = new float[MaxSamples];
+        private readonly int[] _ringAlive = new int[MaxSamples];
+        private readonly int[] _ringAlloc = new int[MaxSamples];
+        private readonly float[] _ringMotion = new float[MaxSamples];
+        private readonly int[] _ringSettled = new int[MaxSamples];
+        private readonly float[] _scratch = new float[MaxSamples];
+        private readonly StringBuilder _line = new StringBuilder(384);
+
+        // 拥挤度指标（M6 拥挤修复验收）：每帧累加所有敌人的位移，换算成"每只敌人每秒移动多少世界单位"。
+        // 站定后应接近 0；1 单位 = 32px，所以 0.1 u/s ≈ 3.2px/s。
+        private readonly Vector2[] _lastPositions = new Vector2[128];
+        private int _trackedCount = -1;
+        private float _frameMotion;
+        private int _frameSettled;
+        private float _windowUnsettledMax;
+
+        private int _ringHead;
+        private int _ringCount;
+
+        // 当前窗口统计（Collect 填）
+        private long _collectAliveSum;
+        private long _collectAlloc;
+        private float _collectMotion;
+        private int _collectSettled;
+        private int _collectCount;
+
+        private GameManager _manager;
+        private EnemySpawner _spawner;
+        private PlayerHealth _health;
+
+        private int _limitOverride;
+        private float _roundOverride;
+        private bool _invincible;
+        private bool _drawHud;
+        private bool _autoStart;
+        private float _perfSeconds = 90f;
+
+        private float _elapsed;
+        private float _autoStartCountdown = 1f;
+        private bool _autoStarted;
+        private int _lastAlive;
+
+        private long _heapPrev;
+        private long _allocTotal;
+        private int _peakAlive;
+        private float _capReachedAt = -1f;
+        private float _nextWindowAt = WindowSeconds;
+        private int _activeLimit;
+        private bool _summaryLogged;
+        private bool _collectionSupported = true;
+
+        private GUIStyle _hudStyle;
+        private string _hudText = string.Empty;
+        private float _hudRefreshAt;
+
+        // ---------- 启动 ----------
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void Bootstrap()
+        {
+            Dictionary<string, string> query = ParseQuery(Application.absoluteURL);
+            if (!query.TryGetValue("perf", out string value) || value != "1")
+            {
+                return;
+            }
+
+            var host = new GameObject("PerfProbe");
+            DontDestroyOnLoad(host);
+            host.AddComponent<PerfProbe>().ApplyQuery(query);
+        }
+
+        private void ApplyQuery(Dictionary<string, string> query)
+        {
+            _limitOverride = ParseInt(query, "enemyLimit");
+            _roundOverride = ParseFloat(query, "roundDuration");
+            _invincible = ParseInt(query, "invincible") == 1;
+            _drawHud = ParseInt(query, "hud") == 1;
+            _autoStart = ParseInt(query, "autostart") == 1;
+            float seconds = ParseFloat(query, "perfSeconds");
+            if (seconds > 0f)
+            {
+                _perfSeconds = seconds;
+            }
+        }
+
+        private void Start()
+        {
+            _manager = FindFirstObjectByType<GameManager>();
+            _spawner = FindFirstObjectByType<EnemySpawner>();
+            _health = FindFirstObjectByType<PlayerHealth>();
+
+            if (_manager == null || _manager.Config == null)
+            {
+                Debug.LogError("[PERF] GameManager / GameConfig 未找到，压测探针停用。");
+                enabled = false;
+                return;
+            }
+
+            GameConfig config = _manager.Config;
+            if (_limitOverride > 0)
+            {
+                config.SetPerfEnemyLimitOverride(_limitOverride);
+            }
+
+            if (_roundOverride > 0f)
+            {
+                config.SetPerfRoundDurationOverride(_roundOverride);
+            }
+
+            if (_health != null)
+            {
+                _health.SetPerfInvincible(_invincible);
+            }
+
+            _activeLimit = config.EnemyLimit;
+            _heapPrev = GC.GetTotalMemory(false);
+            Debug.Log("[PERF] probe start " + BuildEnvironmentJson());
+        }
+
+        private void Update()
+        {
+            float dt = Time.unscaledDeltaTime;
+
+            // 延时 1 秒再自动开局：等 WebGLBridge.Start 订阅状态，避免 H5 收不到 Playing。
+            if (_autoStart && !_autoStarted)
+            {
+                _autoStartCountdown -= dt;
+                if (_autoStartCountdown <= 0f)
+                {
+                    _autoStarted = true;
+                    if (_manager != null && _manager.State == GameState.Ready)
+                    {
+                        _manager.StartGame();
+                        Debug.Log("[PERF] autostart -> Playing");
+                    }
+                }
+            }
+
+            if (_manager == null || _manager.State != GameState.Playing || dt <= 0f)
+            {
+                return;
+            }
+
+            _elapsed += dt;
+            _lastAlive = _spawner != null ? _spawner.ActiveCount : 0;
+            if (_lastAlive > _peakAlive)
+            {
+                _peakAlive = _lastAlive;
+            }
+
+            if (_capReachedAt < 0f && _activeLimit > 0 && _lastAlive >= _activeLimit)
+            {
+                _capReachedAt = _elapsed;
+                Debug.Log($"[PERF] cap reached limit={_activeLimit} at={F(_capReachedAt, 2)}s");
+            }
+
+            long heap = GC.GetTotalMemory(false);
+            long delta = heap - _heapPrev;
+            _heapPrev = heap;
+
+            int alloc = 0;
+            if (delta > 0)
+            {
+                _allocTotal += delta;
+                alloc = delta > int.MaxValue ? int.MaxValue : (int)delta;
+            }
+
+            TrackEnemyMotion(dt);
+            Push(dt, _lastAlive, alloc, _frameMotion, _frameSettled);
+
+            if (_elapsed >= _nextWindowAt)
+            {
+                _nextWindowAt += WindowSeconds;
+                LogWindow();
+            }
+
+            if (!_summaryLogged && _elapsed >= _perfSeconds)
+            {
+                _summaryLogged = true;
+                LogSummary();
+            }
+        }
+
+        // ---------- 采样 ----------
+
+        private void Push(float dt, int alive, int alloc, float motion, int settled)
+        {
+            _ringDt[_ringHead] = dt;
+            _ringTime[_ringHead] = _elapsed;
+            _ringAlive[_ringHead] = alive;
+            _ringAlloc[_ringHead] = alloc;
+            _ringMotion[_ringHead] = motion;
+            _ringSettled[_ringHead] = settled;
+            _ringHead = (_ringHead + 1) % MaxSamples;
+            if (_ringCount < MaxSamples)
+            {
+                _ringCount++;
+            }
+        }
+
+        /// <summary>
+        /// 每帧统计敌人位移总量与"已站定"数量。生成/回收导致数量变化的帧直接重置基准，
+        /// 避免索引错位把别人的位移算到自己头上。
+        /// </summary>
+        private void TrackEnemyMotion(float dt)
+        {
+            _frameMotion = 0f;
+            _frameSettled = 0;
+
+            if (_spawner == null || dt <= 0f)
+            {
+                return;
+            }
+
+            IReadOnlyList<EnemyAI> enemies = _spawner.ActiveEnemies;
+            int count = enemies.Count;
+            int tracked = Mathf.Min(count, _lastPositions.Length);
+
+            if (count != _trackedCount)
+            {
+                _trackedCount = count;
+                for (int i = 0; i < tracked; i++)
+                {
+                    _lastPositions[i] = enemies[i] != null ? (Vector2)enemies[i].transform.position : Vector2.zero;
+                }
+
+                return;
+            }
+
+            for (int i = 0; i < tracked; i++)
+            {
+                EnemyAI enemy = enemies[i];
+                if (enemy == null)
+                {
+                    continue;
+                }
+
+                Vector2 position = enemy.transform.position;
+                _frameMotion += (position - _lastPositions[i]).magnitude;
+                _lastPositions[i] = position;
+                if (enemy.IsSettled)
+                {
+                    _frameSettled++;
+                }
+                else if (enemy.StanceDistance > _windowUnsettledMax)
+                {
+                    _windowUnsettledMax = enemy.StanceDistance;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 把 ring 中 t ∈ [from, to] 的帧时间拷到 _scratch（供排序求分位），
+        /// 同时统计样本数、敌人数总和、分配字节数。返回样本数。
+        /// </summary>
+        private int Collect(float from, float to)
+        {
+            int count = 0;
+            long aliveSum = 0;
+            long alloc = 0;
+            float motionSum = 0f;
+            int settledSum = 0;
+
+            for (int k = 0; k < _ringCount; k++)
+            {
+                int index = (_ringHead - _ringCount + k + MaxSamples) % MaxSamples;
+                float t = _ringTime[index];
+                if (t < from || t > to)
+                {
+                    continue;
+                }
+
+                _scratch[count++] = _ringDt[index];
+                aliveSum += _ringAlive[index];
+                alloc += _ringAlloc[index];
+                motionSum += _ringMotion[index];
+                settledSum += _ringSettled[index];
+            }
+
+            _collectCount = count;
+            _collectAliveSum = aliveSum;
+            _collectAlloc = alloc;
+            _collectMotion = motionSum;
+            _collectSettled = settledSum;
+            return count;
+        }
+
+        private static float PercentileSorted(float[] sorted, int count, float percentile)
+        {
+            if (count <= 0)
+            {
+                return 0f;
+            }
+
+            int index = Mathf.Clamp(Mathf.CeilToInt(percentile * count) - 1, 0, count - 1);
+            return sorted[index];
+        }
+
+        private static float SumSeconds(float[] samples, int count)
+        {
+            float sum = 0f;
+            for (int i = 0; i < count; i++)
+            {
+                sum += samples[i];
+            }
+
+            return sum;
+        }
+
+        private void LogWindow()
+        {
+            int count = Collect(_elapsed - WindowSeconds, _elapsed);
+            if (count < 2)
+            {
+                return;
+            }
+
+            float seconds = SumSeconds(_scratch, count);
+            float avgAlive = (float)_collectAliveSum / count;
+            float motionUps = avgAlive > 0f && seconds > 0f ? _collectMotion / (seconds * avgAlive) : 0f;
+            float settledAvg = (float)_collectSettled / count;
+            Array.Sort(_scratch, 0, count);
+
+            _line.Clear();
+            _line.Append("[PERF] {\"t\":").Append(F(_elapsed, 2))
+                .Append(",\"alive\":").Append(_lastAlive)
+                .Append(",\"avgAlive\":").Append(F(avgAlive, 1))
+                .Append(",\"settled\":").Append(F(settledAvg, 1))
+                .Append(",\"motionUps\":").Append(F(motionUps, 3))
+                .Append(",\"unsettledMax\":").Append(F(_windowUnsettledMax, 2))
+                .Append(",\"fps\":").Append(F(seconds > 0f ? count / seconds : 0f, 1))
+                .Append(",\"p95ms\":").Append(F(PercentileSorted(_scratch, count, 0.95f) * 1000f, 2))
+                .Append(",\"p99ms\":").Append(F(PercentileSorted(_scratch, count, 0.99f) * 1000f, 2))
+                .Append(",\"maxms\":").Append(F(_scratch[count - 1] * 1000f, 2))
+                .Append(",\"allocKBps\":").Append(F(seconds > 0f ? _collectAlloc / 1024f / seconds : 0f, 1))
+                .Append(",\"heapKB\":").Append(GC.GetTotalMemory(false) / 1024)
+                .Append(",\"wasmMB\":").Append(F(GetWasmHeapBytes() / 1048576f, 1))
+                .Append(",\"gc\":").Append(SafeCollectionCount())
+                .Append('}');
+            Debug.Log(_line.ToString());
+            _windowUnsettledMax = 0f;
+        }
+
+        /// <summary>
+        /// 稳态（最后 20 秒，且只取到顶之后）+ 填充期（开局到到顶）各一组数字。
+        /// 到顶前就结束的局（上限没摸到）会标 capReached=false，避免把填充期当稳态看。
+        /// </summary>
+        private void LogSummary()
+        {
+            float steadyFrom = Mathf.Max(_capReachedAt >= 0f ? _capReachedAt : 0f, _elapsed - SteadyWindowSeconds);
+            int steadyCount = Collect(steadyFrom, _elapsed);
+            float steadySeconds = SumSeconds(_scratch, steadyCount);
+            Array.Sort(_scratch, 0, steadyCount);
+            float steadyFps = steadySeconds > 0f ? steadyCount / steadySeconds : 0f;
+            float steadyP95 = PercentileSorted(_scratch, steadyCount, 0.95f) * 1000f;
+            float steadyP99 = PercentileSorted(_scratch, steadyCount, 0.99f) * 1000f;
+            float steadyMax = steadyCount > 0 ? _scratch[steadyCount - 1] * 1000f : 0f;
+            float steadyAlloc = steadySeconds > 0f ? _collectAlloc / 1024f / steadySeconds : 0f;
+            float steadyAlive = steadyCount > 0 ? (float)_collectAliveSum / steadyCount : 0f;
+            // 拥挤度：必须先算（下面的填充期 Collect 会覆盖 _collectMotion/_collectSettled）。
+            float steadyMotion = steadyAlive > 0f && steadySeconds > 0f
+                ? _collectMotion / (steadySeconds * steadyAlive)
+                : 0f;
+            float steadySettled = steadyCount > 0 ? (float)_collectSettled / steadyCount : 0f;
+
+            float fillSeconds = 0f;
+            float fillFps = 0f;
+            long fillAlloc = 0;
+            if (_capReachedAt > 0f)
+            {
+                int fillCount = Collect(0f, _capReachedAt);
+                fillSeconds = SumSeconds(_scratch, fillCount);
+                fillFps = fillSeconds > 0f ? fillCount / fillSeconds : 0f;
+                fillAlloc = _collectAlloc;
+            }
+
+            _line.Clear();
+            _line.Append("[PERF-SUMMARY] {")
+                .Append("\"limit\":").Append(_activeLimit)
+                .Append(",\"t\":").Append(F(_elapsed, 2))
+                .Append(",\"peakAlive\":").Append(_peakAlive)
+                .Append(",\"capReached\":").Append(_capReachedAt >= 0f ? "true" : "false")
+                .Append(",\"capAt\":").Append(F(_capReachedAt, 2))
+                .Append(",\"fillSec\":").Append(F(fillSeconds, 2))
+                .Append(",\"fillFps\":").Append(F(fillFps, 1))
+                .Append(",\"fillAllocMB\":").Append(F(fillAlloc / 1048576f, 2))
+                .Append(",\"steadySec\":").Append(F(steadySeconds, 2))
+                .Append(",\"steadyAvgAlive\":").Append(F(steadyAlive, 1))
+                .Append(",\"steadyFps\":").Append(F(steadyFps, 1))
+                .Append(",\"steadyP95ms\":").Append(F(steadyP95, 2))
+                .Append(",\"steadyP99ms\":").Append(F(steadyP99, 2))
+                .Append(",\"steadyMaxMs\":").Append(F(steadyMax, 2))
+                .Append(",\"steadyAllocKBps\":").Append(F(steadyAlloc, 1))
+                .Append(",\"steadyMotionUps\":").Append(F(steadyMotion, 3))
+                .Append(",\"steadySettled\":").Append(F(steadySettled, 1))
+                .Append(",\"totalAllocMB\":").Append(F(_allocTotal / 1048576f, 2))
+                .Append(",\"heapKB\":").Append(GC.GetTotalMemory(false) / 1024)
+                .Append(",\"wasmMB\":").Append(F(GetWasmHeapBytes() / 1048576f, 1))
+                .Append(",\"gc\":").Append(SafeCollectionCount());
+            AppendEnvironmentFields(_line);
+            _line.Append('}');
+            Debug.Log(_line.ToString());
+        }
+
+        private string BuildEnvironmentJson()
+        {
+            var sb = new StringBuilder(256);
+            sb.Append('{');
+            AppendEnvironmentFields(sb);
+            sb.Append('}');
+            return sb.ToString();
+        }
+
+        private void AppendEnvironmentFields(StringBuilder sb)
+        {
+            sb.Append(",\"screen\":\"").Append(Screen.width).Append('x').Append(Screen.height).Append('"')
+                .Append(",\"dpi\":").Append(F(Screen.dpi, 0))
+                .Append(",\"gpu\":\"").Append(Escape(SystemInfo.graphicsDeviceName)).Append('"')
+                .Append(",\"cpu\":\"").Append(Escape(SystemInfo.processorType)).Append('"')
+                .Append(",\"device\":\"").Append(Escape(SystemInfo.deviceModel)).Append('"')
+                .Append(",\"os\":\"").Append(Escape(SystemInfo.operatingSystem)).Append('"')
+                .Append(",\"invincible\":").Append(_invincible ? "true" : "false")
+                .Append(",\"roundDuration\":").Append(F(_manager != null && _manager.Config != null ? _manager.Config.RoundDuration : 0f, 0))
+                .Append(",\"perfSeconds\":").Append(F(_perfSeconds, 0))
+                .Append(",\"autostart\":").Append(_autoStart ? "true" : "false");
+        }
+
+        // ---------- HUD（真机） ----------
+
+        private void OnGUI()
+        {
+            if (!_drawHud)
+            {
+                return;
+            }
+
+            if (Time.unscaledTime >= _hudRefreshAt)
+            {
+                _hudRefreshAt = Time.unscaledTime + 0.25f;
+                _hudText = BuildHudText();
+            }
+
+            if (_hudStyle == null)
+            {
+                float scale = Mathf.Max(1f, Screen.height / 720f);
+                _hudStyle = new GUIStyle(GUI.skin.label)
+                {
+                    fontSize = Mathf.RoundToInt(18f * scale),
+                    fontStyle = FontStyle.Bold,
+                };
+                _hudStyle.normal.textColor = Color.white;
+            }
+
+            float hudScale = Mathf.Max(1f, Screen.height / 720f);
+            var box = new Rect(0f, 0f, Mathf.Min(Screen.width, 640f * hudScale), 108f * hudScale);
+            Color previous = GUI.color;
+            GUI.color = new Color(0f, 0f, 0f, 0.65f);
+            GUI.Box(box, GUIContent.none);
+            GUI.color = previous;
+            GUI.Label(new Rect(12f * hudScale, 6f * hudScale, box.width - 24f * hudScale, box.height - 12f * hudScale),
+                _hudText, _hudStyle);
+        }
+
+        /// <summary>HUD 用最近 2 秒的窗口；字符串每 0.25 秒才重建，避免每帧分配污染 GC 采样。</summary>
+        private string BuildHudText()
+        {
+            int count = Collect(_elapsed - WindowSeconds, _elapsed);
+            float seconds = SumSeconds(_scratch, count);
+            Array.Sort(_scratch, 0, count);
+            float fps = seconds > 0f && count > 0 ? count / seconds : 0f;
+            float p95 = PercentileSorted(_scratch, count, 0.95f) * 1000f;
+            float alloc = seconds > 0f ? _collectAlloc / 1024f / seconds : 0f;
+            float wasm = GetWasmHeapBytes() / 1048576f;
+
+            return "PERF limit " + _activeLimit + "  alive " + _lastAlive + "  peak " + _peakAlive
+                   + "\nfps " + F(fps, 0) + "   p95 " + F(p95, 1) + "ms"
+                   + "\nalloc " + F(alloc, 0) + " KB/s   heap " + F(GC.GetTotalMemory(false) / 1048576f, 1)
+                   + " MB   wasm " + F(wasm, 0) + " MB";
+        }
+
+        // ---------- 平台桥 ----------
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+        [DllImport("__Internal")]
+        private static extern int JsGetWasmHeapBytes();
+#else
+        private static int JsGetWasmHeapBytes() => 0;
+#endif
+
+        private static int GetWasmHeapBytes() => JsGetWasmHeapBytes();
+
+        /// <summary>IL2CPP/WebGL 上 GC.CollectionCount 不保证可用；不支持就返回 0，不影响其他指标。</summary>
+        private int SafeCollectionCount()
+        {
+            if (!_collectionSupported)
+            {
+                return 0;
+            }
+
+            try
+            {
+                return GC.CollectionCount(0);
+            }
+            catch (Exception)
+            {
+                _collectionSupported = false;
+                return 0;
+            }
+        }
+
+        // ---------- 工具 ----------
+
+        private static Dictionary<string, string> ParseQuery(string url)
+        {
+            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            if (string.IsNullOrEmpty(url))
+            {
+                return result;
+            }
+
+            int question = url.IndexOf('?');
+            if (question < 0)
+            {
+                return result;
+            }
+
+            string raw = url.Substring(question + 1);
+            int hash = raw.IndexOf('#');
+            if (hash >= 0)
+            {
+                raw = raw.Substring(0, hash);
+            }
+
+            foreach (string pair in raw.Split('&'))
+            {
+                if (pair.Length == 0)
+                {
+                    continue;
+                }
+
+                int equals = pair.IndexOf('=');
+                string key = equals < 0 ? pair : pair.Substring(0, equals);
+                string value = equals < 0 ? string.Empty : pair.Substring(equals + 1);
+                result[Uri.UnescapeDataString(key)] = Uri.UnescapeDataString(value);
+            }
+
+            return result;
+        }
+
+        private static int ParseInt(Dictionary<string, string> query, string key)
+        {
+            return query.TryGetValue(key, out string value) && int.TryParse(value, NumberStyles.Integer,
+                CultureInfo.InvariantCulture, out int parsed)
+                ? parsed
+                : 0;
+        }
+
+        private static float ParseFloat(Dictionary<string, string> query, string key)
+        {
+            return query.TryGetValue(key, out string value) && float.TryParse(value, NumberStyles.Float,
+                CultureInfo.InvariantCulture, out float parsed)
+                ? parsed
+                : 0f;
+        }
+
+        private static string F(float value, int decimals)
+        {
+            return value.ToString("F" + decimals, CultureInfo.InvariantCulture);
+        }
+
+        private static string Escape(string value)
+        {
+            return string.IsNullOrEmpty(value) ? string.Empty : value.Replace("\"", "'").Replace("\\", "/");
+        }
+    }
+}
