@@ -19,11 +19,8 @@
   };
   var DEFAULT_DIFFICULTY = 'normal';
 
-  // 主流竖屏手机（390×844 / 412×915 / 430×932 / 平板）：16:9 画布是宽度受限，隐藏菜单不会让画面变大，
-  // 只会让页面跳。所以 Playing/Paused 保留菜单（卡片禁用、弱化），画布尺寸与 Ready 相同。
-  // 320×568、横屏和桌面仍然隐藏菜单，把高度让给画面。
-  var TALL_PORTRAIT_QUERY = '(orientation: portrait) and (min-height: 700px)';
-  var tallPortrait = window.matchMedia ? window.matchMedia(TALL_PORTRAIT_QUERY) : null;
+  // 开始/重新开始的 3-2-1（H5 自己倒数）：3 秒后才发指令，给手指离开屏幕/看清难度的机会。
+  var COUNTDOWN_SECONDS = 3;
 
   // 点开始后的兜底时限。正常首帧响应 <100ms（SendMessage 同步）；9 秒只覆盖
   // 「指令真的丢了 / Unity 卡住」的情况，不能短到把慢机器上的正常启动误判。
@@ -38,8 +35,6 @@
   var btnRetry = document.getElementById('btn-retry');
   var btnStart = document.getElementById('btn-start');
   var btnRestart = document.getElementById('btn-restart');
-  var btnPauseMenu = document.getElementById('btn-pause-menu');
-  var btnResultMenu = document.getElementById('btn-result-menu');
   var btnFullscreen = document.getElementById('btn-fullscreen');
   var btnExitFullscreen = document.getElementById('btn-exit-fullscreen');
   var fullscreenHint = document.getElementById('fullscreen-hint');
@@ -59,6 +54,8 @@
   var difficultyInputs = Array.prototype.slice.call(document.querySelectorAll('.difficulty-input'));
   var bestLabel = document.getElementById('best-label');
   var bestValue = document.getElementById('best-value');
+  var countdownEl = document.getElementById('countdown');
+  var countdownValueEl = document.getElementById('countdown-value');
 
   var state = {
     page: 'Loading',
@@ -67,7 +64,16 @@
     difficulty: loadStoredDifficulty(),
     bests: loadBests(),
     gameOverHandled: false,
-    startTimeout: null
+    startTimeout: null,
+    // ReturnToMenu 已发出、等待 Unity 回 Ready：期间忽略重复点击，防止连发中止。
+    returnPending: false
+  };
+
+  // 开始/重新开始的 3-2-1。pending: 'start' | 'restart' | null；数值只用于显示。
+  var countdown = {
+    pending: null,
+    value: 0,
+    timer: null
   };
 
   // ---------- 通用 ----------
@@ -165,9 +171,8 @@
     if (bestValue) bestValue.textContent = String(state.bests[state.difficulty]);
   }
 
-  function selectDifficulty(value) {
-    var id = normalizeDifficulty(value);
-    if (!id || id === state.difficulty) {
+  function applyDifficulty(id) {
+    if (!id) {
       return;
     }
 
@@ -178,15 +183,50 @@
     renderDifficulty();
   }
 
-  /** 菜单（难度区）在哪些状态可见：Loading/Ready/Starting 总是；Playing/Paused 只在主流竖屏手机。 */
-  function shouldShowMenu(page) {
-    if (page === 'Loading' || page === 'Ready' || page === 'Starting') {
-      return true;
+  /**
+   * 点难度卡（常驻可点，规则见 M6 §2）：
+   * - Ready：只选择，不发指令；
+   * - Starting（H5 倒计时中）：取消倒计时、回 Ready、选中该档；
+   * - Playing/Paused/Result：中止本局（ReturnToMenu，不计分）→ 回 Ready 并选中该档。
+   *   点已选中的那张也执行（等同「回到该档的开始界面」），所以不能用 change 事件。
+   */
+  function onDifficultyPicked(value) {
+    var id = normalizeDifficulty(value);
+    if (!id || state.page === 'Loading' || state.page === 'Error') {
+      // 还没就绪：不允许改档，把 radio 的视觉状态回弹到当前选择。
+      renderDifficulty();
+      return;
     }
-    if (page === 'Playing' || page === 'Paused') {
-      return !!(tallPortrait && tallPortrait.matches);
+
+    // 倒计时中点卡：先取消，绝不后台开局。
+    if (countdown.pending) {
+      cancelCountdown();
+      if (state.page === 'Starting') {
+        setPage('Ready');
+      }
     }
-    return false; // Result / Error：结算卡优先，避免溢出
+
+    if (state.page === 'Ready') {
+      applyDifficulty(id);
+      return;
+    }
+
+    if (state.page === 'Playing' || state.page === 'Paused' || state.page === 'Result') {
+      if (state.returnPending) {
+        return;
+      }
+
+      // 先更新选择：最高分行立即切到新档，Unity 回 Ready 时菜单已是正确状态。
+      applyDifficulty(id);
+      state.returnPending = true;
+      setHint('正在返回主菜单…');
+
+      if (!sendMessage('ReturnToMenu', '')) {
+        state.returnPending = false;
+        setHint('返回指令发送失败，请刷新页面重试');
+      }
+      return;
+    }
   }
 
   function renderButtons(page) {
@@ -194,30 +234,16 @@
     btnStart.hidden = !showStart;
     btnStart.disabled = page !== 'Ready';
 
-    // 难度只在 Ready 可改；进入 Playing 后由 Unity 快照锁定（协议 v2 §2.2）。
-    // 高竖屏下菜单仍显示，但卡片禁用 + 弱化，明确“现在不能改”。
-    var showMenu = shouldShowMenu(page);
-    var menuLocked = showMenu && page !== 'Ready';
+    // 难度区常驻（用户要求“键常驻”）：所有状态可见、可点，点击行为由 onDifficultyPicked 决定。
     if (difficultySection) {
-      difficultySection.hidden = !showMenu;
-      difficultySection.classList.toggle('is-locked', menuLocked);
+      difficultySection.hidden = false;
     }
     for (var i = 0; i < difficultyInputs.length; i++) {
-      difficultyInputs[i].disabled = page !== 'Ready';
+      difficultyInputs[i].disabled = false;
     }
 
     btnRestart.hidden = page !== 'Result';
-    btnRestart.disabled = page !== 'Result';
-
-    // 返回主菜单：Paused（先暂停再返回，防误触）与结算卡各一个入口；Playing 不显示。
-    if (btnPauseMenu) {
-      btnPauseMenu.hidden = page !== 'Paused';
-      btnPauseMenu.disabled = page !== 'Paused';
-    }
-    if (btnResultMenu) {
-      btnResultMenu.hidden = page !== 'Result';
-      btnResultMenu.disabled = page !== 'Result';
-    }
+    btnRestart.disabled = page !== 'Result' || !!countdown.pending;
 
     // M6 §2：Ready 也允许全屏（CSS 已改成按 body[data-page] 隐藏，Ready 会保留难度区 + 开始）。
     // Result 不进全屏：结算卡在页面里，全屏只剩画面会让玩家卡住；退出按钮单独控制。
@@ -262,9 +288,65 @@
     }
   }
 
+  // ---------- 开始/重开的 3-2-1 ----------
+
+  function renderCountdown() {
+    if (!countdownEl) {
+      return;
+    }
+    countdownEl.hidden = countdown.pending === null;
+    if (countdownValueEl) {
+      countdownValueEl.textContent = String(Math.max(1, countdown.value));
+    }
+  }
+
+  function cancelCountdown() {
+    if (countdown.timer !== null) {
+      window.clearInterval(countdown.timer);
+      countdown.timer = null;
+    }
+    countdown.pending = null;
+    countdown.value = 0;
+    renderCountdown();
+    if (state.page === 'Result') {
+      btnRestart.disabled = false;
+    }
+  }
+
+  /**
+   * 3→2→1（每秒一跳），结束后才发指令。倒计时期间：
+   * - 点难度卡 → cancelCountdown（Starting 回 Ready；Result 继续走中止流程）；
+   * - 页面隐藏/失焦 → cancelCountdown，绝不后台开局。
+   */
+  function startCountdown(kind) {
+    if (countdown.pending) {
+      return;
+    }
+
+    countdown.pending = kind;
+    countdown.value = COUNTDOWN_SECONDS;
+    renderCountdown();
+
+    countdown.timer = window.setInterval(function () {
+      countdown.value -= 1;
+      if (countdown.value > 0) {
+        renderCountdown();
+        return;
+      }
+
+      var pending = countdown.pending;
+      cancelCountdown();
+      if (pending === 'start') {
+        sendStartCommand();
+      } else if (pending === 'restart') {
+        sendRestartCommand();
+      }
+    }, 1000);
+  }
+
   // ---------- 用户操作 ----------
 
-  function startGame() {
+  function beginStartCountdown() {
     if (!state.ready || state.page !== 'Ready') {
       return;
     }
@@ -282,14 +364,22 @@
       canvas.focus();
     }
 
-    // 顺序不能反：Unity 的 SendMessage 是同步的，onStateChange(Playing) 会在
-    // sendMessage() 返回前到达。若先发指令再设 Starting + 兜底计时器，就会把刚到的
-    // Playing 覆盖回 Starting，兜底到期再把页面打回 Ready（游戏其实已在跑）。
-    setHint('正在开始…');
     setPage('Starting');
+    setHint('3 秒后开始 · 点难度卡可取消');
+    startCountdown('start');
+  }
+
+  function sendStartCommand() {
+    var nickname = normalizeNickname(nicknameInput.value);
+
+    // 顺序不能反：Unity 的 SendMessage 是同步的，onStateChange(Playing) 会在
+    // sendMessage() 返回前到达。先设 Starting + 兜底计时器，再由状态回调清除。
+    setHint('正在开始…');
+    if (state.page !== 'Starting') {
+      setPage('Starting');
+    }
 
     // 兜底只提示、不改状态：Unity 可能已经在跑，只是状态回调没到。
-    // 打回 Ready 会让玩家误以为没开始而重复点击；保持 Starting 即可（开始按钮禁用）。
     window.clearTimeout(state.startTimeout);
     state.startTimeout = window.setTimeout(function () {
       if (state.page === 'Starting') {
@@ -304,40 +394,29 @@
     }
   }
 
-  /**
-   * 中止本局回主菜单（协议 v2 §2）。Unity 收到后清场回 Ready，**不发 onGameOver**，
-   * 所以最高分不会被中止局污染；难度保持上次选择，可直接改档再开始。
-   */
-  function returnToMenu() {
-    if (state.page !== 'Paused' && state.page !== 'Result') {
-      return;
-    }
-
-    // 与 startGame 同理：SendMessage 是同步的，先写提示再发，避免 Ready 回调被覆盖。
-    setHint('正在返回主菜单…');
-    if (!sendMessage('ReturnToMenu', '')) {
-      setHint('返回指令发送失败，请刷新页面重试');
-      return;
-    }
-
-    window.setTimeout(function () {
-      if (state.page === 'Paused' || state.page === 'Result') {
-        setHint('返回无响应，请刷新页面重试');
-      }
-    }, 1500);
-  }
-
-  function restartGame() {
-    if (state.page !== 'Result') {
-      return;
-    }
-
-    if (!sendMessage('RestartGame', '')) {
-      setHint('重新开始指令发送失败，请刷新页面重试');
+  function beginRestartCountdown() {
+    if (state.page !== 'Result' || countdown.pending) {
       return;
     }
 
     btnRestart.disabled = true;
+    setHint('3 秒后重新开始 · 点难度卡可返回主菜单');
+
+    // 结算卡可能在视口底部、画布已被滚走；倒计时画在画布上，先把它滚回来。
+    var frame = document.querySelector('.game-frame');
+    if (frame && typeof frame.scrollIntoView === 'function') {
+      frame.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    startCountdown('restart');
+  }
+
+  function sendRestartCommand() {
+    if (!sendMessage('RestartGame', '')) {
+      btnRestart.disabled = false;
+      setHint('重新开始指令发送失败，请刷新页面重试');
+      return;
+    }
 
     // 正常由 onStateChange(Playing) 驱动；失败时恢复按钮。
     window.setTimeout(function () {
@@ -346,6 +425,23 @@
         setHint('重新开始无响应，请再试一次');
       }
     }, 1500);
+  }
+
+  /** 页面隐藏/失焦时取消倒计时：不允许在玩家看不见的时候自动开局。 */
+  function cancelCountdownBecauseHidden() {
+    if (!countdown.pending) {
+      return;
+    }
+
+    var kind = countdown.pending;
+    cancelCountdown();
+    if (kind === 'start') {
+      setPage('Ready');
+      setHint('已取消开始（页面切走了）');
+    } else if (kind === 'restart') {
+      btnRestart.disabled = false;
+      setHint('已取消重新开始（页面切走了）');
+    }
   }
 
   // ---------- Unity → H5 事件（由 bridge.js 转发） ----------
@@ -390,7 +486,9 @@
     switch (message.state) {
       case 'Playing':
         window.clearTimeout(state.startTimeout);
+        cancelCountdown();
         state.gameOverHandled = false;
+        state.returnPending = false;
         setPage('Playing');
         // 开始按钮消失后页面不能一片空白，否则像卡死（M4 第 1.5 节）。
         setHint('游戏中 · 暂停按钮在游戏内右上角');
@@ -406,6 +504,8 @@
 
       case 'Ready':
         // 只有 ReturnToMenu 会让 Unity 主动回到 Ready；清掉「正在返回主菜单…」提示。
+        state.returnPending = false;
+        cancelCountdown();
         setPage('Ready');
         setHint('');
         break;
@@ -636,6 +736,40 @@
     else requestFullscreen();
   }
 
+  // ---------- 画布滚轮穿透（M6 §1.3） ----------
+
+  /**
+   * Unity WebGL 运行时会在画布上注册 wheel 回调并 `preventDefault()`（引擎行为，不是本页 CSS），
+   * 页面在画布上永远滚不动；而画布占了大半屏，鼠标多半悬在画布上。这里自己接管滚轮：
+   * `preventDefault()` 后 `scrollBy`，浏览器默认滚动被拦掉，所以不会双重滚动。
+   * - 监听挂 document 的捕获阶段（不在画布本身上）：同一元素上的监听按注册顺序执行，
+   *   Unity 在自己初始化的过程中给画布注册，谁先谁后不受我们控制；捕获阶段一定早于目标监听。
+   * - 全屏：`html:fullscreen` 已 `overflow:hidden`，页面本就不滚，直接放行（不吞 Unity 的事件）。
+   * - Ctrl+滚轮：留给浏览器缩放。
+   * - deltaMode：0=像素、1=行（取 16px/行，浏览器常见行高）、2=页（按视口高度）。
+   */
+  function onCanvasWheel(event) {
+    if (event.target !== canvas || event.defaultPrevented || isFullscreen() || event.ctrlKey) {
+      return;
+    }
+
+    var pixels;
+    if (event.deltaMode === 1) {
+      pixels = event.deltaY * 16;
+    } else if (event.deltaMode === 2) {
+      pixels = event.deltaY * window.innerHeight;
+    } else {
+      pixels = event.deltaY;
+    }
+
+    if (!pixels) {
+      return;
+    }
+
+    event.preventDefault();
+    window.scrollBy(0, pixels);
+  }
+
   // ---------- 初始化 ----------
 
   if (btnFullscreen) btnFullscreen.addEventListener('click', toggleFullscreen);
@@ -644,31 +778,32 @@
   document.addEventListener('webkitfullscreenchange', updateFullscreenUi);
   updateFullscreenUi();
 
-  if (btnStart) btnStart.addEventListener('click', startGame);
-  if (btnRestart) btnRestart.addEventListener('click', restartGame);
-  if (btnPauseMenu) btnPauseMenu.addEventListener('click', returnToMenu);
-  if (btnResultMenu) btnResultMenu.addEventListener('click', returnToMenu);
+  // 必须非 passive 才能 preventDefault；挂在 document 捕获阶段，保证早于 Unity 在画布上
+  // 注册的回调执行（详见 onCanvasWheel 注释）。Unity 的回调随后仍会收到事件。
+  if (canvas) {
+    document.addEventListener('wheel', onCanvasWheel, { passive: false, capture: true });
+  }
 
+  if (btnStart) btnStart.addEventListener('click', beginStartCountdown);
+  if (btnRestart) btnRestart.addEventListener('click', beginRestartCountdown);
+
+  // 用 click 而不是 change：点「已选中」的卡也要触发（change 不会）。
+  // 点击 label 会激活内部 radio，事件冒泡到 input，所以监听 input 的 click 恰好一次。
   for (var inputIndex = 0; inputIndex < difficultyInputs.length; inputIndex++) {
+    difficultyInputs[inputIndex].addEventListener('click', function () {
+      onDifficultyPicked(this.value);
+    });
+
+    // 键盘方向键只改 checked、不发 click：只在 Ready 接受选择，其余状态回弹，
+    // 避免在局内用方向键误触发中止（中止只能通过鼠标/触摸点击卡片）。
     difficultyInputs[inputIndex].addEventListener('change', function () {
-      if (this.checked) selectDifficulty(this.value);
+      if (state.page === 'Ready') {
+        applyDifficulty(this.value);
+      } else {
+        renderDifficulty();
+      }
     });
   }
-
-  // 旋转/改窗口后重新判断「高竖屏是否保留菜单」；matchMedia 的 change 覆盖主要场景，resize 兜底。
-  function refreshMenuForViewport() {
-    renderButtons(state.page);
-  }
-
-  if (tallPortrait) {
-    if (typeof tallPortrait.addEventListener === 'function') {
-      tallPortrait.addEventListener('change', refreshMenuForViewport);
-    } else if (typeof tallPortrait.addListener === 'function') {
-      tallPortrait.addListener(refreshMenuForViewport);
-    }
-  }
-  window.addEventListener('resize', refreshMenuForViewport);
-  window.addEventListener('orientationchange', refreshMenuForViewport);
 
   if (btnRetry) {
     btnRetry.addEventListener('click', function () {
@@ -685,6 +820,12 @@
 
   function syncVisibility(hidden) {
     if (!state.ready) return;
+
+    // 倒计时中切走：直接取消，不能在后台把局开起来（哪怕 Unity 没收到暂停指令）。
+    if (hidden) {
+      cancelCountdownBecauseHidden();
+    }
+
     if (hidden === lastVisibilitySent) return;
 
     lastVisibilitySent = hidden;

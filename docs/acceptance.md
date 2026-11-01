@@ -1,6 +1,8 @@
 # 验收记录（living document）
 
-> 最后更新：2026-11-01（M5-3：无水印 1.0.0 构建 `2026-10-31T14:53:47Z`、M4.7 摇杆/响应式/全屏验收、无头 E2E、build 入库 `f19fcb79`、Release `v1.0.0`、干净克隆通过；人工/真机仍待测）
+> 最后更新：2026-11-01（M6 第 2 步：三档难度 + H5 主界面 + `ReturnToMenu` 自动化全绿，见 §3.3；
+> 此前 M5-3：无水印 1.0.0 构建 `2026-10-31T14:53:47Z`、M4.7 摇杆/响应式/全屏验收、无头 E2E、build 入库 `f19fcb79`、
+> Release `v1.0.0`、干净克隆通过；人工/真机仍待测）
 > 规则：只写实际跑过的结果；没跑就写「待测」。证据放 `docs/evidence/`。
 > 测试用例与门槛见 `docs/测试计划.md`。
 
@@ -111,6 +113,38 @@
   `e2e-online-chrome-desktop-summary.json`，finishedAt `2026-11-01T05:57:33Z`）。
   国内网络仍慢/不稳定，国内主链接仍待 CloudBase。
 
+## 3.3 M6 第 2 步已验证项（2026-11-01，三档难度 + H5 主界面 + ReturnToMenu）
+
+构建 `2026-11-01T12:44:35Z`（含协议 v2 / `ReturnToMenu`，尚未部署）；H5 为静态文件，无独立版本号。
+
+- **难度端到端（`difficulty-e2e.mjs`，47 PASS / 0 FAIL）**：
+  - A 困难站立不动 → 死亡；`damage=14`（12×1.15）、`onGameOver.difficulty=hard`、分数按 ×1.6 结算、结算卡显示「困难」、
+    只写 `bestScore.hard`（`m6-difficulty-hard-lose.png`）。
+  - B 困难 60 秒胜利 = **1160**（`breakdown.survival=960` + `winBonus=200` 不乘倍率）（`m6-difficulty-hard-win.png`）。
+  - C v1 载荷（只有昵称）→ Unity 按 `normal` 开局；D 非法 `difficulty=bogus` → `normal` + bridge 警告。
+  - E 开始 3-2-1；倒计时中点卡取消（不后台开局、不写分）；Playing 中点「简单」→ ReturnToMenu 回 Ready、本局不计分；
+    再开简单局 → `difficulty=easy`、5 秒胜利 250、只写 `bestScore.easy`。
+  - F 重新开始也有 3-2-1；倒计时中点「困难」→ Ready + 困难选中；返回菜单后暂停/恢复 3-2-1 正常；
+    困难 5 秒胜利 280、`bestScore.hard` 更新、`easy` 保持（`m6-return-menu-hard-result.png`）。
+  - G 开始倒计时中失焦 → 取消，不产生新结算。
+- **H5 主界面/响应式（`menu-check.mjs`，137 PASS / 0 FAIL）**：6 视口（320×568 / 390×844 / 844×390 / 768×1024 /
+  1280×720 / 1920×1080）Ready + Playing + Result；难度卡首屏可见且命中区 ≥44px（短横屏 ≥36）；无横向溢出；
+  **画布在 Ready/Playing 同尺寸**且绘制缓冲 = CSS × DPR；`touch-action:none`；分档最高分旧键迁移/跨档不串分；
+  Ready 全屏可开始（`m6-h5-ready-*.png`、`m6-h5-playing-*.png`、`m6-h5-layout.json`、`m6-h5-menu-check.log`）。
+  页面允许纵向滚动：**画布上滚轮由 H5 接管**（`onCanvasWheel`，单次 40px 恰好滚 40px、无双重），
+  画布外走原生滚动；全屏内不滚（`fullscreen-states` 断言 scrollY=0）。
+- **画布滚轮穿透（2026-11-01，策划确认）**：`onCanvasWheel` 在 document 捕获阶段接管画布 wheel，
+  `preventDefault` 后 `scrollBy`（deltaMode 行/页换算）；全屏与 Ctrl+滚轮放行。
+  320×568 / 844×390 / 1280×720 实测**单次 40px 恰好滚 40px（无双重）**，画布外原生滚动正常；
+  全屏内 scrollY=0。证据 `m6-h5-menu-check.log`、`m6-fullscreen-states.log`。
+- **回归（`smoke.mjs` 桌面 3 局 = 25 PASS / 0 FAIL；`fullscreen-states.mjs` 11 PASS / 0 FAIL）**：
+  加载 → 昵称 → 开始 3-2-1 → 暂停/Esc/P/失焦保持暂停 → 恢复 3-2-1 → 结算 → 重开 ×2 → 刷新昵称/最高分；
+  Ready 全屏可开始、Playing/Paused 可全屏、Result 隐藏全屏（`m6-step2-h5-smoke.log`、`m6-fullscreen-states.log`）。
+- **移动视口 smoke（390×844、`MOBILE=1`，19 PASS / 0 FAIL）**：CDP 真实触摸拖动可移动玩家、拖动时页面不滚动
+  （`scrollY=0`）、暂停/恢复倒计时、结算、刷新（`m6-step2-h5-smoke-mobile.log`）。
+- 17 条需求：1–16 的自动化回归仍全绿（见 3.1/3.2 证据 + 本次 smoke/menu-check）；第 17 条交付物仍是 1.0.0，
+  M6 发版（1.1.0）未做。
+
 ## 4. 未关闭项
 
 1. **人工 60 秒胜利未测**：自动化脚本（M3 60.1s、M4 60.0s）只证明功能链路，**不算人工验收**；需在最终构建上人工跑 1 次。
@@ -121,7 +155,11 @@
    但国内 4G 直连仍慢/不稳定；README 的国内链接只能写「待定」，不能宣称「手机 4G 可玩」。
 5. **正式美术 / 音效**：仍是占位圆点 + 网格。
 6. **加载性能**：约 9 MB/次；Netlify 国内实测很慢（首次 50～61s），国内托管方案见 `docs/部署与托管.md`。
-7. **M4.5 §2/§3**：暂停菜单「重新开始」、Unity 主菜单 + 难度未做（不阻塞交付）。全屏 §1 已完成。
+7. **M4.5 §2/§3**：暂停菜单「重新开始」未做；Unity 主菜单按 M6 D1 决定不做（主界面在 H5，三档难度已实现）。
+   全屏 §1 已完成。
+8. **M6 第 2 步遗留**：真机未测（Honor 90 Pro 三档各 1 局 + 40 只 `?perf=1`）；
+   全屏 Playing/Paused/Result 下难度卡隐藏（全屏例外，换档需退出全屏）；Result 下难度卡与结算卡不同屏。
+   这些不影响功能链路，但人工验收时要按此口径检查。
 
 ## 5. 结论
 

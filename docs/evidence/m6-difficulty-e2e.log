@@ -1,0 +1,727 @@
+[A] [UnityCache] Response is served without Content-Length header. Please reconfigure server to include valid Content-Length for better download performance.
+[A] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.framework.js.unityweb" file.
+[A] [UnityCache] Response is served without Content-Length header. Please reconfigure server to include valid Content-Length for better download performance.
+[A] [UnityCache] Response is served without Content-Length header. Please reconfigure server to include valid Content-Length for better download performance.
+[A] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.data.unityweb" file.
+[A] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.wasm.unityweb" file.
+[A] [UnityCache] 'http://127.0.0.1:8127/unity/Build/unity.data.unityweb' successfully downloaded and stored in the browser cache
+[A] [UnityMemory] Configuration Parameters - Can be set up in boot.config
+
+[A]     "memorysetup-allocator-temp-initial-block-size-main=262144"
+
+[A]     "memorysetup-allocator-temp-initial-block-size-worker=262144"
+
+[A]     "memorysetup-temp-allocator-size-audio-worker=65536"
+
+[A]     "memorysetup-temp-allocator-size-background-worker=32768"
+
+[A]     "memorysetup-bucket-allocator-granularity=16"
+
+[A]     "memorysetup-bucket-allocator-bucket-count=8"
+
+[A]     "memorysetup-bucket-allocator-block-size=4194304"
+
+[A]     "memorysetup-bucket-allocator-block-count=1"
+
+[A]     "memorysetup-main-allocator-block-size=16777216"
+
+[A]     "memorysetup-thread-allocator-block-size=16777216"
+
+[A]     "memorysetup-gfx-main-allocator-block-size=16777216"
+
+[A]     "memorysetup-gfx-thread-allocator-block-size=16777216"
+
+[A]     "memorysetup-cache-allocator-block-size=4194304"
+
+[A]     "memorysetup-typetree-allocator-block-size=2097152"
+
+[A]     "memorysetup-profiler-bucket-allocator-granularity=16"
+
+[A]     "memorysetup-profiler-bucket-allocator-bucket-count=8"
+
+[A]     "memorysetup-profiler-bucket-allocator-block-size=4194304"
+
+[A]     "memorysetup-profiler-bucket-allocator-block-count=1"
+
+[A]     "memorysetup-profiler-allocator-block-size=16777216"
+
+[A]     "memorysetup-profiler-editor-allocator-block-size=1048576"
+
+[A]     "memorysetup-temp-allocator-size-main=4194304"
+
+[A]     "memorysetup-job-temp-allocator-block-size=2097152"
+
+[A]     "memorysetup-job-temp-allocator-block-size-background=1048576"
+
+[A]     "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+
+[A] Input System module state changed to: Initialized.
+
+[A] [Physics::Module] Initialized fallback backend.
+
+[A] [Physics::Module] Id: 0xdecafbad
+
+[A] Loading player data from data.unity3d
+
+[A] Initialize engine version: 6000.3.22f1 (1c726e1fb402)
+
+[A] Creating WebGL 2.0 context.
+[A] Renderer: WebKit WebGL
+
+[A] Vendor:   WebKit
+
+[A] Version:  OpenGL ES 3.0 (WebGL 2.0 (OpenGL ES 3.0 Chromium))
+
+[A] GLES:     3
+
+[A]  EXT_clip_control EXT_color_buffer_float EXT_color_buffer_half_float EXT_conservative_depth EXT_depth_clamp EXT_disjoint_timer_query_webgl2 EXT_float_blend EXT_polygon_offset_clamp EXT_texture_compression_bptc EXT_texture_compression_rgtc EXT_texture_filter_anisotropic EXT_texture_mirror_clamp_to_edge NV_shader_noperspective_interpolation OES_draw_buffers_indexed OES_sample_variables OES_shader_multisample_interpolation OES_texture_float_linear OVR_multiview2 WEBGL_clip_cull_distance WEBGL_compressed_texture_astc WEBGL_compressed_texture_etc WEBGL_compressed_texture_etc1 WEBGL_compressed_texture_s3tc WEBGL_compressed_texture_s3tc_srgb WEBGL_debug_renderer_info WEBGL_debug_shaders WEBGL_lose_context WEBGL_multi_draw WEBGL_polygon_mode WEBGL_stencil_texturing GL_EXT_clip_control GL_EXT_color_buffer_float GL_EXT_color_buffer_half_float GL_EXT_conservative_depth GL_EXT_depth_clamp GL_EXT_disjoint_timer_query_webgl2 GL_EXT_float_blend GL_EXT_polygon_offset_clamp GL_EXT_texture_compression_bptc GL_EXT_texture_comp
+
+[A] ression_rgtc GL_EXT_texture_filter_anisotropic GL_EXT_texture_mirror_clamp_to_edge GL_NV_shader_noperspective_interpolation GL_OES_draw_buffers_indexed GL_OES_sample_variables GL_OES_shader_multisample_interpolation GL_OES_texture_float_linear GL_OVR_multiview2 GL_WEBGL_clip_cull_distance GL_WEBGL_compressed_texture_astc GL_WEBGL_compressed_texture_etc GL_WEBGL_compressed_texture_etc1 GL_WEBGL_compressed_texture_s3tc GL_WEBGL_compressed_texture_s3tc_srgb GL_WEBGL_debug_renderer_info GL_WEBGL_debug_shaders GL_WEBGL_lose_context GL_WEBGL_multi_draw GL_WEBGL_polygon_mode GL_WEBGL_stencil_texturing
+
+[A] OPENGL LOG: Creating OpenGL ES 3.0 graphics device ; Context level  <OpenGL ES 3.0> ; Context handle 1
+
+[A] [Physics::Module] Selected backend.
+
+[A] [Physics::Module] Name: PhysX
+
+[A] [Physics::Module] Id: 0xf2b8ea05
+
+[A] [Physics::Module] SDK Version: 4.1.2
+
+[A] [Physics::Module] Integration Version: 1.0.0
+
+[A] [Physics::Module] Threading Mode: Single-Threaded
+
+[A] Input Manager initialize...
+
+[A] Input System initialize...
+
+[A] UnloadTime: 1.500000 ms
+
+[A] Audio context resumed after 0.173 seconds.
+[A] [Bridge] subscribed to GameManager (state=Ready)
+
+[A] [App] Unity ready
+[A] [EnemySpawner] begin difficulty=Hard interval=1.275s limit=20
+
+[A] [Bridge] stateChange -> Playing
+
+[A] [GameManager] state=Playing difficulty=Hard
+
+[A] [PlayerHealth] damage=14 hp=86/100
+
+[A] [PlayerHealth] damage=14 hp=72/100
+
+[A] [PlayerHealth] damage=14 hp=58/100
+
+[A] [PlayerHealth] damage=14 hp=44/100
+
+[A] [PlayerHealth] damage=14 hp=30/100
+
+[A] [PlayerHealth] damage=14 hp=16/100
+
+[A] [PlayerHealth] damage=14 hp=2/100
+
+[A] [PlayerHealth] damage=14 hp=0/100
+
+[A] [Bridge] stateChange -> Lost
+
+[A] [App] gameOver score=208 difficulty=hard best=208 newRecord=true
+[A] [GameManager] state=Lost survived=14.0s score=208
+
+[B] [UnityCache] Response is served without Content-Length header. Please reconfigure server to include valid Content-Length for better download performance.
+[B] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.framework.js.unityweb" file.
+[B] [UnityCache] Response is served without Content-Length header. Please reconfigure server to include valid Content-Length for better download performance.
+[B] [UnityCache] Response is served without Content-Length header. Please reconfigure server to include valid Content-Length for better download performance.
+[B] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.data.unityweb" file.
+[B] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.wasm.unityweb" file.
+[B] [UnityCache] 'http://127.0.0.1:8127/unity/Build/unity.data.unityweb' successfully downloaded and stored in the browser cache
+[B] [UnityMemory] Configuration Parameters - Can be set up in boot.config
+
+[B]     "memorysetup-allocator-temp-initial-block-size-main=262144"
+
+[B]     "memorysetup-allocator-temp-initial-block-size-worker=262144"
+
+[B]     "memorysetup-temp-allocator-size-audio-worker=65536"
+
+[B]     "memorysetup-temp-allocator-size-background-worker=32768"
+
+[B]     "memorysetup-bucket-allocator-granularity=16"
+
+[B]     "memorysetup-bucket-allocator-bucket-count=8"
+
+[B]     "memorysetup-bucket-allocator-block-size=4194304"
+
+[B]     "memorysetup-bucket-allocator-block-count=1"
+
+[B]     "memorysetup-main-allocator-block-size=16777216"
+
+[B]     "memorysetup-thread-allocator-block-size=16777216"
+
+[B]     "memorysetup-gfx-main-allocator-block-size=16777216"
+
+[B]     "memorysetup-gfx-thread-allocator-block-size=16777216"
+
+[B]     "memorysetup-cache-allocator-block-size=4194304"
+
+[B]     "memorysetup-typetree-allocator-block-size=2097152"
+
+[B]     "memorysetup-profiler-bucket-allocator-granularity=16"
+
+[B]     "memorysetup-profiler-bucket-allocator-bucket-count=8"
+
+[B]     "memorysetup-profiler-bucket-allocator-block-size=4194304"
+
+[B]     "memorysetup-profiler-bucket-allocator-block-count=1"
+
+[B]     "memorysetup-profiler-allocator-block-size=16777216"
+
+[B]     "memorysetup-profiler-editor-allocator-block-size=1048576"
+
+[B]     "memorysetup-temp-allocator-size-main=4194304"
+
+[B]     "memorysetup-job-temp-allocator-block-size=2097152"
+
+[B]     "memorysetup-job-temp-allocator-block-size-background=1048576"
+
+[B]     "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+
+[B] Input System module state changed to: Initialized.
+
+[B] [Physics::Module] Initialized fallback backend.
+
+[B] [Physics::Module] Id: 0xdecafbad
+
+[B] Loading player data from data.unity3d
+
+[B] Initialize engine version: 6000.3.22f1 (1c726e1fb402)
+
+[B] Creating WebGL 2.0 context.
+[B] Renderer: WebKit WebGL
+
+[B] Vendor:   WebKit
+
+[B] Version:  OpenGL ES 3.0 (WebGL 2.0 (OpenGL ES 3.0 Chromium))
+
+[B] GLES:     3
+
+[B]  EXT_clip_control EXT_color_buffer_float EXT_color_buffer_half_float EXT_conservative_depth EXT_depth_clamp EXT_disjoint_timer_query_webgl2 EXT_float_blend EXT_polygon_offset_clamp EXT_texture_compression_bptc EXT_texture_compression_rgtc EXT_texture_filter_anisotropic EXT_texture_mirror_clamp_to_edge NV_shader_noperspective_interpolation OES_draw_buffers_indexed OES_sample_variables OES_shader_multisample_interpolation OES_texture_float_linear OVR_multiview2 WEBGL_clip_cull_distance WEBGL_compressed_texture_astc WEBGL_compressed_texture_etc WEBGL_compressed_texture_etc1 WEBGL_compressed_texture_s3tc WEBGL_compressed_texture_s3tc_srgb WEBGL_debug_renderer_info WEBGL_debug_shaders WEBGL_lose_context WEBGL_multi_draw WEBGL_polygon_mode WEBGL_stencil_texturing GL_EXT_clip_control GL_EXT_color_buffer_float GL_EXT_color_buffer_half_float GL_EXT_conservative_depth GL_EXT_depth_clamp GL_EXT_disjoint_timer_query_webgl2 GL_EXT_float_blend GL_EXT_polygon_offset_clamp GL_EXT_texture_compression_bptc GL_EXT_texture_comp
+
+[B] ression_rgtc GL_EXT_texture_filter_anisotropic GL_EXT_texture_mirror_clamp_to_edge GL_NV_shader_noperspective_interpolation GL_OES_draw_buffers_indexed GL_OES_sample_variables GL_OES_shader_multisample_interpolation GL_OES_texture_float_linear GL_OVR_multiview2 GL_WEBGL_clip_cull_distance GL_WEBGL_compressed_texture_astc GL_WEBGL_compressed_texture_etc GL_WEBGL_compressed_texture_etc1 GL_WEBGL_compressed_texture_s3tc GL_WEBGL_compressed_texture_s3tc_srgb GL_WEBGL_debug_renderer_info GL_WEBGL_debug_shaders GL_WEBGL_lose_context GL_WEBGL_multi_draw GL_WEBGL_polygon_mode GL_WEBGL_stencil_texturing
+
+[B] OPENGL LOG: Creating OpenGL ES 3.0 graphics device ; Context level  <OpenGL ES 3.0> ; Context handle 1
+
+[B] [Physics::Module] Selected backend.
+
+[B] [Physics::Module] Name: PhysX
+
+[B] [Physics::Module] Id: 0xf2b8ea05
+
+[B] [Physics::Module] SDK Version: 4.1.2
+
+[B] [Physics::Module] Integration Version: 1.0.0
+
+[B] [Physics::Module] Threading Mode: Single-Threaded
+
+[B] Input Manager initialize...
+
+[B] Input System initialize...
+
+[B] UnloadTime: 1.500000 ms
+
+[B] Audio context resumed after 0.180 seconds.
+[B] [Bridge] subscribed to GameManager (state=Ready)
+
+[B] [PERF] probe start {,"screen":"936x527","dpi":96,"gpu":"ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)","cpu":"n/a","device":"Chrome 156.0.0.0","os":"Windows 10","invincible":true,"roundDuration":60,"perfSeconds":90,"autostart":false}
+
+[B] [App] Unity ready
+[B] [EnemySpawner] begin difficulty=Hard interval=1.275s limit=20
+
+[B] [Bridge] stateChange -> Playing
+
+[B] [GameManager] state=Playing difficulty=Hard
+
+[B] [PERF] {"t":2.00,"alive":1,"avgAlive":0.4,"settled":0.0,"motionUps":1.836,"unsettledMax":11.02,"minPairDist":0.900,"playerUps":0.00,"fps":152.4,"p95ms":8.00,"p99ms":10.00,"maxms":11.00,"allocKBps":161.9,"heapKB":2236,"wasmMB":55.4,"gc":2}
+
+[B] [PERF] {"t":4.00,"alive":3,"avgAlive":1.8,"settled":0.0,"motionUps":1.901,"unsettledMax":11.02,"minPairDist":0.900,"playerUps":0.00,"fps":150.9,"p95ms":8.00,"p99ms":8.00,"maxms":9.00,"allocKBps":48.0,"heapKB":2332,"wasmMB":55.4,"gc":2}
+
+[B] [PERF] {"t":6.01,"alive":4,"avgAlive":3.5,"settled":0.0,"motionUps":1.979,"unsettledMax":11.02,"minPairDist":0.900,"playerUps":0.00,"fps":150.3,"p95ms":8.00,"p99ms":9.00,"maxms":13.00,"allocKBps":37.9,"heapKB":2100,"wasmMB":55.4,"gc":3}
+
+[B] [PERF] {"t":8.01,"alive":6,"avgAlive":5.0,"settled":0.7,"motionUps":1.680,"unsettledMax":11.02,"minPairDist":0.900,"playerUps":0.00,"fps":155.5,"p95ms":8.00,"p99ms":9.00,"maxms":9.00,"allocKBps":40.0,"heapKB":2180,"wasmMB":55.4,"gc":3}
+
+[B] [PERF] {"t":10.00,"alive":7,"avgAlive":6.5,"settled":2.3,"motionUps":1.302,"unsettledMax":11.02,"minPairDist":0.868,"playerUps":0.00,"fps":156.1,"p95ms":8.00,"p99ms":9.00,"maxms":13.00,"allocKBps":39.9,"heapKB":2260,"wasmMB":55.4,"gc":3}
+
+[B] [PERF] {"t":12.00,"alive":9,"avgAlive":8.3,"settled":3.0,"motionUps":1.097,"unsettledMax":11.02,"minPairDist":0.834,"playerUps":0.00,"fps":152.0,"p95ms":8.00,"p99ms":8.00,"maxms":9.00,"allocKBps":37.9,"heapKB":2336,"wasmMB":55.4,"gc":3}
+
+[B] [PERF] {"t":14.00,"alive":11,"avgAlive":10.0,"settled":3.6,"motionUps":0.885,"unsettledMax":11.02,"minPairDist":0.812,"playerUps":0.00,"fps":157.4,"p95ms":8.00,"p99ms":8.00,"maxms":9.00,"allocKBps":40.0,"heapKB":2116,"wasmMB":55.4,"gc":4}
+
+[B] [PERF] {"t":16.00,"alive":13,"avgAlive":11.7,"settled":4.0,"motionUps":0.865,"unsettledMax":11.02,"minPairDist":0.781,"playerUps":0.00,"fps":152.6,"p95ms":8.00,"p99ms":9.00,"maxms":9.00,"allocKBps":37.9,"heapKB":2192,"wasmMB":55.4,"gc":4}
+
+[B] [PERF] {"t":18.00,"alive":14,"avgAlive":13.5,"settled":4.0,"motionUps":0.725,"unsettledMax":11.02,"minPairDist":0.772,"playerUps":0.00,"fps":153.1,"p95ms":8.00,"p99ms":9.00,"maxms":11.00,"allocKBps":37.9,"heapKB":2268,"wasmMB":55.4,"gc":4}
+
+[B] [PERF] {"t":20.00,"alive":16,"avgAlive":15.3,"settled":4.7,"motionUps":0.594,"unsettledMax":11.02,"minPairDist":0.771,"playerUps":0.00,"fps":141.1,"p95ms":9.00,"p99ms":12.00,"maxms":15.00,"allocKBps":35.9,"heapKB":2340,"wasmMB":55.4,"gc":4}
+
+[B] [PERF] {"t":22.00,"alive":18,"avgAlive":17.2,"settled":5.0,"motionUps":0.490,"unsettledMax":11.02,"minPairDist":0.769,"playerUps":0.00,"fps":142.9,"p95ms":9.00,"p99ms":10.00,"maxms":11.00,"allocKBps":34.0,"heapKB":2104,"wasmMB":55.4,"gc":5}
+
+[B] [PERF] cap reached limit=20 at=23.40s
+
+[B] [PERF] {"t":24.00,"alive":20,"avgAlive":19.1,"settled":5.0,"motionUps":0.514,"unsettledMax":11.02,"minPairDist":0.766,"playerUps":0.00,"fps":145.1,"p95ms":8.00,"p99ms":10.00,"maxms":10.00,"allocKBps":37.9,"heapKB":2180,"wasmMB":55.4,"gc":5}
+
+[B] [PERF] {"t":26.01,"alive":20,"avgAlive":20.0,"settled":5.0,"motionUps":0.432,"unsettledMax":9.96,"minPairDist":0.764,"playerUps":0.00,"fps":141.6,"p95ms":9.00,"p99ms":9.00,"maxms":21.00,"allocKBps":37.9,"heapKB":2256,"wasmMB":55.4,"gc":5}
+
+[B] [PERF] {"t":28.00,"alive":20,"avgAlive":20.0,"settled":5.0,"motionUps":0.154,"unsettledMax":5.98,"minPairDist":0.760,"playerUps":0.00,"fps":144.2,"p95ms":8.00,"p99ms":9.00,"maxms":16.00,"allocKBps":37.9,"heapKB":2328,"wasmMB":55.4,"gc":5}
+
+[B] [PERF] {"t":30.00,"alive":20,"avgAlive":20.0,"settled":5.0,"motionUps":0.059,"unsettledMax":2.70,"minPairDist":0.756,"playerUps":0.00,"fps":144.9,"p95ms":8.00,"p99ms":9.00,"maxms":13.00,"allocKBps":34.0,"heapKB":2088,"wasmMB":55.4,"gc":6}
+
+[B] [PERF] {"t":32.00,"alive":20,"avgAlive":20.0,"settled":5.0,"motionUps":0.024,"unsettledMax":1.86,"minPairDist":0.747,"playerUps":0.00,"fps":145.6,"p95ms":10.00,"p99ms":13.00,"maxms":16.00,"allocKBps":33.9,"heapKB":2156,"wasmMB":55.4,"gc":6}
+
+[B] [PERF-CROWD] {"t":33.4,"alive":20,"blockedN":20,"blockedOver03":6,"blockedRatio":0.30,"unblockedN":0,"unblockedNetMax":0.000,"unblockedPathMax":0.000,"yieldN":0,"yieldNetMax":0.000,"maxFrameDisp":0.385,"minPairDist":0.742,"swaps":15,"playerPeakUps":0.00,"playerX":0.0,"playerY":0.0}
+
+[B] [PERF] {"t":34.01,"alive":20,"avgAlive":20.0,"settled":5.0,"motionUps":0.011,"unsettledMax":1.54,"minPairDist":0.741,"playerUps":0.00,"fps":143.0,"p95ms":8.00,"p99ms":10.00,"maxms":12.00,"allocKBps":35.9,"heapKB":2228,"wasmMB":55.4,"gc":6}
+
+[B] [PERF] {"t":36.01,"alive":20,"avgAlive":20.0,"settled":5.0,"motionUps":0.028,"unsettledMax":1.53,"minPairDist":0.736,"playerUps":0.00,"fps":144.9,"p95ms":8.00,"p99ms":9.00,"maxms":11.00,"allocKBps":35.9,"heapKB":2300,"wasmMB":55.4,"gc":6}
+
+[B] [PERF] {"t":38.00,"alive":20,"avgAlive":20.0,"settled":5.0,"motionUps":0.002,"unsettledMax":1.52,"minPairDist":0.731,"playerUps":0.00,"fps":145.4,"p95ms":8.00,"p99ms":10.00,"maxms":14.00,"allocKBps":38.0,"heapKB":2376,"wasmMB":55.4,"gc":6}
+
+[B] [PERF] {"t":40.00,"alive":20,"avgAlive":20.0,"settled":5.0,"motionUps":0.002,"unsettledMax":1.51,"minPairDist":0.728,"playerUps":0.00,"fps":149.4,"p95ms":8.00,"p99ms":9.00,"maxms":11.00,"allocKBps":34.0,"heapKB":2128,"wasmMB":55.4,"gc":7}
+
+[B] [PERF] {"t":42.00,"alive":20,"avgAlive":20.0,"settled":5.0,"motionUps":0.001,"unsettledMax":1.51,"minPairDist":0.725,"playerUps":0.00,"fps":147.9,"p95ms":8.00,"p99ms":9.00,"maxms":14.00,"allocKBps":38.0,"heapKB":2204,"wasmMB":55.4,"gc":7}
+
+[B] [PERF-CROWD] {"t":43.4,"alive":20,"blockedN":20,"blockedOver03":1,"blockedRatio":0.05,"unblockedN":0,"unblockedNetMax":0.000,"unblockedPathMax":0.000,"yieldN":0,"yieldNetMax":0.000,"maxFrameDisp":0.040,"minPairDist":0.724,"swaps":2,"playerPeakUps":0.00,"playerX":0.0,"playerY":0.0}
+
+[B] [PERF] {"t":44.00,"alive":20,"avgAlive":20.0,"settled":5.0,"motionUps":0.002,"unsettledMax":1.50,"minPairDist":0.724,"playerUps":0.00,"fps":147.3,"p95ms":9.00,"p99ms":10.00,"maxms":11.00,"allocKBps":35.9,"heapKB":2276,"wasmMB":55.4,"gc":7}
+
+[B] [PERF] {"t":46.00,"alive":20,"avgAlive":20.0,"settled":5.0,"motionUps":0.002,"unsettledMax":1.50,"minPairDist":0.723,"playerUps":0.00,"fps":148.3,"p95ms":8.00,"p99ms":8.00,"maxms":11.00,"allocKBps":39.9,"heapKB":2356,"wasmMB":55.4,"gc":7}
+
+[B] [PERF] {"t":48.00,"alive":20,"avgAlive":20.0,"settled":5.0,"motionUps":0.002,"unsettledMax":1.49,"minPairDist":0.722,"playerUps":0.00,"fps":148.1,"p95ms":8.00,"p99ms":9.00,"maxms":9.00,"allocKBps":35.9,"heapKB":2116,"wasmMB":55.4,"gc":8}
+
+[B] [PERF] {"t":50.01,"alive":20,"avgAlive":20.0,"settled":5.0,"motionUps":0.001,"unsettledMax":1.49,"minPairDist":0.722,"playerUps":0.00,"fps":152.3,"p95ms":8.00,"p99ms":9.00,"maxms":10.00,"allocKBps":38.0,"heapKB":2192,"wasmMB":55.4,"gc":8}
+
+[B] [PERF] {"t":52.00,"alive":20,"avgAlive":20.0,"settled":5.0,"motionUps":0.001,"unsettledMax":1.48,"minPairDist":0.721,"playerUps":0.00,"fps":156.3,"p95ms":8.00,"p99ms":8.00,"maxms":8.00,"allocKBps":40.0,"heapKB":2272,"wasmMB":55.4,"gc":8}
+
+[B] [PERF-CROWD] {"t":53.4,"alive":20,"blockedN":20,"blockedOver03":0,"blockedRatio":0.00,"unblockedN":0,"unblockedNetMax":0.000,"unblockedPathMax":0.000,"yieldN":0,"yieldNetMax":0.000,"maxFrameDisp":0.001,"minPairDist":0.721,"swaps":0,"playerPeakUps":0.00,"playerX":0.0,"playerY":0.0}
+
+[B] [PERF] {"t":54.00,"alive":20,"avgAlive":20.0,"settled":5.0,"motionUps":0.001,"unsettledMax":1.48,"minPairDist":0.720,"playerUps":0.00,"fps":153.0,"p95ms":8.00,"p99ms":8.00,"maxms":10.00,"allocKBps":38.0,"heapKB":2348,"wasmMB":55.4,"gc":8}
+
+[B] [PERF] {"t":56.00,"alive":20,"avgAlive":20.0,"settled":5.0,"motionUps":0.001,"unsettledMax":1.47,"minPairDist":0.720,"playerUps":0.00,"fps":153.5,"p95ms":8.00,"p99ms":9.00,"maxms":9.00,"allocKBps":36.0,"heapKB":2100,"wasmMB":55.4,"gc":9}
+
+[B] [PERF] {"t":58.00,"alive":20,"avgAlive":20.0,"settled":5.0,"motionUps":0.001,"unsettledMax":1.47,"minPairDist":0.719,"playerUps":0.00,"fps":148.4,"p95ms":8.00,"p99ms":9.00,"maxms":10.00,"allocKBps":36.0,"heapKB":2172,"wasmMB":55.4,"gc":9}
+
+[B] [Bridge] stateChange -> Won
+
+[B] [App] gameOver score=1160 difficulty=hard best=1160 newRecord=true
+[B] [GameManager] state=Won survived=60.0s score=1160
+
+[C] [UnityCache] Response is served without Content-Length header. Please reconfigure server to include valid Content-Length for better download performance.
+[C] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.framework.js.unityweb" file.
+[C] [UnityCache] Response is served without Content-Length header. Please reconfigure server to include valid Content-Length for better download performance.
+[C] [UnityCache] Response is served without Content-Length header. Please reconfigure server to include valid Content-Length for better download performance.
+[C] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.wasm.unityweb" file.
+[C] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.data.unityweb" file.
+[C] [UnityCache] 'http://127.0.0.1:8127/unity/Build/unity.data.unityweb' successfully downloaded and stored in the browser cache
+[C] [UnityMemory] Configuration Parameters - Can be set up in boot.config
+
+[C]     "memorysetup-allocator-temp-initial-block-size-main=262144"
+
+[C]     "memorysetup-allocator-temp-initial-block-size-worker=262144"
+
+[C]     "memorysetup-temp-allocator-size-audio-worker=65536"
+
+[C]     "memorysetup-temp-allocator-size-background-worker=32768"
+
+[C]     "memorysetup-bucket-allocator-granularity=16"
+
+[C]     "memorysetup-bucket-allocator-bucket-count=8"
+
+[C]     "memorysetup-bucket-allocator-block-size=4194304"
+
+[C]     "memorysetup-bucket-allocator-block-count=1"
+
+[C]     "memorysetup-main-allocator-block-size=16777216"
+
+[C]     "memorysetup-thread-allocator-block-size=16777216"
+
+[C]     "memorysetup-gfx-main-allocator-block-size=16777216"
+
+[C]     "memorysetup-gfx-thread-allocator-block-size=16777216"
+
+[C]     "memorysetup-cache-allocator-block-size=4194304"
+
+[C]     "memorysetup-typetree-allocator-block-size=2097152"
+
+[C]     "memorysetup-profiler-bucket-allocator-granularity=16"
+
+[C]     "memorysetup-profiler-bucket-allocator-bucket-count=8"
+
+[C]     "memorysetup-profiler-bucket-allocator-block-size=4194304"
+
+[C]     "memorysetup-profiler-bucket-allocator-block-count=1"
+
+[C]     "memorysetup-profiler-allocator-block-size=16777216"
+
+[C]     "memorysetup-profiler-editor-allocator-block-size=1048576"
+
+[C]     "memorysetup-temp-allocator-size-main=4194304"
+
+[C]     "memorysetup-job-temp-allocator-block-size=2097152"
+
+[C]     "memorysetup-job-temp-allocator-block-size-background=1048576"
+
+[C]     "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+
+[C] Input System module state changed to: Initialized.
+
+[C] [Physics::Module] Initialized fallback backend.
+
+[C] [Physics::Module] Id: 0xdecafbad
+
+[C] Loading player data from data.unity3d
+
+[C] Initialize engine version: 6000.3.22f1 (1c726e1fb402)
+
+[C] Creating WebGL 2.0 context.
+[C] Renderer: WebKit WebGL
+
+[C] Vendor:   WebKit
+
+[C] Version:  OpenGL ES 3.0 (WebGL 2.0 (OpenGL ES 3.0 Chromium))
+
+[C] GLES:     3
+
+[C]  EXT_clip_control EXT_color_buffer_float EXT_color_buffer_half_float EXT_conservative_depth EXT_depth_clamp EXT_disjoint_timer_query_webgl2 EXT_float_blend EXT_polygon_offset_clamp EXT_texture_compression_bptc EXT_texture_compression_rgtc EXT_texture_filter_anisotropic EXT_texture_mirror_clamp_to_edge NV_shader_noperspective_interpolation OES_draw_buffers_indexed OES_sample_variables OES_shader_multisample_interpolation OES_texture_float_linear OVR_multiview2 WEBGL_clip_cull_distance WEBGL_compressed_texture_astc WEBGL_compressed_texture_etc WEBGL_compressed_texture_etc1 WEBGL_compressed_texture_s3tc WEBGL_compressed_texture_s3tc_srgb WEBGL_debug_renderer_info WEBGL_debug_shaders WEBGL_lose_context WEBGL_multi_draw WEBGL_polygon_mode WEBGL_stencil_texturing GL_EXT_clip_control GL_EXT_color_buffer_float GL_EXT_color_buffer_half_float GL_EXT_conservative_depth GL_EXT_depth_clamp GL_EXT_disjoint_timer_query_webgl2 GL_EXT_float_blend GL_EXT_polygon_offset_clamp GL_EXT_texture_compression_bptc GL_EXT_texture_comp
+
+[C] ression_rgtc GL_EXT_texture_filter_anisotropic GL_EXT_texture_mirror_clamp_to_edge GL_NV_shader_noperspective_interpolation GL_OES_draw_buffers_indexed GL_OES_sample_variables GL_OES_shader_multisample_interpolation GL_OES_texture_float_linear GL_OVR_multiview2 GL_WEBGL_clip_cull_distance GL_WEBGL_compressed_texture_astc GL_WEBGL_compressed_texture_etc GL_WEBGL_compressed_texture_etc1 GL_WEBGL_compressed_texture_s3tc GL_WEBGL_compressed_texture_s3tc_srgb GL_WEBGL_debug_renderer_info GL_WEBGL_debug_shaders GL_WEBGL_lose_context GL_WEBGL_multi_draw GL_WEBGL_polygon_mode GL_WEBGL_stencil_texturing
+
+[C] OPENGL LOG: Creating OpenGL ES 3.0 graphics device ; Context level  <OpenGL ES 3.0> ; Context handle 1
+
+[C] [Physics::Module] Selected backend.
+
+[C] [Physics::Module] Name: PhysX
+
+[C] [Physics::Module] Id: 0xf2b8ea05
+
+[C] [Physics::Module] SDK Version: 4.1.2
+
+[C] [Physics::Module] Integration Version: 1.0.0
+
+[C] [Physics::Module] Threading Mode: Single-Threaded
+
+[C] Input Manager initialize...
+
+[C] Input System initialize...
+
+[C] UnloadTime: 1.500000 ms
+
+[C] Audio context resumed after 0.193 seconds.
+[C] [Bridge] subscribed to GameManager (state=Ready)
+
+[C] [PERF] probe start {,"screen":"936x527","dpi":96,"gpu":"ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)","cpu":"n/a","device":"Chrome 156.0.0.0","os":"Windows 10","invincible":true,"roundDuration":5,"perfSeconds":90,"autostart":false}
+
+[C] [App] Unity ready
+[C] [EnemySpawner] begin difficulty=Normal interval=1.500s limit=20
+
+[C] [Bridge] stateChange -> Playing
+
+[C] [GameManager] state=Playing difficulty=Normal
+
+[C] [PERF] {"t":2.00,"alive":1,"avgAlive":0.3,"settled":0.0,"motionUps":1.373,"unsettledMax":11.02,"minPairDist":0.900,"playerUps":0.00,"fps":150.4,"p95ms":9.00,"p99ms":10.00,"maxms":11.00,"allocKBps":90.0,"heapKB":2092,"wasmMB":55.4,"gc":2}
+
+[C] [PERF] {"t":4.01,"alive":2,"avgAlive":1.5,"settled":0.0,"motionUps":1.847,"unsettledMax":11.02,"minPairDist":0.900,"playerUps":0.00,"fps":156.1,"p95ms":8.00,"p99ms":9.00,"maxms":9.00,"allocKBps":45.9,"heapKB":2184,"wasmMB":55.4,"gc":2}
+
+[C] [Bridge] stateChange -> Won
+
+[C] [App] gameOver score=265 difficulty=normal best=265 newRecord=true
+[C] [GameManager] state=Won survived=5.0s score=265
+
+[D] [UnityCache] Response is served without Content-Length header. Please reconfigure server to include valid Content-Length for better download performance.
+[D] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.framework.js.unityweb" file.
+[D] [UnityCache] Response is served without Content-Length header. Please reconfigure server to include valid Content-Length for better download performance.
+[D] [UnityCache] Response is served without Content-Length header. Please reconfigure server to include valid Content-Length for better download performance.
+[D] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.data.unityweb" file.
+[D] [UnityCache] 'http://127.0.0.1:8127/unity/Build/unity.data.unityweb' successfully downloaded and stored in the browser cache
+[D] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.wasm.unityweb" file.
+[D] [UnityMemory] Configuration Parameters - Can be set up in boot.config
+
+[D]     "memorysetup-allocator-temp-initial-block-size-main=262144"
+
+[D]     "memorysetup-allocator-temp-initial-block-size-worker=262144"
+
+[D]     "memorysetup-temp-allocator-size-audio-worker=65536"
+
+[D]     "memorysetup-temp-allocator-size-background-worker=32768"
+
+[D]     "memorysetup-bucket-allocator-granularity=16"
+
+[D]     "memorysetup-bucket-allocator-bucket-count=8"
+
+[D]     "memorysetup-bucket-allocator-block-size=4194304"
+
+[D]     "memorysetup-bucket-allocator-block-count=1"
+
+[D]     "memorysetup-main-allocator-block-size=16777216"
+
+[D]     "memorysetup-thread-allocator-block-size=16777216"
+
+[D]     "memorysetup-gfx-main-allocator-block-size=16777216"
+
+[D]     "memorysetup-gfx-thread-allocator-block-size=16777216"
+
+[D]     "memorysetup-cache-allocator-block-size=4194304"
+
+[D]     "memorysetup-typetree-allocator-block-size=2097152"
+
+[D]     "memorysetup-profiler-bucket-allocator-granularity=16"
+
+[D]     "memorysetup-profiler-bucket-allocator-bucket-count=8"
+
+[D]     "memorysetup-profiler-bucket-allocator-block-size=4194304"
+
+[D]     "memorysetup-profiler-bucket-allocator-block-count=1"
+
+[D]     "memorysetup-profiler-allocator-block-size=16777216"
+
+[D]     "memorysetup-profiler-editor-allocator-block-size=1048576"
+
+[D]     "memorysetup-temp-allocator-size-main=4194304"
+
+[D]     "memorysetup-job-temp-allocator-block-size=2097152"
+
+[D]     "memorysetup-job-temp-allocator-block-size-background=1048576"
+
+[D]     "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+
+[D] Input System module state changed to: Initialized.
+
+[D] [Physics::Module] Initialized fallback backend.
+
+[D] [Physics::Module] Id: 0xdecafbad
+
+[D] Loading player data from data.unity3d
+
+[D] Initialize engine version: 6000.3.22f1 (1c726e1fb402)
+
+[D] Creating WebGL 2.0 context.
+[D] Renderer: WebKit WebGL
+
+[D] Vendor:   WebKit
+
+[D] Version:  OpenGL ES 3.0 (WebGL 2.0 (OpenGL ES 3.0 Chromium))
+
+[D] GLES:     3
+
+[D]  EXT_clip_control EXT_color_buffer_float EXT_color_buffer_half_float EXT_conservative_depth EXT_depth_clamp EXT_disjoint_timer_query_webgl2 EXT_float_blend EXT_polygon_offset_clamp EXT_texture_compression_bptc EXT_texture_compression_rgtc EXT_texture_filter_anisotropic EXT_texture_mirror_clamp_to_edge NV_shader_noperspective_interpolation OES_draw_buffers_indexed OES_sample_variables OES_shader_multisample_interpolation OES_texture_float_linear OVR_multiview2 WEBGL_clip_cull_distance WEBGL_compressed_texture_astc WEBGL_compressed_texture_etc WEBGL_compressed_texture_etc1 WEBGL_compressed_texture_s3tc WEBGL_compressed_texture_s3tc_srgb WEBGL_debug_renderer_info WEBGL_debug_shaders WEBGL_lose_context WEBGL_multi_draw WEBGL_polygon_mode WEBGL_stencil_texturing GL_EXT_clip_control GL_EXT_color_buffer_float GL_EXT_color_buffer_half_float GL_EXT_conservative_depth GL_EXT_depth_clamp GL_EXT_disjoint_timer_query_webgl2 GL_EXT_float_blend GL_EXT_polygon_offset_clamp GL_EXT_texture_compression_bptc GL_EXT_texture_comp
+
+[D] ression_rgtc GL_EXT_texture_filter_anisotropic GL_EXT_texture_mirror_clamp_to_edge GL_NV_shader_noperspective_interpolation GL_OES_draw_buffers_indexed GL_OES_sample_variables GL_OES_shader_multisample_interpolation GL_OES_texture_float_linear GL_OVR_multiview2 GL_WEBGL_clip_cull_distance GL_WEBGL_compressed_texture_astc GL_WEBGL_compressed_texture_etc GL_WEBGL_compressed_texture_etc1 GL_WEBGL_compressed_texture_s3tc GL_WEBGL_compressed_texture_s3tc_srgb GL_WEBGL_debug_renderer_info GL_WEBGL_debug_shaders GL_WEBGL_lose_context GL_WEBGL_multi_draw GL_WEBGL_polygon_mode GL_WEBGL_stencil_texturing
+
+[D] OPENGL LOG: Creating OpenGL ES 3.0 graphics device ; Context level  <OpenGL ES 3.0> ; Context handle 1
+
+[D] [Physics::Module] Selected backend.
+
+[D] [Physics::Module] Name: PhysX
+
+[D] [Physics::Module] Id: 0xf2b8ea05
+
+[D] [Physics::Module] SDK Version: 4.1.2
+
+[D] [Physics::Module] Integration Version: 1.0.0
+
+[D] [Physics::Module] Threading Mode: Single-Threaded
+
+[D] Input Manager initialize...
+
+[D] Input System initialize...
+
+[D] UnloadTime: 1.800000 ms
+
+[D] Audio context resumed after 0.201 seconds.
+[D] [Bridge] subscribed to GameManager (state=Ready)
+
+[D] [PERF] probe start {,"screen":"936x527","dpi":96,"gpu":"ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)","cpu":"n/a","device":"Chrome 156.0.0.0","os":"Windows 10","invincible":true,"roundDuration":5,"perfSeconds":90,"autostart":false}
+
+[D] [App] Unity ready
+[D] [Bridge] 未知难度 'bogus'，按 normal 处理
+
+[D] [EnemySpawner] begin difficulty=Normal interval=1.500s limit=20
+
+[D] [Bridge] stateChange -> Playing
+
+[D] [GameManager] state=Playing difficulty=Normal
+
+[D] [PERF] {"t":2.00,"alive":1,"avgAlive":0.3,"settled":0.0,"motionUps":1.533,"unsettledMax":11.02,"minPairDist":0.900,"playerUps":0.00,"fps":151.2,"p95ms":8.00,"p99ms":10.00,"maxms":22.00,"allocKBps":97.8,"heapKB":2108,"wasmMB":55.4,"gc":2}
+
+[D] [PERF] {"t":4.01,"alive":2,"avgAlive":1.5,"settled":0.0,"motionUps":1.940,"unsettledMax":11.02,"minPairDist":0.900,"playerUps":0.00,"fps":157.4,"p95ms":8.00,"p99ms":9.00,"maxms":9.00,"allocKBps":50.0,"heapKB":2208,"wasmMB":55.4,"gc":2}
+
+[D] [Bridge] stateChange -> Won
+
+[D] [App] gameOver score=265 difficulty=normal best=265 newRecord=false
+[D] [GameManager] state=Won survived=5.0s score=265
+
+[EF] [UnityCache] Response is served without Content-Length header. Please reconfigure server to include valid Content-Length for better download performance.
+[EF] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.framework.js.unityweb" file.
+[EF] [UnityCache] Response is served without Content-Length header. Please reconfigure server to include valid Content-Length for better download performance.
+[EF] [UnityCache] Response is served without Content-Length header. Please reconfigure server to include valid Content-Length for better download performance.
+[EF] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.wasm.unityweb" file.
+[EF] You can reduce startup time if you configure your web server to add "Content-Encoding: br" response header when serving "unity/Build/unity.data.unityweb" file.
+[EF] [UnityCache] 'http://127.0.0.1:8127/unity/Build/unity.data.unityweb' successfully downloaded and stored in the browser cache
+[EF] [UnityMemory] Configuration Parameters - Can be set up in boot.config
+
+[EF]     "memorysetup-allocator-temp-initial-block-size-main=262144"
+
+[EF]     "memorysetup-allocator-temp-initial-block-size-worker=262144"
+
+[EF]     "memorysetup-temp-allocator-size-audio-worker=65536"
+
+[EF]     "memorysetup-temp-allocator-size-background-worker=32768"
+
+[EF]     "memorysetup-bucket-allocator-granularity=16"
+
+[EF]     "memorysetup-bucket-allocator-bucket-count=8"
+
+[EF]     "memorysetup-bucket-allocator-block-size=4194304"
+
+[EF]     "memorysetup-bucket-allocator-block-count=1"
+
+[EF]     "memorysetup-main-allocator-block-size=16777216"
+
+[EF]     "memorysetup-thread-allocator-block-size=16777216"
+
+[EF]     "memorysetup-gfx-main-allocator-block-size=16777216"
+
+[EF]     "memorysetup-gfx-thread-allocator-block-size=16777216"
+
+[EF]     "memorysetup-cache-allocator-block-size=4194304"
+
+[EF]     "memorysetup-typetree-allocator-block-size=2097152"
+
+[EF]     "memorysetup-profiler-bucket-allocator-granularity=16"
+
+[EF]     "memorysetup-profiler-bucket-allocator-bucket-count=8"
+
+[EF]     "memorysetup-profiler-bucket-allocator-block-size=4194304"
+
+[EF]     "memorysetup-profiler-bucket-allocator-block-count=1"
+
+[EF]     "memorysetup-profiler-allocator-block-size=16777216"
+
+[EF]     "memorysetup-profiler-editor-allocator-block-size=1048576"
+
+[EF]     "memorysetup-temp-allocator-size-main=4194304"
+
+[EF]     "memorysetup-job-temp-allocator-block-size=2097152"
+
+[EF]     "memorysetup-job-temp-allocator-block-size-background=1048576"
+
+[EF]     "memorysetup-job-temp-allocator-reduction-small-platforms=262144"
+
+[EF] Input System module state changed to: Initialized.
+
+[EF] [Physics::Module] Initialized fallback backend.
+
+[EF] [Physics::Module] Id: 0xdecafbad
+
+[EF] Loading player data from data.unity3d
+
+[EF] Initialize engine version: 6000.3.22f1 (1c726e1fb402)
+
+[EF] Creating WebGL 2.0 context.
+[EF] Renderer: WebKit WebGL
+
+[EF] Vendor:   WebKit
+
+[EF] Version:  OpenGL ES 3.0 (WebGL 2.0 (OpenGL ES 3.0 Chromium))
+
+[EF] GLES:     3
+
+[EF]  EXT_clip_control EXT_color_buffer_float EXT_color_buffer_half_float EXT_conservative_depth EXT_depth_clamp EXT_disjoint_timer_query_webgl2 EXT_float_blend EXT_polygon_offset_clamp EXT_texture_compression_bptc EXT_texture_compression_rgtc EXT_texture_filter_anisotropic EXT_texture_mirror_clamp_to_edge NV_shader_noperspective_interpolation OES_draw_buffers_indexed OES_sample_variables OES_shader_multisample_interpolation OES_texture_float_linear OVR_multiview2 WEBGL_clip_cull_distance WEBGL_compressed_texture_astc WEBGL_compressed_texture_etc WEBGL_compressed_texture_etc1 WEBGL_compressed_texture_s3tc WEBGL_compressed_texture_s3tc_srgb WEBGL_debug_renderer_info WEBGL_debug_shaders WEBGL_lose_context WEBGL_multi_draw WEBGL_polygon_mode WEBGL_stencil_texturing GL_EXT_clip_control GL_EXT_color_buffer_float GL_EXT_color_buffer_half_float GL_EXT_conservative_depth GL_EXT_depth_clamp GL_EXT_disjoint_timer_query_webgl2 GL_EXT_float_blend GL_EXT_polygon_offset_clamp GL_EXT_texture_compression_bptc GL_EXT_texture_comp
+
+[EF] ression_rgtc GL_EXT_texture_filter_anisotropic GL_EXT_texture_mirror_clamp_to_edge GL_NV_shader_noperspective_interpolation GL_OES_draw_buffers_indexed GL_OES_sample_variables GL_OES_shader_multisample_interpolation GL_OES_texture_float_linear GL_OVR_multiview2 GL_WEBGL_clip_cull_distance GL_WEBGL_compressed_texture_astc GL_WEBGL_compressed_texture_etc GL_WEBGL_compressed_texture_etc1 GL_WEBGL_compressed_texture_s3tc GL_WEBGL_compressed_texture_s3tc_srgb GL_WEBGL_debug_renderer_info GL_WEBGL_debug_shaders GL_WEBGL_lose_context GL_WEBGL_multi_draw GL_WEBGL_polygon_mode GL_WEBGL_stencil_texturing
+
+[EF] OPENGL LOG: Creating OpenGL ES 3.0 graphics device ; Context level  <OpenGL ES 3.0> ; Context handle 1
+
+[EF] [Physics::Module] Selected backend.
+
+[EF] [Physics::Module] Name: PhysX
+
+[EF] [Physics::Module] Id: 0xf2b8ea05
+
+[EF] [Physics::Module] SDK Version: 4.1.2
+
+[EF] [Physics::Module] Integration Version: 1.0.0
+
+[EF] [Physics::Module] Threading Mode: Single-Threaded
+
+[EF] Input Manager initialize...
+
+[EF] Input System initialize...
+
+[EF] UnloadTime: 1.400000 ms
+
+[EF] Audio context resumed after 0.179 seconds.
+[EF] [Bridge] subscribed to GameManager (state=Ready)
+
+[EF] [PERF] probe start {,"screen":"936x527","dpi":96,"gpu":"ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)","cpu":"n/a","device":"Chrome 156.0.0.0","os":"Windows 10","invincible":true,"roundDuration":5,"perfSeconds":90,"autostart":false}
+
+[EF] [App] Unity ready
+[EF] [EnemySpawner] begin difficulty=Hard interval=1.275s limit=20
+
+[EF] [Bridge] stateChange -> Playing
+
+[EF] [GameManager] state=Playing difficulty=Hard
+
+[EF] [EnemySpawner] begin difficulty=Hard interval=1.275s limit=20
+
+[EF] [Bridge] stateChange -> Ready
+
+[EF] [GameManager] state=Ready (return to menu)
+
+[EF] [EnemySpawner] begin difficulty=Easy interval=1.800s limit=14
+
+[EF] [Bridge] stateChange -> Playing
+
+[EF] [GameManager] state=Playing difficulty=Easy
+
+[EF] [PERF] {"t":2.00,"alive":1,"avgAlive":0.1,"settled":0.0,"motionUps":1.008,"unsettledMax":11.02,"minPairDist":0.900,"playerUps":0.00,"fps":165.3,"p95ms":7.00,"p99ms":8.00,"maxms":9.00,"allocKBps":275.6,"heapKB":2256,"wasmMB":55.4,"gc":3}
+
+[EF] [PERF] {"t":4.00,"alive":2,"avgAlive":1.2,"settled":0.0,"motionUps":1.685,"unsettledMax":11.02,"minPairDist":0.900,"playerUps":0.00,"fps":165.0,"p95ms":7.00,"p99ms":7.00,"maxms":8.00,"allocKBps":52.0,"heapKB":2360,"wasmMB":55.4,"gc":3}
+
+[EF] [Bridge] stateChange -> Won
+
+[EF] [App] gameOver score=250 difficulty=easy best=250 newRecord=true
+[EF] [GameManager] state=Won survived=5.0s score=250
+
+[EF] [EnemySpawner] begin difficulty=Easy interval=1.800s limit=14
+
+[EF] [Bridge] stateChange -> Ready
+
+[EF] [GameManager] state=Ready (return to menu)
+
+[EF] [EnemySpawner] begin difficulty=Hard interval=1.275s limit=20
+
+[EF] [Bridge] stateChange -> Playing
+
+[EF] [GameManager] state=Playing difficulty=Hard
+
+[EF] [Bridge] stateChange -> Paused
+
+[EF] [GameManager] state=Paused
+
+[EF] [Bridge] stateChange -> Playing
+
+[EF] [GameManager] state=Playing (resume)
+
+[EF] [PERF] {"t":6.01,"alive":0,"avgAlive":1.0,"settled":0.0,"motionUps":1.704,"unsettledMax":10.57,"minPairDist":0.900,"playerUps":0.00,"fps":164.8,"p95ms":7.00,"p99ms":8.00,"maxms":10.00,"allocKBps":129.9,"heapKB":2120,"wasmMB":55.4,"gc":5}
+
+[EF] [PERF] {"t":8.01,"alive":2,"avgAlive":1.0,"settled":0.0,"motionUps":1.971,"unsettledMax":11.02,"minPairDist":0.900,"playerUps":0.00,"fps":165.0,"p95ms":7.00,"p99ms":8.00,"maxms":8.00,"allocKBps":40.0,"heapKB":2200,"wasmMB":55.4,"gc":5}
+
+[EF] [PERF] {"t":10.00,"alive":3,"avgAlive":2.6,"settled":0.0,"motionUps":2.100,"unsettledMax":11.02,"minPairDist":0.900,"playerUps":0.00,"fps":165.1,"p95ms":7.00,"p99ms":8.00,"maxms":8.00,"allocKBps":41.9,"heapKB":2284,"wasmMB":55.4,"gc":5}
+
+[EF] [Bridge] stateChange -> Won
+
+[EF] [App] gameOver score=280 difficulty=hard best=280 newRecord=true
+[EF] [GameManager] state=Won survived=5.0s score=280
+
+[EF] [EnemySpawner] begin difficulty=Hard interval=1.275s limit=20
+
+[EF] [Bridge] stateChange -> Ready
+
+[EF] [GameManager] state=Ready (return to menu)

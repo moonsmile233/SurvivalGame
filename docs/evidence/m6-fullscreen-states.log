@@ -1,0 +1,12 @@
+PASS  Ready 时全屏按钮可见
+PASS  Ready 能进入全屏
+PASS  全屏 Ready 下开始按钮仍可见
+PASS  全屏 Ready 下难度区仍可见
+PASS  Playing 时全屏按钮可见
+PASS  Paused 时全屏按钮可见
+PASS  Playing 能进入全屏
+PASS  全屏内画布滚轮不滚动页面 — scrollY=0
+PASS  能退出 Playing 全屏
+PASS  Result 时全屏按钮隐藏
+PASS  Result 时结算卡可见
+全部通过

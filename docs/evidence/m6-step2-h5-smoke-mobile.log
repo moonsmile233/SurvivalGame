@@ -1,0 +1,44 @@
+本地静态服务：http://127.0.0.1:8123（root=D:\unityFile\SurvivalGame\web）
+
+[1/8] 打开页面等待 onReady（chrome / 390×844）
+PASS  onReady 后开始按钮可见且可用
+      截图 → docs/evidence/e2e-local-chrome-mobile-ready.png
+
+[2/8] 填昵称并开始
+PASS  H5 显示「游戏中」
+PASS  开始按钮已隐藏
+      截图 → docs/evidence/e2e-local-chrome-mobile-playing.png
+
+[3/8] 触摸拖动（CDP 真实触摸事件）
+PASS  能在画布上完成一次触摸拖动
+PASS  拖动时页面不滚动（scrollY=0）
+
+[4/8] 真实失焦 → 暂停 → 切回仍暂停 → 主动恢复 3-2-1
+PASS  失焦后 H5 显示「已暂停」
+      截图 → docs/evidence/e2e-local-chrome-mobile-paused.png
+PASS  切回后仍保持「已暂停」，不自动恢复
+      截图 → docs/evidence/e2e-local-chrome-mobile-focus-return-paused.png
+PASS  能触发玩家主动恢复
+      截图 → docs/evidence/e2e-local-chrome-mobile-countdown.png
+PASS  主动恢复的 3-2-1 结束后进入「游戏中」
+      截图 → docs/evidence/e2e-local-chrome-mobile-resumed.png
+
+[5/8] 等待一局结束（不操作，约 20~40 秒）
+      截图 → docs/evidence/e2e-local-chrome-mobile-result.png
+PASS  结算后「重新开始」在首屏可见（y=783）
+PASS  结果标题正确（失败）
+PASS  本次得分合理（195）
+PASS  最高分不低于本次（195 >= 195）
+PASS  结算昵称是玩家昵称（E2E测试）
+PASS  存活秒数格式正确（15.7 秒）
+PASS  游戏画布仍在页面上（H5 未替换画布）
+      截图 → docs/evidence/e2e-local-chrome-mobile-result-round1.png
+
+[7/8] 刷新页面校验本地存储
+PASS  刷新后昵称仍在（E2E测试）
+PASS  刷新后最高分仍在（195 >= 195）
+
+[8/8] console 检查
+PASS  console 无未预期的 error（0）
+
+全部通过

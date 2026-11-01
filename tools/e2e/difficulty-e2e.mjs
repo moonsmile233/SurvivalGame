@@ -202,11 +202,11 @@ async function main() {
       await page.close();
     }
 
-    // ---------- E/F: 暂停/结算 → 返回主菜单 → 换档 → 开局 ----------
-    console.log('\n[E] 暂停 → 返回主菜单 → 换档 → 开局（中止不计分）');
+    // ---------- E/F/G: 难度卡常驻 + 3-2-1 + 中止不计分 ----------
+    console.log('\n[E] 倒计时中点卡取消 → Playing 点卡回 Ready → 开局');
+    const efContext = await browser.newContext({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
     {
-      // 5 秒回合 + 无敌：暂停、返回、换档都能在几秒内跑完
-      const page = await openPage(context, '?perf=1&invincible=1&roundDuration=5', 'EF');
+      const page = await openPage(efContext, '?perf=1&invincible=1&roundDuration=5', 'EF');
       await page.evaluate(() => {
         window.__gameOverCount = 0;
         const original = window.SurvivalApp.onGameOver;
@@ -216,47 +216,72 @@ async function main() {
         };
       });
 
-      // 普通档开一局，立刻暂停
-      await page.locator('.difficulty-card').nth(1).click();
+      // 开始 → 3-2-1 中点击困难卡：取消倒计时、回 Ready、选中困难，不后台开局
+      await page.click('#btn-start');
+      await page.waitForTimeout(150);
+      const cd = await page.evaluate(() => ({
+        hidden: document.querySelector('#countdown')?.hidden,
+        value: document.querySelector('#countdown-value')?.textContent,
+        page: document.body.dataset.page,
+      }));
+      check(cd.hidden === false && cd.value === '3', `E 开始有 3-2-1 倒计时（${cd.value}）`);
+      check(cd.page === 'Starting', `E 倒计时中页面为 Starting（${cd.page}）`);
+
+      await page.locator('.difficulty-card').nth(2).click();
+      await page.waitForTimeout(300);
+      const cancelled = await page.evaluate(() => ({
+        page: document.body.dataset.page,
+        hidden: document.querySelector('#countdown')?.hidden,
+        hardChecked: document.querySelector('input[value="hard"]')?.checked,
+        label: document.querySelector('#best-label')?.textContent,
+      }));
+      check(cancelled.hidden === true, 'E 倒计时中点卡取消倒计时');
+      check(cancelled.page === 'Ready', `E 取消后回 Ready（${cancelled.page}）`);
+      check(cancelled.hardChecked === true && cancelled.label === '困难', 'E 选中困难并刷新最高分行');
+
+      await page.waitForTimeout(3500);
+      const stillReady = await page.evaluate(() => ({
+        page: document.body.dataset.page,
+        count: window.__gameOverCount,
+        normal: window.localStorage.getItem('survival.bestScore.normal'),
+        easy: window.localStorage.getItem('survival.bestScore.easy'),
+      }));
+      check(stillReady.page === 'Ready', `E 取消后不会后台开局（${stillReady.page}）`);
+      check(stillReady.count === 0 && stillReady.normal === null && stillReady.easy === null, 'E 取消后没有结算、没有写最高分');
+      await page.screenshot({ path: evidence('m6-countdown-cancelled.png') });
+      console.log('      截图 → docs/evidence/m6-countdown-cancelled.png');
+
+      // 困难开一局 → Playing 点简单卡 → 中止回 Ready（不计分）
       await page.click('#btn-start');
       await page.waitForFunction(
         () => (document.querySelector('#status-hint')?.textContent || '').includes('游戏中'),
         null,
         { timeout: 30000 },
       );
-      await page.keyboard.press('p');
-      await page.waitForFunction(
-        () => (document.querySelector('#status-hint')?.textContent || '').includes('已暂停'),
-        null,
-        { timeout: 10000 },
-      );
-      check(await page.isVisible('#btn-pause-menu'), 'E Paused 时「返回主菜单」可见');
-
-      await page.click('#btn-pause-menu');
+      await page.locator('.difficulty-card').nth(0).click();
       await page.waitForFunction(() => document.body.dataset.page === 'Ready', null, { timeout: 15000 });
-      await page.waitForTimeout(400);
-
-      const afterReturn = await page.evaluate(() => ({
-        menuHidden: document.querySelector('#difficulty')?.hidden,
+      await page.waitForTimeout(300);
+      const aborted = await page.evaluate(() => ({
+        page: document.body.dataset.page,
+        easyChecked: document.querySelector('input[value="easy"]')?.checked,
+        count: window.__gameOverCount,
+        hard: window.localStorage.getItem('survival.bestScore.hard'),
         startHidden: document.querySelector('#btn-start')?.hidden,
-        gameOverCount: window.__gameOverCount,
-        normalBest: window.localStorage.getItem('survival.bestScore.normal'),
-        frame: (() => {
-          const r = document.querySelector('.game-frame')?.getBoundingClientRect();
-          return r ? { w: r.width, h: r.height } : null;
-        })(),
       }));
-      check(afterReturn.menuHidden === false, 'E 返回后难度区可见');
-      check(afterReturn.startHidden === false, 'E 返回后开始按钮可见');
-      check(afterReturn.gameOverCount === 0, `E 中止局没有 onGameOver（${afterReturn.gameOverCount}）`);
-      check(afterReturn.normalBest === null, `E 中止局不写最高分（normal=${afterReturn.normalBest}）`);
-
+      check(aborted.count === 0, `E Playing 点卡中止不计分（onGameOver=${aborted.count}）`);
+      check(aborted.page === 'Ready' && aborted.easyChecked === true, 'E 中止后回 Ready 且选中简单');
+      check(aborted.hard === null, `E 中止局不写困难最高分（hard=${aborted.hard}）`);
+      check(aborted.startHidden === false, 'E 中止后开始按钮可用');
       await page.screenshot({ path: evidence('m6-return-menu-ready.png') });
       console.log('      截图 → docs/evidence/m6-return-menu-ready.png');
 
-      // 换到简单档再开一局
-      await page.locator('.difficulty-card').nth(0).click();
+      // 简单开一局（含 3-2-1）→ 5 秒胜利
       await page.click('#btn-start');
+      await page.waitForFunction(
+        () => (document.querySelector('#status-hint')?.textContent || '').includes('游戏中'),
+        null,
+        { timeout: 30000 },
+      );
       const easyPayload = await waitResult(page, 60000);
       const easyState = await page.evaluate(() => ({
         difficulty: document.querySelector('#result-difficulty')?.textContent,
@@ -267,17 +292,31 @@ async function main() {
       check(easyPayload?.score === 250, `E 简单 5 秒胜利 = 50×1.0+200（${easyPayload?.score}）`);
       check(easyState.difficulty === '简单', `E 结算卡显示简单（${easyState.difficulty}）`);
       check(easyState.easyBest === '250', `E 简单档最高分写入（${easyState.easyBest}）`);
-      check(easyState.normalBest === null, `E 普通档仍未被中止局污染（${easyState.normalBest}）`);
+      check(easyState.normalBest === null, `E 普通档没有被污染（${easyState.normalBest}）`);
 
-      console.log('\n[F] Result → 返回主菜单 → 换档 → 开局 → 暂停/3-2-1');
-      check(await page.isVisible('#btn-result-menu'), 'F 结算卡里「返回主菜单」可见');
-      await page.click('#btn-result-menu');
+      console.log('\n[F] 重新开始有 3-2-1；倒计时中点困难卡 → Ready；再开局 + 暂停/3-2-1');
+      await page.click('#btn-restart');
+      await page.waitForTimeout(150);
+      const restartCd = await page.evaluate(() => ({
+        hidden: document.querySelector('#countdown')?.hidden,
+        value: document.querySelector('#countdown-value')?.textContent,
+      }));
+      check(restartCd.hidden === false && restartCd.value === '3', `F 重新开始也有 3-2-1（${restartCd.value}）`);
+
+      await page.locator('.difficulty-card').nth(2).click();
       await page.waitForFunction(() => document.body.dataset.page === 'Ready', null, { timeout: 15000 });
       await page.waitForTimeout(300);
-      check(await page.isVisible('#difficulty'), 'F 结算返回后难度区可见');
+      const resultToReady = await page.evaluate(() => ({
+        page: document.body.dataset.page,
+        hardChecked: document.querySelector('input[value="hard"]')?.checked,
+        count: window.__gameOverCount,
+        easyBest: window.localStorage.getItem('survival.bestScore.easy'),
+      }));
+      check(resultToReady.page === 'Ready' && resultToReady.hardChecked === true, 'F 结算中点困难卡 → Ready + 困难选中');
+      check(resultToReady.count === 1, `F 中止/切档不额外上报结算（${resultToReady.count}）`);
+      check(resultToReady.easyBest === '250', `F 简单档最高分保持（${resultToReady.easyBest}）`);
 
-      // 换困难 → 开局 → 暂停 → P 触发 3-2-1 → 恢复
-      await page.locator('.difficulty-card').nth(2).click();
+      // 困难开局 → 暂停 → P 触发 3-2-1 → 恢复 → 5 秒胜利
       await page.click('#btn-start');
       await page.waitForFunction(
         () => (document.querySelector('#status-hint')?.textContent || '').includes('游戏中'),
@@ -307,10 +346,29 @@ async function main() {
       check(hardState.hardBest === '280', `F 困难档最高分写入（${hardState.hardBest}）`);
       check(hardState.easyBest === '250', `F 简单档最高分保持（${hardState.easyBest}）`);
 
+      console.log('\n[G] 开始倒计时中失焦 → 取消，不后台开局');
+      await page.locator('.difficulty-card').nth(1).click();
+      await page.waitForFunction(() => document.body.dataset.page === 'Ready', null, { timeout: 15000 });
+      await page.waitForTimeout(300);
+      await page.click('#btn-start');
+      await page.waitForTimeout(200);
+      await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+      await page.waitForTimeout(3500);
+      const blurState = await page.evaluate(() => ({
+        page: document.body.dataset.page,
+        hidden: document.querySelector('#countdown')?.hidden,
+        count: window.__gameOverCount,
+      }));
+      check(blurState.hidden === true, 'G 失焦取消倒计时');
+      check(blurState.page === 'Ready', `G 失焦后仍停在 Ready（${blurState.page}）`);
+      check(blurState.count === 2, `G 失焦不会产生新结算（${blurState.count}）`);
+      await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+
       await page.screenshot({ path: evidence('m6-return-menu-hard-result.png') });
       console.log('      截图 → docs/evidence/m6-return-menu-hard-result.png');
       await page.close();
     }
+    await efContext.close();
 
     fs.writeFileSync(evidence('m6-difficulty-e2e.log'), consoleText.join('\n'));
     console.log('\nconsole 原文 → docs/evidence/m6-difficulty-e2e.log');

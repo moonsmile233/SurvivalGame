@@ -75,18 +75,7 @@ body {
   color: var(--muted);
 }
 
-body[data-page="Playing"] .tagline,
-body[data-page="Paused"] .tagline,
-body[data-page="Result"] .tagline {
-  display: none;
-}
-
-/* 版本号只在菜单里看；局内/结算让出高度（1280×720 局内会因此多出约 32px 余量） */
-body[data-page="Playing"] .footer,
-body[data-page="Paused"] .footer,
-body[data-page="Result"] .footer {
-  display: none;
-}
+/* 菜单常驻后页面结构在所有状态一致：不再按状态隐藏规则行/页脚，避免开局时页面跳动。 */
 
 .nickname-field {
   display: flex;
@@ -169,6 +158,28 @@ body[data-page="Result"] .footer {
   max-width: 40em;
 }
 
+/* 开始/重开的 3-2-1：盖在画布上，和 Unity 暂停面板的倒计时观感一致（深色底 + 大号白字）。
+   pointer-events:none 让点击照常落到画布（倒计时期间本来也不接受画布交互）。 */
+.countdown {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(13, 13, 21, 0.55);
+  pointer-events: none;
+}
+
+.countdown-value {
+  font-size: clamp(44px, 16vw, 96px);
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.7);
+  font-variant-numeric: tabular-nums;
+}
+
 .error-card {
   display: flex;
   flex-direction: column;
@@ -223,11 +234,6 @@ body[data-page="Result"] .footer {
   box-shadow: inset 0 0 0 1px var(--accent);
 }
 
-/* 高竖屏局内：菜单仍占位（避免页面跳），但整组弱化、不可点 */
-.difficulty.is-locked .difficulty-card {
-  opacity: 0.6;
-  cursor: default;
-}
 
 /* 原生 radio：只做视觉隐藏，键盘/读屏能力保留（不要 display:none 或 visibility:hidden）。 */
 .difficulty-input {
@@ -520,7 +526,6 @@ body[data-page="Result"] .footer {
     display: none;
   }
 
-  /* 菜单态多了难度卡 + 说明，画面要给它们让高度；局内仍是原来的 132px 预算。 */
   .difficulty-card {
     min-height: 44px;
     padding: 6px 10px;
@@ -530,20 +535,14 @@ body[data-page="Result"] .footer {
     display: none;
   }
 
-  /* 用高度定尺寸，宽度由 16:9 反推：保证页头+按钮+提示刚好占满一屏，不出现纵向滚动。 */
+  /* 用高度定尺寸，宽度由 16:9 反推：横屏一屏仍能放下标题/菜单/按钮/画面。
+     菜单常驻后页面允许纵向滚动，超出部分靠滚动，不缩画布。 */
   .game-frame {
     height: calc(100vh - 132px);
     height: calc(100dvh - 132px);
     width: auto;
     max-width: 100%;
     align-self: center;
-  }
-
-  body[data-page="Ready"] .game-frame,
-  body[data-page="Starting"] .game-frame,
-  body[data-page="Loading"] .game-frame {
-    height: calc(100vh - 250px);
-    height: calc(100dvh - 250px);
   }
 }
 
@@ -554,29 +553,11 @@ body[data-page="Result"] .footer {
   }
 }
 
-/* 菜单态（Ready）要同时放难度卡 + 开始，画面按「剩余高度」反推尺寸；
-   局内恢复原来的尺寸，避免因为菜单把游玩画面永久压小。
-   短横屏有自己的规则（见上面的 max-height: 560px 段），这里不覆盖。 */
-@media (min-height: 561px) {
-  body[data-page="Ready"] .game-frame,
-  body[data-page="Starting"] .game-frame,
-  body[data-page="Loading"] .game-frame {
-    width: min(100%, calc((100vh - 420px) * 16 / 9));
-    width: min(100%, calc((100dvh - 420px) * 16 / 9));
-  }
-}
-
-/* 小屏竖屏（320×568 一类）：菜单占的固定高度更多，再把画面压一档并收紧间距 */
+/* 菜单常驻后页面会变高：允许纵向滚动（网页游戏的常规做法），画布在所有状态保持完整尺寸。
+   320×568 这类小屏只是收紧间距，不再缩小画布。 */
 @media (max-height: 620px) and (orientation: portrait) {
   .shell {
     gap: 8px;
-  }
-
-  body[data-page="Ready"] .game-frame,
-  body[data-page="Starting"] .game-frame,
-  body[data-page="Loading"] .game-frame {
-    width: min(100%, calc((100vh - 470px) * 16 / 9));
-    width: min(100%, calc((100dvh - 470px) * 16 / 9));
   }
 }
 
@@ -620,7 +601,8 @@ html:fullscreen body[data-page="Result"] .controls {
 }
 
 html:fullscreen body[data-page="Playing"] .difficulty,
-html:fullscreen body[data-page="Paused"] .difficulty {
+html:fullscreen body[data-page="Paused"] .difficulty,
+html:fullscreen body[data-page="Result"] .difficulty {
   display: none !important;
 }
 

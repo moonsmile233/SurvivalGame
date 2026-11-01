@@ -32,24 +32,24 @@ PASS  主动恢复的 3-2-1 结束后进入「游戏中」
       截图 → docs/evidence/e2e-local-chrome-desktop-result.png
 PASS  结算后「重新开始」在首屏可见（y=739）
 PASS  结果标题正确（失败）
-PASS  本次得分合理（160）
-PASS  最高分不低于本次（160 >= 160）
+PASS  本次得分合理（195）
+PASS  最高分不低于本次（195 >= 195）
 PASS  结算昵称是玩家昵称（E2E测试）
-PASS  存活秒数格式正确（16.5 秒）
+PASS  存活秒数格式正确（15.9 秒）
 PASS  游戏画布仍在页面上（H5 未替换画布）
 
 [6/8] 第 2 局：点「重新开始」
 PASS  第 2 局开始后结算卡片隐藏
-PASS  第 2 局得分合理且未累加（170）
+PASS  第 2 局得分合理且未累加（208）
 
 [6/8] 第 3 局：点「重新开始」
 PASS  第 3 局开始后结算卡片隐藏
-PASS  第 3 局得分合理且未累加（180）
+PASS  第 3 局得分合理且未累加（195）
       截图 → docs/evidence/e2e-local-chrome-desktop-result-round3.png
 
 [7/8] 刷新页面校验本地存储
 PASS  刷新后昵称仍在（E2E测试）
-PASS  刷新后最高分仍在（180 >= 180）
+PASS  刷新后最高分仍在（208 >= 208）
 
 [8/8] console 检查
 PASS  console 无未预期的 error（0）

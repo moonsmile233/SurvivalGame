@@ -25,9 +25,10 @@
 
     <p class="rotate-hint">横屏体验更佳</p>
 
-    <!-- 难度（M6 §2）：只在 Loading/Ready/Starting 可见，开局后锁死。
-         用原生 radio + label：方向键、读屏、disabled 都交给浏览器，不额外写键盘处理。 -->
-    <section id="difficulty" class="difficulty" role="radiogroup" aria-label="难度" hidden>
+    <!-- 难度（M6 §2）：常驻可见、随时可点。
+         Ready 只选择；倒计时中点会取消倒计时；Playing/Paused/Result 点会中止本局回主菜单（不计分）。
+         用原生 radio + label：方向键、读屏能力交给浏览器。 -->
+    <section id="difficulty" class="difficulty" role="radiogroup" aria-label="难度">
       <div class="difficulty-cards">
         <label class="difficulty-card">
           <input class="difficulty-input" type="radio" name="difficulty" value="easy" disabled>
@@ -53,6 +54,15 @@
       <p class="difficulty-note">倍率只作用于存活分，胜利奖励固定 +200</p>
     </section>
 
+    <!-- 开始/全屏在画布上方：Ready 首屏一定能看到开始；Playing 时只隐藏开始按钮，行高不变。
+         页面允许纵向滚动（菜单常驻后高度会超出小屏），画布自己 touch-action:none，拖动摇杆不会滚页。 -->
+    <section class="controls">
+      <button id="btn-start" class="btn" type="button" disabled>开始游戏</button>
+      <button id="btn-fullscreen" class="btn btn-secondary" type="button">全屏</button>
+      <p id="status-hint" class="status-hint" aria-live="polite"></p>
+      <p id="fullscreen-hint" class="status-hint" role="status" hidden></p>
+    </section>
+
     <section class="game-frame" aria-label="游戏画面">
       <canvas id="unity-canvas" tabindex="0"></canvas>
       <div id="overlay" class="overlay">
@@ -62,15 +72,11 @@
           <button id="btn-retry" class="btn" type="button">重试</button>
         </div>
       </div>
-    </section>
-
-    <section class="controls">
-      <button id="btn-start" class="btn" type="button" disabled>开始游戏</button>
-      <button id="btn-fullscreen" class="btn btn-secondary" type="button">全屏</button>
-      <!-- Paused 才能看到：局内先暂停再返回，避免误触（M6 §2 换难度不需要刷新） -->
-      <button id="btn-pause-menu" class="btn btn-secondary" type="button" hidden>返回主菜单</button>
-      <p id="status-hint" class="status-hint" aria-live="polite"></p>
-      <p id="fullscreen-hint" class="status-hint" role="status" hidden></p>
+      <!-- 开始/重新开始的 3-2-1：H5 自己在画布上倒数，3 秒后才发 StartGame/RestartGame。
+           与 Unity 暂停面板的 3-2-1 视觉尽量一致；倒计时中点难度卡或页面切走都会取消。 -->
+      <div id="countdown" class="countdown" aria-live="assertive" aria-atomic="true" hidden>
+        <span id="countdown-value" class="countdown-value">3</span>
+      </div>
     </section>
 
     <p class="op-hint">
@@ -110,7 +116,6 @@
       <!-- 按钮放进结算卡：block:'start' 滚动后卡片与按钮同屏，小屏不会把按钮顶出视口（M4.6/M4.7 响应式）。 -->
       <div class="result-actions">
         <button id="btn-restart" class="btn" type="button" hidden>重新开始</button>
-        <button id="btn-result-menu" class="btn btn-secondary" type="button" hidden>返回主菜单</button>
       </div>
     </section>
 

@@ -141,13 +141,13 @@ async function checkLayout(context, width, height) {
   const minCard = shortLandscape ? 36 : 44;
 
   check(m.scrollW <= m.innerW + 1, `${label} 无横向溢出（scrollW ${m.scrollW} ≤ innerW ${m.innerW}）`);
-  check(m.scrollH <= m.innerH + 1, `${label} 无纵向溢出（scrollH ${m.scrollH} ≤ innerH ${m.innerH}）`);
+  // 纵向滚动是允许的（菜单常驻后页面会变高），只记录高度用于报告。
   check(!!m.difficulty && m.difficulty.h > 0, `${label} 难度区可见`);
   check(m.cards.length === 3, `${label} 三张难度卡都在（${m.cards.length}）`);
   check(m.cards.every((card) => card.h + 0.5 >= minCard), `${label} 难度卡命中区 ≥${minCard}px（${m.cards.map((c) => Math.round(c.h)).join('/')}）`);
   check(!!m.start && m.start.bottom <= m.innerH + 0.5 && m.start.y >= 0, `${label} 开始按钮在首屏内（bottom ${Math.round(m.start.bottom)} ≤ ${m.innerH}）`);
-  check(m.difficulty.bottom <= m.frame.y + 0.5, `${label} 难度区不与画面重叠`);
-  check(m.frame.bottom <= m.controls.y + 0.5, `${label} 画面不与操作区重叠`);
+  check(m.difficulty.bottom <= m.controls.y + 0.5, `${label} 难度区在操作区之上`);
+  check(m.controls.bottom <= m.frame.y + 0.5, `${label} 开始/全屏在画布上方`);
   check(m.fullscreenButtonVisible, `${label} Ready 下全屏按钮可见`);
   check(m.page === 'Ready', `${label} 页面状态 body[data-page]=Ready`);
 
@@ -272,10 +272,20 @@ async function checkPlaying(context, width, height) {
   await waitReady(page);
 
   const ready = await measure(page);
-  const tallPortrait = width < height && height >= 700;
 
   await page.fill('#nickname', '布局');
   await page.click('#btn-start');
+  await page.waitForTimeout(150);
+  const countdownState = await page.evaluate(() => ({
+    hidden: document.querySelector('#countdown')?.hidden,
+    value: document.querySelector('#countdown-value')?.textContent,
+    page: document.body.dataset.page,
+  }));
+  check(
+    countdownState.hidden === false && countdownState.value === '3' && countdownState.page === 'Starting',
+    `${label}（Playing）开始有 3-2-1 倒计时（${countdownState.value}/${countdownState.page}）`,
+  );
+
   await page.waitForFunction(
     () => (document.querySelector('#status-hint')?.textContent || '').includes('游戏中'),
     null,
@@ -311,23 +321,60 @@ async function checkPlaying(context, width, height) {
   });
 
   check(m.scrollW <= m.innerW + 1, `${label}（Playing）无横向溢出（${m.scrollW} ≤ ${m.innerW}）`);
-  check(m.scrollH <= m.innerH + 1, `${label}（Playing）无纵向溢出（${m.scrollH} ≤ ${m.innerH}）`);
   check(m.startHidden === true, `${label}（Playing）开始按钮隐藏`);
 
-  if (tallPortrait) {
-    // 高竖屏：菜单保留（不可点），画布尺寸与 Ready 相同，页面不跳
-    check(m.difficultyHidden === false, `${label}（Playing）高竖屏保留难度区`);
-    check(m.difficultyLocked === true && m.cardsDisabled === true, `${label}（Playing）难度卡禁用并弱化`);
-    check(
-      Math.abs(m.frame.w - ready.frame.w) <= 0.5 && Math.abs(m.frame.h - ready.frame.h) <= 0.5,
-      `${label}（Playing）画布与 Ready 同尺寸（${Math.round(m.frame.w)}×${Math.round(m.frame.h)} vs ${Math.round(ready.frame.w)}×${Math.round(ready.frame.h)}）`,
-    );
-  } else {
-    check(m.difficultyHidden === true, `${label}（Playing）短屏/横屏/桌面隐藏难度区`);
-    check(m.frame.h > ready.frame.h + 0.5, `${label}（Playing）画面比 Ready 大（${Math.round(m.frame.h)} > ${Math.round(ready.frame.h)}）`);
-  }
+  // 菜单常驻：所有状态都显示难度区、卡片可点；画布尺寸与 Ready 相同（不再有局内放大）
+  check(m.difficultyHidden === false, `${label}（Playing）难度区常驻可见`);
+  check(m.cardsDisabled === false, `${label}（Playing）难度卡仍可点`);
+  check(
+    Math.abs(m.frame.w - ready.frame.w) <= 0.5 && Math.abs(m.frame.h - ready.frame.h) <= 0.5,
+    `${label}（Playing）画布与 Ready 同尺寸（${Math.round(m.frame.w)}×${Math.round(m.frame.h)} vs ${Math.round(ready.frame.w)}×${Math.round(ready.frame.h)}）`,
+  );
 
-  check(!!m.frame && m.frame.bottom <= m.innerH + 0.5, `${label}（Playing）画面在视口内`);
+  // 画布保持完整尺寸；页面允许纵向滚动，所以不要求 frame 整个在首屏内。
+  const touchAction = await page.evaluate(
+    () => getComputedStyle(document.querySelector('#unity-canvas')).touchAction,
+  );
+  check(touchAction === 'none', `${label}（Playing）画布 touch-action:none（拖动摇杆不滚页）`);
+
+  if (m.scrollH > m.innerH + 1) {
+    // 滚轮两条路径都要能滚页（M6 §1.3）：
+    // - 画布上：Unity 默认 preventDefault，app.js 的 onCanvasWheel 自己 scrollBy；
+    // - 画布外：走浏览器原生滚动。
+    // 同时校验「不双重滚动」：单次 40px 若被浏览器默认+我们的 scrollBy 叠加会变成 80px。
+    // 每次测前先回顶，避免点击开始按钮留下的滚动量造成假通过（320 之前就是这样暴露的）。
+    const maxScroll = m.scrollH - m.innerH;
+    const step = 40;
+    const wanted = Math.min(step, maxScroll);
+    const resetScroll = async () => {
+      await page.evaluate(() => window.scrollTo(0, 0));
+      await page.waitForTimeout(100);
+    };
+
+    const centerX = Math.round(Math.min(Math.max(m.frame.x + m.frame.w / 2, 20), m.innerW - 20));
+    const centerY = Math.round(Math.min(Math.max(m.frame.y + 40, 20), m.innerH - 20));
+    await resetScroll();
+    await page.mouse.move(centerX, centerY);
+    await page.mouse.wheel(0, step);
+    await page.waitForTimeout(300);
+    const canvasScrolled = await page.evaluate(() => window.scrollY);
+    check(
+      canvasScrolled >= Math.min(10, wanted) && canvasScrolled <= wanted + 8,
+      `${label}（Playing）画布上滚轮能滚页且不双重（scrollY ${Math.round(canvasScrolled)}，期望 ${wanted}）`,
+    );
+
+    await resetScroll();
+    await page.mouse.move(Math.round(m.innerW / 2), 6);
+    await page.mouse.wheel(0, step);
+    await page.waitForTimeout(300);
+    const outsideScrolled = await page.evaluate(() => window.scrollY);
+    check(
+      outsideScrolled > 0,
+      `${label}（Playing）画布外滚轮能滚动页面（scrollY ${Math.round(outsideScrolled)}）`,
+    );
+
+    await resetScroll();
+  }
 
   const buf = m.canvasBuffer;
   const css = m.canvasCss;
@@ -352,9 +399,24 @@ async function checkPlaying(context, width, height) {
       },
     }));
   });
-  await page.waitForTimeout(200);
-  const resultMenuHidden = await page.evaluate(() => document.querySelector('#difficulty')?.hidden === true);
-  check(resultMenuHidden, `${label}（Result）隐藏难度区`);
+  await page.waitForTimeout(700);
+  const resultState = await page.evaluate(() => {
+    const el = document.querySelector('#result');
+    const r = el ? el.getBoundingClientRect() : null;
+    return {
+      menuHidden: document.querySelector('#difficulty')?.hidden,
+      resultVisible: !!el && !el.hidden && !!r && r.height > 0,
+      resultBottom: r ? r.bottom : null,
+      innerH: window.innerHeight,
+      cardsDisabled: Array.from(document.querySelectorAll('.difficulty-input')).some((input) => input.disabled),
+    };
+  });
+  check(resultState.menuHidden === false && resultState.cardsDisabled === false, `${label}（Result）难度区常驻且可点`);
+  check(resultState.resultVisible === true, `${label}（Result）结算卡可见`);
+  check(
+    resultState.resultBottom !== null && resultState.resultBottom <= resultState.innerH + 2,
+    `${label}（Result）结算卡能滚到可见（bottom ${Math.round(resultState.resultBottom)} ≤ ${resultState.innerH}）`,
+  );
 
   await page.close();
 }

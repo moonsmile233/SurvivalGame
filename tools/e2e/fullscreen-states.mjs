@@ -1,6 +1,7 @@
-// 全屏按钮的状态门禁（M4.5 §1 策划验收 P2）：
-// Ready / Result 不允许进全屏（否则 .controls 或 .result 被 CSS 隐藏，玩家卡在静止画面），
-// Playing / Paused 才显示「全屏」。一次跑完，截图写 docs/evidence/resp-<label>-fullscreen-gate-*.png。
+// 全屏按钮的状态门禁（M4.5 §1 策划验收 P2；M6 §2 更新）：
+// Ready / Starting / Playing / Paused 显示「全屏」，Result 不允许（结算卡在页面里，全屏只剩画面会卡住）。
+// Ready 全屏必须仍能看到难度区与开始按钮（CSS 按 body[data-page] 保留 .controls/.difficulty）。
+// 一次跑完，截图写 docs/evidence/resp-<label>-fullscreen-gate-*.png。
 // 用法：BASE_URL=http://127.0.0.1:8125 VIEWPORT=1280x800 node fullscreen-states.mjs
 import { chromium } from 'playwright';
 import { chromiumLaunchOptions } from './launch.mjs';
@@ -66,6 +67,23 @@ await page.waitForFunction(
   null,
   { timeout: 20000 },
 );
+
+// Playing 全屏 + 滚轮：全屏里页面本就不该滚（html:fullscreen overflow:hidden），
+// app.js 的 onCanvasWheel 也在全屏时放行，不做 scrollBy；防止将来把穿透逻辑扩到全屏。
+await page.click('#btn-fullscreen');
+await page.waitForTimeout(500);
+check('Playing 能进入全屏', await page.evaluate(() => !!document.fullscreenElement));
+await page.evaluate(() => window.scrollTo(0, 0));
+const canvasBox = await page.locator('#unity-canvas').boundingBox();
+await page.mouse.move(canvasBox.x + canvasBox.width / 2, canvasBox.y + canvasBox.height / 2);
+await page.mouse.wheel(0, 200);
+await page.waitForTimeout(300);
+const fullscreenScroll = await page.evaluate(() => window.scrollY);
+check('全屏内画布滚轮不滚动页面', fullscreenScroll === 0, `scrollY=${fullscreenScroll}`);
+await page.screenshot({ path: path.join(evidenceDir, `resp-${label}-fullscreen-gate-playing.png`) });
+await page.click('#btn-exit-fullscreen');
+await page.waitForTimeout(400);
+check('能退出 Playing 全屏', !(await page.evaluate(() => !!document.fullscreenElement)));
 
 // 结算：不操作，等自然结束（最长 60 秒）
 await page.waitForSelector('#result:not([hidden])', { timeout: 120000 });

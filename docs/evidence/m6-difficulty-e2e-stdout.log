@@ -1,0 +1,70 @@
+
+[A] hard 死亡：damage=14 / difficulty=hard / 分数倍率
+PASS  A 收到 onGameOver 载荷
+PASS  A onGameOver.difficulty=hard（hard）
+PASS  A 站立不动应当死亡（lose）
+PASS  A 分数按困难倍率结算（score 208 ≈ floor(14)×16=224）
+PASS  A console 出现 damage=14（困难伤害倍率生效）
+PASS  A 结算卡显示困难（困难）
+PASS  A 困难最高分写入 bestScore.hard（208）
+PASS  A 不写普通档（normal=null）
+      截图 → docs/evidence/m6-difficulty-hard-lose.png
+
+[B] hard 60 秒胜利 = 1160
+PASS  B 60 秒判定胜利（win）
+PASS  B 存活 60 秒（60）
+PASS  B difficulty=hard（hard）
+PASS  B 分数 1160 = 600×1.6+200（1160）
+PASS  B breakdown.survival=960（960）
+PASS  B winBonus=200 不乘倍率（200）
+      截图 → docs/evidence/m6-difficulty-hard-win.png
+
+[C] v1 载荷（纯昵称）→ normal
+PASS  C 缺 difficulty → normal（normal）
+PASS  C 5 秒压测回合正常结束（win）
+
+[D] 非法 difficulty → normal
+PASS  D 非法值 → normal（normal）
+PASS  D bridge 打出未知难度 warning
+
+[E] 倒计时中点卡取消 → Playing 点卡回 Ready → 开局
+PASS  E 开始有 3-2-1 倒计时（3）
+PASS  E 倒计时中页面为 Starting（Starting）
+PASS  E 倒计时中点卡取消倒计时
+PASS  E 取消后回 Ready（Ready）
+PASS  E 选中困难并刷新最高分行
+PASS  E 取消后不会后台开局（Ready）
+PASS  E 取消后没有结算、没有写最高分
+      截图 → docs/evidence/m6-countdown-cancelled.png
+PASS  E Playing 点卡中止不计分（onGameOver=0）
+PASS  E 中止后回 Ready 且选中简单
+PASS  E 中止局不写困难最高分（hard=null）
+PASS  E 中止后开始按钮可用
+      截图 → docs/evidence/m6-return-menu-ready.png
+PASS  E 换档后开局 difficulty=easy（easy）
+PASS  E 简单 5 秒胜利 = 50×1.0+200（250）
+PASS  E 结算卡显示简单（简单）
+PASS  E 简单档最高分写入（250）
+PASS  E 普通档没有被污染（null）
+
+[F] 重新开始有 3-2-1；倒计时中点困难卡 → Ready；再开局 + 暂停/3-2-1
+PASS  F 重新开始也有 3-2-1（3）
+PASS  F 结算中点困难卡 → Ready + 困难选中
+PASS  F 中止/切档不额外上报结算（1）
+PASS  F 简单档最高分保持（250）
+PASS  F 返回菜单后 3-2-1 仍能恢复（Playing）
+PASS  F 换困难后 difficulty=hard（hard）
+PASS  F 困难 5 秒胜利 = 50×1.6+200（280）
+PASS  F 结算卡显示困难（困难）
+PASS  F 困难档最高分写入（280）
+PASS  F 简单档最高分保持（250）
+
+[G] 开始倒计时中失焦 → 取消，不后台开局
+PASS  G 失焦取消倒计时
+PASS  G 失焦后仍停在 Ready（Ready）
+PASS  G 失焦不会产生新结算（2）
+      截图 → docs/evidence/m6-return-menu-hard-result.png
+
+console 原文 → docs/evidence/m6-difficulty-e2e.log
+
+全部通过
