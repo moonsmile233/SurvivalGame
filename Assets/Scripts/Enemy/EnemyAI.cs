@@ -50,6 +50,7 @@ namespace Survival.Enemy
         [SerializeField] private Camera _camera;
 
         private float _baseSpeed;
+        private int _contactDamage;
         private float _stopRadius;
         private float _offScreenSeconds;
         private bool _hasBeenSeen;
@@ -111,8 +112,11 @@ namespace Survival.Enemy
                 return;
             }
 
+            // 难度在生成时结算一次（局内锁定，见协议 v2 §2.2）：不要放进 Update，
+            // 避免每帧读档位、也避免中途改档位导致同一只敌人速度/伤害跳变。
             float jitter = 1f + Random.Range(-config.EnemySpeedJitter, config.EnemySpeedJitter);
-            _baseSpeed = Mathf.Min(definition.MoveSpeed * jitter, config.EnemySpeedMax);
+            _baseSpeed = Mathf.Min(definition.MoveSpeed * config.EnemySpeedMultiplier * jitter, config.EnemySpeedMax);
+            _contactDamage = Mathf.Max(1, Mathf.RoundToInt(definition.ContactDamage * config.DamageMultiplier));
         }
 
         /// <summary>Spawner 30Hz 调用：只更新“看得见谁”，位置在 Update 里读实时 transform。</summary>
@@ -581,7 +585,8 @@ namespace Survival.Enemy
                 return;
             }
 
-            _playerHealth.TakeDamage(_definition.ContactDamage);
+            // 伤害在 Initialize 里按难度算好（_contactDamage），这里是唯一伤害入口。
+            _playerHealth.TakeDamage(_contactDamage);
         }
     }
 }

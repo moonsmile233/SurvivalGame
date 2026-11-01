@@ -11,7 +11,7 @@ using UnityEngine;
 /// </summary>
 public class WebGLBridge : MonoBehaviour
 {
-    private const int ProtocolVersion = 1;
+    private const int ProtocolVersion = 2;
     private const int MaxNicknameLength = 64;
 
     [SerializeField] private GameManager _gameManager;
@@ -117,8 +117,11 @@ public class WebGLBridge : MonoBehaviour
                 survivedSeconds = Mathf.Round(survived * 10f) / 10f,
                 kills = score.Kills,
                 nickname = _nickname,
+                // 回传「Unity 实际采用」的档位（非法/缺省已被回落为 normal），H5 以它分档记分。
+                difficulty = DifficultyToWire(_gameManager.Config.ActiveDifficulty),
                 breakdown = new ScoreBreakdown
                 {
+                    // survival 已含难度倍率；H5 只展示，不再换算（协议 v2 §3）。
                     survival = score.SurvivalScore,
                     kills = score.KillScore,
                     winBonus = score.WinBonus,
@@ -132,7 +135,10 @@ public class WebGLBridge : MonoBehaviour
 
     // ---------- H5 → Unity（SendMessage 只能带一个 string 参数） ----------
 
-    /// <summary>Ready → Playing。参数：JSON `{"nickname":"..."}`；兼容直接传昵称字符串。</summary>
+    /// <summary>
+    /// Ready → Playing。参数：JSON `{"nickname":"...","difficulty":"easy|normal|hard"}`；
+    /// 兼容 v1 的直接传昵称字符串（难度按 normal）。难度只在这里解析一次，局内锁定（协议 v2 §2.2）。
+    /// </summary>
     public void StartGame(string payload)
     {
         if (!EnsureManager("StartGame"))
@@ -146,13 +152,14 @@ public class WebGLBridge : MonoBehaviour
             return;
         }
 
-        _nickname = ParseNickname(payload);
+        ParseStartGame(payload, out string nickname, out Difficulty difficulty);
+        _nickname = nickname;
         _pausedByVisibility = false;
         _reported = false;
 
         // 能收到 StartGame 就说明页面在驱动游戏：结算交给 H5（ticket M4 1.3）。
         IsEmbedded = true;
-        _gameManager.StartGame();
+        _gameManager.StartGame(difficulty);
     }
 
     /// <summary>Playing → Paused（H5 手动暂停）。</summary>
@@ -236,10 +243,14 @@ public class WebGLBridge : MonoBehaviour
         return false;
     }
 
-    /// <summary>只解析昵称，不渲染；超长直接截断，避免把异常大的字符串带进结算 JSON。</summary>
-    private static string ParseNickname(string payload)
+    /// <summary>
+    /// 解析昵称 + 难度（一次解析、开局快照）。昵称只保存不渲染，超长截断，避免把异常大的字符串带进结算 JSON。
+    /// 非法/缺省难度 → normal；纯昵称字符串（v1 写法）→ 昵称 + normal。
+    /// </summary>
+    private static void ParseStartGame(string payload, out string nickname, out Difficulty difficulty)
     {
-        string nickname = string.Empty;
+        nickname = string.Empty;
+        difficulty = Difficulty.Normal;
 
         if (!string.IsNullOrEmpty(payload))
         {
@@ -249,19 +260,30 @@ public class WebGLBridge : MonoBehaviour
                 try
                 {
                     var message = JsonUtility.FromJson<StartGameMessage>(trimmed);
-                    if (message != null && message.nickname != null)
+                    if (message != null)
                     {
-                        nickname = message.nickname;
+                        if (message.nickname != null)
+                        {
+                            nickname = message.nickname;
+                        }
+
+                        // 缺省（v1 H5）静默按 normal；有值但认不出才告警，方便排查前端拼错。
+                        if (!string.IsNullOrEmpty(message.difficulty) &&
+                            !TryParseDifficulty(message.difficulty, out difficulty))
+                        {
+                            Debug.LogWarning($"[Bridge] 未知难度 '{message.difficulty}'，按 normal 处理");
+                            difficulty = Difficulty.Normal;
+                        }
                     }
                 }
                 catch (Exception exception)
                 {
-                    Debug.LogWarning($"[Bridge] StartGame JSON 解析失败，按空昵称处理: {exception.Message}");
+                    Debug.LogWarning($"[Bridge] StartGame JSON 解析失败，按空昵称/普通难度处理: {exception.Message}");
                 }
             }
             else
             {
-                // 兼容旧协议：直接传昵称字符串。
+                // 兼容旧协议：直接传昵称字符串（难度 normal）。
                 nickname = trimmed;
             }
         }
@@ -271,8 +293,39 @@ public class WebGLBridge : MonoBehaviour
         {
             nickname = nickname.Substring(0, MaxNicknameLength);
         }
+    }
 
-        return nickname;
+    /// <summary>线格式 → 枚举。只认小写三值；其它一律 false（调用方回落 normal）。</summary>
+    private static bool TryParseDifficulty(string value, out Difficulty difficulty)
+    {
+        switch (value)
+        {
+            case "easy":
+                difficulty = Difficulty.Easy;
+                return true;
+            case "normal":
+                difficulty = Difficulty.Normal;
+                return true;
+            case "hard":
+                difficulty = Difficulty.Hard;
+                return true;
+            default:
+                difficulty = Difficulty.Normal;
+                return false;
+        }
+    }
+
+    private static string DifficultyToWire(Difficulty difficulty)
+    {
+        switch (difficulty)
+        {
+            case Difficulty.Easy:
+                return "easy";
+            case Difficulty.Hard:
+                return "hard";
+            default:
+                return "normal";
+        }
     }
 
     // ---------- 原生桥 ----------
@@ -306,6 +359,7 @@ public class WebGLBridge : MonoBehaviour
     private sealed class StartGameMessage
     {
         public string nickname;
+        public string difficulty;
     }
 
     [Serializable]
@@ -324,6 +378,7 @@ public class WebGLBridge : MonoBehaviour
         public float survivedSeconds;
         public int kills;
         public string nickname;
+        public string difficulty;
         public ScoreBreakdown breakdown;
     }
 

@@ -96,17 +96,30 @@ namespace Survival.Core
             _autoStart = enabled;
         }
 
-        /// <summary>Ready → Playing（M3 由 H5 StartGame 调用）。</summary>
+        /// <summary>Editor 自测/自动开局用：按普通档开局。</summary>
         public void StartGame()
+        {
+            StartGame(Difficulty.Normal);
+        }
+
+        /// <summary>
+        /// Ready → Playing（M3/M6 由 H5 StartGame 调用）。
+        /// 难度**只在这里设置一次**并写入 GameConfig 的运行时字段（不写回资产）；局内锁定，
+        /// RestartGame 沿用，不重新读 H5（协议 v2 §2.2）。
+        /// </summary>
+        public void StartGame(Difficulty difficulty)
         {
             if (State != GameState.Ready)
             {
                 return;
             }
 
+            _config.SetActiveDifficulty(difficulty);
+            ValidateDifficultyProfile();
+
             ResetRound();
             SetState(GameState.Playing);
-            Debug.Log("[GameManager] state=Playing");
+            Debug.Log($"[GameManager] state=Playing difficulty={_config.ActiveDifficulty}");
         }
 
         /// <summary>Playing → Paused，统一 Time.timeScale = 0。</summary>
@@ -167,7 +180,21 @@ namespace Survival.Core
 
             ResetRound();
             SetState(GameState.Playing);
-            Debug.Log("[GameManager] state=Playing (restart)");
+            Debug.Log($"[GameManager] state=Playing (restart) difficulty={_config.ActiveDifficulty}");
+        }
+
+        /// <summary>
+        /// GameConfig 的档位数组按枚举下标取（协议 v2 §2.2）。数组顺序被改错时数值会静默错档，
+        /// 所以在开局时校验一次（每局一次，不进热路径）。
+        /// </summary>
+        private void ValidateDifficultyProfile()
+        {
+            DifficultyProfile profile = _config.ActiveProfile;
+            if (profile != null && profile.Id != _config.ActiveDifficulty)
+            {
+                Debug.LogWarning(
+                    $"[GameManager] 难度档案顺序不一致：active={_config.ActiveDifficulty} profile.id={profile.Id}，按数组位置生效");
+            }
         }
 
         private void ResetRound()

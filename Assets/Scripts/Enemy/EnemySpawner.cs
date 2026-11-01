@@ -274,6 +274,12 @@ namespace Survival.Enemy
             _separationAccumulator = 0f;
             MinPairDistance = _config != null ? _config.EnemySeparationRadius : 1f;
             _running = true;
+
+            // 每局一行，方便核对档位是否真的生效（间隔/上限是难度最容易配错的两项）。
+            if (_config != null)
+            {
+                Debug.Log($"[EnemySpawner] begin difficulty={_config.ActiveDifficulty} interval={GetCurrentInterval():F3}s limit={_config.EnemyLimit}");
+            }
         }
 
         public void StopSpawning()
@@ -374,11 +380,14 @@ namespace Survival.Enemy
             return _enemyDefinitions[Random.Range(0, _enemyDefinitions.Length)];
         }
 
-        /// <summary>每 10 秒递减，不低于下限。</summary>
+        /// <summary>
+        /// 每 10 秒递减，不低于下限；难度倍率乘在「当前间隔」上再钳下限（M6 §4：困难下限仍 0.5s）。
+        /// </summary>
         private float GetCurrentInterval()
         {
             float steps = Mathf.Floor(_elapsed / TickSeconds);
             float interval = _config.SpawnIntervalStart - steps * _config.SpawnIntervalDecreasePerTenSeconds;
+            interval *= _config.SpawnIntervalMultiplier;
             return Mathf.Max(_config.SpawnIntervalMin, interval);
         }
 

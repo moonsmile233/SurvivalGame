@@ -62,6 +62,10 @@ namespace Survival.Core
         [SerializeField] private float _mapWidth = 36f;
         [SerializeField] private float _mapHeight = 20f;
 
+        [Header("Difficulty")]
+        [Tooltip("三档难度配置，顺序固定 Easy / Normal / Hard（SceneSetup 生成并挂上）。缺档位时回落到本资产字段（等价普通档）。")]
+        [SerializeField] private DifficultyProfile[] _difficulties = new DifficultyProfile[3];
+
         [Header("Round")]
         [SerializeField] private float _roundDuration = 60f;
 
@@ -75,6 +79,10 @@ namespace Survival.Core
         private int _perfEnemyLimitOverride;
         private float _perfRoundDurationOverride;
 
+        // 活动难度（M6 §7.2）：同样是运行时字段，**不加 [SerializeField]、不写回资产**。
+        // 只在 GameManager.StartGame 时设置一次、局内锁定（RestartGame 沿用）；Editor 试玩不会弄脏 cfg_GameConfig.asset。
+        private Difficulty _activeDifficulty = Difficulty.Normal;
+
         public int PlayerMaxHealth => _playerMaxHealth;
         public float PlayerSpeed => _playerSpeed;
         public float InvincibleDuration => _invincibleDuration;
@@ -82,7 +90,19 @@ namespace Survival.Core
         public float SpawnIntervalStart => _spawnIntervalStart;
         public float SpawnIntervalDecreasePerTenSeconds => _spawnIntervalDecreasePerTenSeconds;
         public float SpawnIntervalMin => _spawnIntervalMin;
-        public int EnemyLimit => _perfEnemyLimitOverride > 0 ? _perfEnemyLimitOverride : _enemyLimit;
+        public int EnemyLimit
+        {
+            get
+            {
+                if (_perfEnemyLimitOverride > 0)
+                {
+                    return _perfEnemyLimitOverride;
+                }
+
+                DifficultyProfile profile = ActiveProfile;
+                return profile != null ? profile.EnemyLimit : _enemyLimit;
+            }
+        }
         public float EnemySpeedJitter => _enemySpeedJitter;
         public float EnemySpeedMax => _enemySpeedMax;
         public float EnemySoftWallDistance => _enemySoftWallDistance;
@@ -101,7 +121,15 @@ namespace Survival.Core
         public float EnemyMaxVelocityRatio => _enemyMaxVelocityRatio;
         public float EnemyMaxVelocity => _enemySpeedMax * _enemyMaxVelocityRatio;
         public float EnemyRecycleSeconds => _enemyRecycleSeconds;
-        public float EnemyPressureMaxMultiplier => _enemyPressureMaxMultiplier;
+
+        public float EnemyPressureMaxMultiplier
+        {
+            get
+            {
+                DifficultyProfile profile = ActiveProfile;
+                return profile != null ? profile.PressureMaxMultiplier : _enemyPressureMaxMultiplier;
+            }
+        }
 
         public float MapWidth => _mapWidth;
         public float MapHeight => _mapHeight;
@@ -112,6 +140,39 @@ namespace Survival.Core
         public int ScorePerSurvivedSecond => _scorePerSurvivedSecond;
         public int ScorePerKill => _scorePerKill;
         public int WinBonus => _winBonus;
+
+        // ---------- 难度（M6 §7.2） ----------
+
+        /// <summary>
+        /// 本局实际采用的难度。只在 Ready → Playing 时由 GameManager 设置一次；
+        /// 结算回传（onGameOver.difficulty）也读这里，所以是「Unity 真正用的值」而不是 H5 发来的值。
+        /// </summary>
+        public Difficulty ActiveDifficulty => _activeDifficulty;
+
+        /// <summary>当前档位的配置；资产缺失/数组没挂时返回 null，各乘区 getter 会回落到本资产字段。</summary>
+        public DifficultyProfile ActiveProfile => ResolveProfile(_activeDifficulty);
+
+        public float EnemySpeedMultiplier => ActiveProfile != null ? ActiveProfile.EnemySpeedMultiplier : 1f;
+        public float SpawnIntervalMultiplier => ActiveProfile != null ? ActiveProfile.SpawnIntervalMultiplier : 1f;
+        public float DamageMultiplier => ActiveProfile != null ? ActiveProfile.DamageMultiplier : 1f;
+        public float ScoreMultiplier => ActiveProfile != null ? ActiveProfile.ScoreMultiplier : 1f;
+
+        /// <summary>只在开局设置（GameManager.StartGame）；局内不可改，RestartGame 沿用。</summary>
+        public void SetActiveDifficulty(Difficulty difficulty)
+        {
+            _activeDifficulty = difficulty;
+        }
+
+        private DifficultyProfile ResolveProfile(Difficulty difficulty)
+        {
+            int index = (int)difficulty;
+            if (_difficulties == null || index < 0 || index >= _difficulties.Length)
+            {
+                return null;
+            }
+
+            return _difficulties[index];
+        }
 
         /// <summary>只给压测探针用（M6 §3.4）：覆盖同屏上限，不改资产默认值。</summary>
         public void SetPerfEnemyLimitOverride(int value) => _perfEnemyLimitOverride = Mathf.Max(0, value);

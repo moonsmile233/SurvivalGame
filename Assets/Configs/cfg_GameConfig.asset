@@ -15,12 +15,34 @@ MonoBehaviour:
   _playerMaxHealth: 100
   _playerSpeed: 3.2
   _invincibleDuration: 1
-  _enemySpeed: 1.8
-  _enemyContactDamage: 12
   _spawnIntervalStart: 1.5
   _spawnIntervalDecreasePerTenSeconds: 0.15
   _spawnIntervalMin: 0.5
   _enemyLimit: 20
+  _enemySpeedJitter: 0.12
+  _enemySpeedMax: 2.2
+  _enemySoftWallDistance: 0.7
+  _enemySeparationRadius: 0.9
+  _enemySeparationHz: 30
+  _enemyVelocitySmoothing: 16
+  _enemySeekGain: 5
+  _enemyBackOutRatio: 0.6
+  _enemySidestepSpeed: 0.35
+  _enemyYieldSpeed: 0.2
+  _enemySideMargin: 0.15
+  _enemyPlayerDodgeFactor: 0.5
+  _enemyEmergencyDistance: 0.5
+  _enemyEmergencyStrength: 2
+  _enemyEmergencyAccel: 3.6
+  _enemyMaxVelocityRatio: 1.2
+  _enemyRecycleSeconds: 3
+  _enemyPressureMaxMultiplier: 1.15
+  _mapWidth: 36
+  _mapHeight: 20
+  _difficulties:
+  - {fileID: 11400000, guid: 1e1a13950276dd64cad40b310bc81c7b, type: 2}
+  - {fileID: 11400000, guid: 52222c38db18cfa42b8cf4bb69a0016f, type: 2}
+  - {fileID: 11400000, guid: 57a226dacf7908440a749334ae621043, type: 2}
   _roundDuration: 60
   _scorePerSurvivedSecond: 10
   _scorePerKill: 20

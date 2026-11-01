@@ -24,6 +24,9 @@ public static class SceneSetup
     private const string ConfigFolder = "Assets/Configs";
     private const string ConfigPath = "Assets/Configs/cfg_GameConfig.asset";
     private const string EnemyDefinitionPath = "Assets/Configs/def_Enemy_Chaser.asset";
+    private const string DifficultyEasyPath = "Assets/Configs/dif_Easy.asset";
+    private const string DifficultyNormalPath = "Assets/Configs/dif_Normal.asset";
+    private const string DifficultyHardPath = "Assets/Configs/dif_Hard.asset";
     private const string SpriteFolder = "Assets/Sprites";
     private const string BackgroundSpritePath = "Assets/Sprites/spr_background_grid.png";
     private const string PlayerSpritePath = "Assets/Sprites/spr_player.png";
@@ -71,6 +74,7 @@ public static class SceneSetup
         }
 
         GameConfig config = EnsureConfig();
+        EnsureDifficultyProfiles(config);
         Sprite backgroundSprite = EnsureSprite(BackgroundSpritePath, CreateGridTexture(), true);
         Sprite playerSprite = EnsureSprite(PlayerSpritePath, CreatePlayerTexture(), false);
         Sprite enemySprite = EnsureSprite(EnemySpritePath, CreateEnemyTexture(), false);
@@ -527,6 +531,61 @@ public static class SceneSetup
         AssetDatabase.SaveAssets();
         Debug.Log($"[SceneSetup] Created config: {ConfigPath}");
         return config;
+    }
+
+    /// <summary>
+    /// 三档难度资产（M6 §7.2）。**只有不存在时才创建并写默认值**：已存在就保留 Inspector 里的调参，
+    /// 否则每次重建场景都会把平衡改回默认。数组每次重新挂到 GameConfig（幂等）。
+    /// </summary>
+    private static void EnsureDifficultyProfiles(GameConfig config)
+    {
+        EnsureFolder(ConfigFolder);
+
+        var profiles = new DifficultyProfile[3];
+        profiles[(int)Difficulty.Easy] = EnsureDifficultyProfile(
+            DifficultyEasyPath, Difficulty.Easy, speed: 0.90f, spawn: 1.20f, damage: 0.80f, limit: 14, pressure: 1.10f, score: 1.0f);
+        profiles[(int)Difficulty.Normal] = EnsureDifficultyProfile(
+            DifficultyNormalPath, Difficulty.Normal, speed: 1.00f, spawn: 1.00f, damage: 1.00f, limit: 20, pressure: 1.15f, score: 1.3f);
+        profiles[(int)Difficulty.Hard] = EnsureDifficultyProfile(
+            DifficultyHardPath, Difficulty.Hard, speed: 1.10f, spawn: 0.85f, damage: 1.15f, limit: 20, pressure: 1.20f, score: 1.6f);
+
+        SetObjectReferenceArray(config, "_difficulties", profiles);
+        EditorUtility.SetDirty(config);
+        AssetDatabase.SaveAssets();
+    }
+
+    private static DifficultyProfile EnsureDifficultyProfile(
+        string path,
+        Difficulty id,
+        float speed,
+        float spawn,
+        float damage,
+        int limit,
+        float pressure,
+        float score)
+    {
+        var profile = AssetDatabase.LoadAssetAtPath<DifficultyProfile>(path);
+        if (profile != null)
+        {
+            return profile;
+        }
+
+        profile = ScriptableObject.CreateInstance<DifficultyProfile>();
+        AssetDatabase.CreateAsset(profile, path);
+
+        // 字段是 private + [SerializeField]，用 SerializedObject 写初始值（与 SetObjectReference 同一套做法）。
+        var serialized = new SerializedObject(profile);
+        serialized.FindProperty("_id").intValue = (int)id;
+        serialized.FindProperty("_enemySpeedMultiplier").floatValue = speed;
+        serialized.FindProperty("_spawnIntervalMultiplier").floatValue = spawn;
+        serialized.FindProperty("_damageMultiplier").floatValue = damage;
+        serialized.FindProperty("_enemyLimit").intValue = limit;
+        serialized.FindProperty("_pressureMaxMultiplier").floatValue = pressure;
+        serialized.FindProperty("_scoreMultiplier").floatValue = score;
+        serialized.ApplyModifiedPropertiesWithoutUndo();
+
+        Debug.Log($"[SceneSetup] Created difficulty profile: {path}");
+        return profile;
     }
 
     /// <summary>

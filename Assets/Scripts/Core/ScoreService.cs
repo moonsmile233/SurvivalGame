@@ -1,10 +1,12 @@
 using System;
+using UnityEngine;
 
 namespace Survival.Core
 {
     /// <summary>
     /// 存活分 + 击杀分 + 胜利奖励。纯逻辑，不碰 UI（规范 6.1）。
     /// 由 GameManager 持有，每局 Reset。
+    /// M6 §7.2：难度倍率只作用于存活分（胜利奖励固定 200），倍率来自 GameConfig 的活动档位。
     /// </summary>
     public class ScoreService
     {
@@ -22,8 +24,12 @@ namespace Survival.Core
         public int Score { get; private set; }
         public int Kills => _kills;
 
-        /// <summary>存活分（已存活整数秒 × 每秒分），供结算明细使用。</summary>
-        public int SurvivalScore => _survivedSeconds * _config.ScorePerSurvivedSecond;
+        /// <summary>
+        /// 存活分（已存活整数秒 × 每秒分 × 难度倍率），供结算明细使用。
+        /// 桥接层把本字段原样放进 <c>breakdown.survival</c>，H5 只展示、不再换算（协议 v2 §3）。
+        /// </summary>
+        public int SurvivalScore =>
+            Mathf.RoundToInt(_survivedSeconds * _config.ScorePerSurvivedSecond * _config.ScoreMultiplier);
 
         /// <summary>击杀分（击杀数 × 每个分）。</summary>
         public int KillScore => _kills * _config.ScorePerKill;
