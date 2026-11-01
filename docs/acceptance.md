@@ -170,7 +170,8 @@
   - Result 不提供全屏、结算卡可见。
   截图 `resp-1280x800-fullscreen-gate-{ready-menu,ready,playing,paused,exited}.png`、日志 `m6-fullscreen-states.log`。
 - **局域网全新浏览器上下文复核（2026-11-01，`http://192.168.1.100:8000/`，Playwright 新 context 无缓存）**：
-  同样 21 项 PASS；Ready 显示「开始游戏 + 全屏」，全屏 Ready 显示难度/最高分/开始；Playing 全屏网页按钮 = 0。
+  同样 20 项 PASS / 0 FAIL；Ready 显示「开始游戏 + 全屏」，全屏 Ready 显示难度/最高分/开始；Playing 全屏网页按钮 = 0。
+  服务端已换成 `web/serve.py`（8000 端口实测 `Cache-Control: no-store`）。
   证据 `m6-fullscreen-states-lan.log`、`resp-lan-1280x800-fullscreen-gate-{ready-menu,ready,playing}.png`。
 - **缓存修正（同次）**：`index.html` 的 H5 资源 `?v=` 由 `1.1.0` 升到 `1.1.1`；新增 `web/serve.py`
   （`start-local` 默认使用，`Cache-Control: no-store` + 正确 MIME）。旧 `python -m http.server` 不发缓存头，
