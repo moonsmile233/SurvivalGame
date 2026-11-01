@@ -67,6 +67,8 @@
     <section class="controls">
       <button id="btn-start" class="btn" type="button" disabled>开始游戏</button>
       <button id="btn-fullscreen" class="btn btn-secondary" type="button">全屏</button>
+      <!-- Paused 才能看到：局内先暂停再返回，避免误触（M6 §2 换难度不需要刷新） -->
+      <button id="btn-pause-menu" class="btn btn-secondary" type="button" hidden>返回主菜单</button>
       <p id="status-hint" class="status-hint" aria-live="polite"></p>
       <p id="fullscreen-hint" class="status-hint" role="status" hidden></p>
     </section>
@@ -105,8 +107,11 @@
         <span class="op-desktop">操作：WASD / 方向键移动 · Esc / P 暂停 · 躲开敌人 · 存活 60 秒</span>
         <span class="op-touch">操作：拖动屏幕移动 · 点画面内「暂停」 · 躲开敌人 · 存活 60 秒</span>
       </p>
-      <!-- 重开按钮放进结算卡：block:'start' 滚动后卡片与按钮同屏，小屏不会把按钮顶出视口（M4.6/M4.7 响应式）。 -->
-      <button id="btn-restart" class="btn" type="button" hidden>重新开始</button>
+      <!-- 按钮放进结算卡：block:'start' 滚动后卡片与按钮同屏，小屏不会把按钮顶出视口（M4.6/M4.7 响应式）。 -->
+      <div class="result-actions">
+        <button id="btn-restart" class="btn" type="button" hidden>重新开始</button>
+        <button id="btn-result-menu" class="btn btn-secondary" type="button" hidden>返回主菜单</button>
+      </div>
     </section>
 
     <footer class="footer">

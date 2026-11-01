@@ -199,6 +199,21 @@ public class WebGLBridge : MonoBehaviour
     }
 
     /// <summary>
+    /// 中止本局回到 Ready（H5「返回主菜单」，协议 v2 §2）。不计分、不发 onGameOver。
+    /// 允许从 Playing / Paused / Won / Lost 调用。
+    /// </summary>
+    public void ReturnToMenu(string _)
+    {
+        if (!EnsureManager("ReturnToMenu"))
+        {
+            return;
+        }
+
+        _pausedByVisibility = false;
+        _gameManager.ReturnToMenu();
+    }
+
+    /// <summary>
     /// 失焦/标签页隐藏时自动暂停，切回**保持暂停**，恢复必须由玩家主动触发（M4.6）。
     /// 切回只清标记，不请求倒计时、不 ResumeGame；否则玩家看不见时游戏会自己继续。
     /// 倒计时中再次失焦：停表并保持暂停。

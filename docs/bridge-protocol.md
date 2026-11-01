@@ -21,12 +21,14 @@
 | `PauseGame` | `""` | Playing → Paused | H5 手动暂停；会清除「因隐藏而暂停」标记 |
 | `ResumeGame` | `""` | Paused → 3-2-1 → Playing | H5 手动继续；M4.6 起只请求倒计时（`RequestCountdownResume`），不直接恢复；会清除标记。当前 H5 无人调用 |
 | `RestartGame` | `""` | Won/Lost → Playing | 全量重置（血量、计时、分数、敌人、玩家位置），昵称**与难度**沿用本局快照（不重新读 H5） |
+| `ReturnToMenu` | `""` | Playing/Paused/Won/Lost → Ready | **中止本局**：清场、重置血量/计时/分数、`Time.timeScale=1`、暂停面板收起；**不结算、不发 `onGameOver`**（中止局不写最高分）。H5 只在 Paused / 结算卡提供入口，Playing 不显示 |
 | `SetPausedByVisibility` | `"true"` / `"false"` | Playing ↔ Paused（条件） | `true`：Playing → 暂停并记标记；只要处于 Paused 就**取消倒计时**并保持暂停。`false`：**只清标记**，保持 Paused，不自动倒数、不自动恢复（M4.6） |
 
 状态守卫（由 `GameManager` 保证，桥接层只转发）：
 
 - `StartGame` 只接受 `Ready`；其他状态直接忽略并打 warning。
 - `RestartGame` 只接受 `Won` / `Lost`。
+- `ReturnToMenu` 接受 `Playing` / `Paused` / `Won` / `Lost`；`Ready` 下是幂等空操作。
 - 失焦自动暂停后切回：**保持 Paused**，不自动恢复；恢复必须由玩家主动触发
   （暂停面板「继续」/ Esc / P）→ 3-2-1 → Playing。手动暂停同理（M4.6）。
 
@@ -117,6 +119,10 @@ HP ≤ 0 / 计时 ≥ 60s
 点击重新开始
   └─ SendMessage RestartGame("") → Playing
      └─ onStateChange(Playing) → H5 关闭结果面板（_reported 已清零）
+暂停面板点「返回主菜单」/ 结算卡点「返回主菜单」
+  └─ SendMessage ReturnToMenu("") → Ready（清场、重置、timeScale=1）
+     └─ onStateChange(Ready) → H5 关闭结算卡、难度区与最高分行重新出现（难度保持上次选择）
+     —— 中止局不发 onGameOver，最高分不变
 ```
 
 - H5 **不轮询** Unity 状态，只处理事件；HUD 数字在 Unity 内绘制。
@@ -141,7 +147,7 @@ HP ≤ 0 / 计时 ≥ 60s
 | 版本 | 日期 | 变更 |
 |---|---|---|
 | 1 | 2026-10-30 | M3：移除 M0 的 Ping/Pong 测试接口；新增 StartGame / PauseGame / ResumeGame / RestartGame / SetPausedByVisibility 与 onReady / onStateChange / onGameOver |
-| 2 | 2026-11-01 | M6 §7.2：`StartGame` 增加 `difficulty`（非法/缺省 → `normal`）；`onGameOver.payload` 增加 `difficulty`（Unity 实际采用值）；`protocol` 1→2。**状态机不变**（难度是参数不是状态）。计分只加难度倍率（只作用于存活分，胜利奖励固定 200） |
+| 2 | 2026-11-01 | M6 §7.2：`StartGame` 增加 `difficulty`（非法/缺省 → `normal`）；`onGameOver.payload` 增加 `difficulty`（Unity 实际采用值）；新增 `ReturnToMenu`（Playing/Paused/Won/Lost → Ready，中止不计分、不发 onGameOver）；`protocol` 1→2。**状态机只多一条回到 Ready 的边**（难度仍是参数不是状态）。计分只加难度倍率（只作用于存活分，胜利奖励固定 200） |
 
 > 2026-10-30（M4）：协议版本仍为 1。`SetPausedByVisibility("false")` 从「立即恢复」改为「暂停面板倒计时后恢复」，
 > H5 调用方式不变；嵌入模式下 Unity 不再画结算面板（见 2.1）。

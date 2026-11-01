@@ -66,12 +66,26 @@ body {
   letter-spacing: 0.02em;
 }
 
-/* 一句话规则（M6 §2 主界面顺序：标题 → 规则 → 昵称） */
+/* 一句话规则（M6 §2 主界面顺序：标题 → 规则 → 昵称）。
+   只服务于菜单；局内隐藏，否则 1280×720 会多出约 18px 把页面撑出纵向滚动。 */
 .tagline {
   margin: 0;
   font-size: 13px;
   line-height: 1.4;
   color: var(--muted);
+}
+
+body[data-page="Playing"] .tagline,
+body[data-page="Paused"] .tagline,
+body[data-page="Result"] .tagline {
+  display: none;
+}
+
+/* 版本号只在菜单里看；局内/结算让出高度（1280×720 局内会因此多出约 32px 余量） */
+body[data-page="Playing"] .footer,
+body[data-page="Paused"] .footer,
+body[data-page="Result"] .footer {
+  display: none;
 }
 
 .nickname-field {
@@ -207,6 +221,12 @@ body {
   border-color: var(--accent);
   background: rgba(124, 92, 255, 0.16);
   box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+/* 高竖屏局内：菜单仍占位（避免页面跳），但整组弱化、不可点 */
+.difficulty.is-locked .difficulty-card {
+  opacity: 0.6;
+  cursor: default;
 }
 
 /* 原生 radio：只做视觉隐藏，键盘/读屏能力保留（不要 display:none 或 visibility:hidden）。 */
@@ -397,10 +417,19 @@ body {
   font-weight: 700;
 }
 
-/* 「重新开始」在结算卡内，滚动到卡顶后与明细同屏；占满卡片宽度便于手指点击。 */
-.result .btn {
-  width: 100%;
+/* 「重新开始 / 返回主菜单」在结算卡内，滚动到卡顶后与明细同屏。
+   宽屏并排；320 宽放不下两列时自动换行，仍然占满宽度便于手指点击。 */
+.result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
   margin-top: 4px;
+}
+
+.result-actions .btn {
+  flex: 1 1 150px;
+  width: auto;
+  margin-top: 0;
 }
 
 .result-grid {
@@ -582,10 +611,16 @@ html:fullscreen .result {
   display: none !important;
 }
 
-/* 局内/结算的全屏只留画面与浮动退出按钮；Ready 的全屏要保留难度区 + 开始（M6 §2 修复） */
+/* 局内/结算的全屏只留画面与浮动退出按钮；Ready 的全屏要保留难度区 + 开始（M6 §2 修复）。
+   高竖屏在普通页面会保留难度区，但全屏里一律收起（否则卡片压在游戏画面上）。 */
 html:fullscreen body[data-page="Playing"] .controls,
 html:fullscreen body[data-page="Paused"] .controls,
 html:fullscreen body[data-page="Result"] .controls {
+  display: none !important;
+}
+
+html:fullscreen body[data-page="Playing"] .difficulty,
+html:fullscreen body[data-page="Paused"] .difficulty {
   display: none !important;
 }
 

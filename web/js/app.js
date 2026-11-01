@@ -19,6 +19,12 @@
   };
   var DEFAULT_DIFFICULTY = 'normal';
 
+  // 主流竖屏手机（390×844 / 412×915 / 430×932 / 平板）：16:9 画布是宽度受限，隐藏菜单不会让画面变大，
+  // 只会让页面跳。所以 Playing/Paused 保留菜单（卡片禁用、弱化），画布尺寸与 Ready 相同。
+  // 320×568、横屏和桌面仍然隐藏菜单，把高度让给画面。
+  var TALL_PORTRAIT_QUERY = '(orientation: portrait) and (min-height: 700px)';
+  var tallPortrait = window.matchMedia ? window.matchMedia(TALL_PORTRAIT_QUERY) : null;
+
   // 点开始后的兜底时限。正常首帧响应 <100ms（SendMessage 同步）；9 秒只覆盖
   // 「指令真的丢了 / Unity 卡住」的情况，不能短到把慢机器上的正常启动误判。
   var START_RESPONSE_TIMEOUT_MS = 9000;
@@ -32,6 +38,8 @@
   var btnRetry = document.getElementById('btn-retry');
   var btnStart = document.getElementById('btn-start');
   var btnRestart = document.getElementById('btn-restart');
+  var btnPauseMenu = document.getElementById('btn-pause-menu');
+  var btnResultMenu = document.getElementById('btn-result-menu');
   var btnFullscreen = document.getElementById('btn-fullscreen');
   var btnExitFullscreen = document.getElementById('btn-exit-fullscreen');
   var fullscreenHint = document.getElementById('fullscreen-hint');
@@ -170,14 +178,29 @@
     renderDifficulty();
   }
 
+  /** 菜单（难度区）在哪些状态可见：Loading/Ready/Starting 总是；Playing/Paused 只在主流竖屏手机。 */
+  function shouldShowMenu(page) {
+    if (page === 'Loading' || page === 'Ready' || page === 'Starting') {
+      return true;
+    }
+    if (page === 'Playing' || page === 'Paused') {
+      return !!(tallPortrait && tallPortrait.matches);
+    }
+    return false; // Result / Error：结算卡优先，避免溢出
+  }
+
   function renderButtons(page) {
     var showStart = page === 'Loading' || page === 'Ready' || page === 'Starting';
     btnStart.hidden = !showStart;
     btnStart.disabled = page !== 'Ready';
 
-    // 难度只在开局前可见/可改；进入 Playing 后难度由 Unity 快照锁定（协议 v2 §2.2）。
+    // 难度只在 Ready 可改；进入 Playing 后由 Unity 快照锁定（协议 v2 §2.2）。
+    // 高竖屏下菜单仍显示，但卡片禁用 + 弱化，明确“现在不能改”。
+    var showMenu = shouldShowMenu(page);
+    var menuLocked = showMenu && page !== 'Ready';
     if (difficultySection) {
-      difficultySection.hidden = !showStart;
+      difficultySection.hidden = !showMenu;
+      difficultySection.classList.toggle('is-locked', menuLocked);
     }
     for (var i = 0; i < difficultyInputs.length; i++) {
       difficultyInputs[i].disabled = page !== 'Ready';
@@ -185,6 +208,16 @@
 
     btnRestart.hidden = page !== 'Result';
     btnRestart.disabled = page !== 'Result';
+
+    // 返回主菜单：Paused（先暂停再返回，防误触）与结算卡各一个入口；Playing 不显示。
+    if (btnPauseMenu) {
+      btnPauseMenu.hidden = page !== 'Paused';
+      btnPauseMenu.disabled = page !== 'Paused';
+    }
+    if (btnResultMenu) {
+      btnResultMenu.hidden = page !== 'Result';
+      btnResultMenu.disabled = page !== 'Result';
+    }
 
     // M6 §2：Ready 也允许全屏（CSS 已改成按 body[data-page] 隐藏，Ready 会保留难度区 + 开始）。
     // Result 不进全屏：结算卡在页面里，全屏只剩画面会让玩家卡住；退出按钮单独控制。
@@ -200,7 +233,8 @@
     state.page = page;
     // CSS 用 body[data-page] 区分「局内全屏只留画面」与「Ready 全屏保留难度/开始」（M6 §2 全屏修复）。
     document.body.dataset.page = page;
-    if (page === 'Playing') {
+    // 回 Ready（返回主菜单）也要收起结算卡；否则难度区回去了、旧成绩卡还挂在下面。
+    if (page === 'Playing' || page === 'Ready') {
       resultEl.hidden = true;
     }
     renderButtons(page);
@@ -268,6 +302,29 @@
       setPage('Ready');
       setHint('开始指令发送失败，请刷新页面重试');
     }
+  }
+
+  /**
+   * 中止本局回主菜单（协议 v2 §2）。Unity 收到后清场回 Ready，**不发 onGameOver**，
+   * 所以最高分不会被中止局污染；难度保持上次选择，可直接改档再开始。
+   */
+  function returnToMenu() {
+    if (state.page !== 'Paused' && state.page !== 'Result') {
+      return;
+    }
+
+    // 与 startGame 同理：SendMessage 是同步的，先写提示再发，避免 Ready 回调被覆盖。
+    setHint('正在返回主菜单…');
+    if (!sendMessage('ReturnToMenu', '')) {
+      setHint('返回指令发送失败，请刷新页面重试');
+      return;
+    }
+
+    window.setTimeout(function () {
+      if (state.page === 'Paused' || state.page === 'Result') {
+        setHint('返回无响应，请刷新页面重试');
+      }
+    }, 1500);
   }
 
   function restartGame() {
@@ -348,7 +405,9 @@
         break;
 
       case 'Ready':
+        // 只有 ReturnToMenu 会让 Unity 主动回到 Ready；清掉「正在返回主菜单…」提示。
         setPage('Ready');
+        setHint('');
         break;
 
       case 'Won':
@@ -587,12 +646,29 @@
 
   if (btnStart) btnStart.addEventListener('click', startGame);
   if (btnRestart) btnRestart.addEventListener('click', restartGame);
+  if (btnPauseMenu) btnPauseMenu.addEventListener('click', returnToMenu);
+  if (btnResultMenu) btnResultMenu.addEventListener('click', returnToMenu);
 
   for (var inputIndex = 0; inputIndex < difficultyInputs.length; inputIndex++) {
     difficultyInputs[inputIndex].addEventListener('change', function () {
       if (this.checked) selectDifficulty(this.value);
     });
   }
+
+  // 旋转/改窗口后重新判断「高竖屏是否保留菜单」；matchMedia 的 change 覆盖主要场景，resize 兜底。
+  function refreshMenuForViewport() {
+    renderButtons(state.page);
+  }
+
+  if (tallPortrait) {
+    if (typeof tallPortrait.addEventListener === 'function') {
+      tallPortrait.addEventListener('change', refreshMenuForViewport);
+    } else if (typeof tallPortrait.addListener === 'function') {
+      tallPortrait.addListener(refreshMenuForViewport);
+    }
+  }
+  window.addEventListener('resize', refreshMenuForViewport);
+  window.addEventListener('orientationchange', refreshMenuForViewport);
 
   if (btnRetry) {
     btnRetry.addEventListener('click', function () {
@@ -647,4 +723,10 @@
     setBuildInfo: setBuildInfo,
     setInstance: setInstance
   };
+
+  // E2E 专用（?testhook=1）：暴露原始 SendMessage，用来验证 Unity 对「非法 difficulty」和
+  // 「v1 纯昵称载荷」的回落。正常页面（没有参数）不挂这个全局，调试入口不会进线上。
+  if (/[?&]testhook=1(?:&|$)/.test(window.location.search)) {
+    window.SurvivalApp.__sendMessage = sendMessage;
+  }
 })();

@@ -263,6 +263,102 @@ async function checkStorageFlow(context, width, height) {
   await page.close();
 }
 
+// Playing 态：菜单隐藏、画面恢复全尺寸后是否溢出；Unity 绘制缓冲是否与 CSS 尺寸匹配（放大=糊）。
+async function checkPlaying(context, width, height) {
+  const label = `${width}x${height}`;
+  const page = await context.newPage();
+  attachConsole(page, `playing-${label}`);
+  await page.setViewportSize({ width, height });
+  await waitReady(page);
+
+  const ready = await measure(page);
+  const tallPortrait = width < height && height >= 700;
+
+  await page.fill('#nickname', '布局');
+  await page.click('#btn-start');
+  await page.waitForFunction(
+    () => (document.querySelector('#status-hint')?.textContent || '').includes('游戏中'),
+    null,
+    { timeout: 60000 },
+  );
+  await page.waitForTimeout(800);
+
+  const m = await page.evaluate(() => {
+    const rect = (selector) => {
+      const el = document.querySelector(selector);
+      if (!el) return null;
+      const r = el.getBoundingClientRect();
+      return { x: r.x, y: r.y, w: r.width, h: r.height, bottom: r.bottom };
+    };
+    const canvas = document.querySelector('#unity-canvas');
+    const dpr = window.devicePixelRatio || 1;
+    return {
+      innerW: window.innerWidth,
+      innerH: window.innerHeight,
+      scrollW: document.documentElement.scrollWidth,
+      scrollH: document.documentElement.scrollHeight,
+      difficultyHidden: document.querySelector('#difficulty')?.hidden,
+      difficultyLocked: document.querySelector('#difficulty')?.classList.contains('is-locked'),
+      cardsDisabled: Array.from(document.querySelectorAll('.difficulty-input')).every((el) => el.disabled),
+      startHidden: document.querySelector('#btn-start')?.hidden,
+      frame: rect('.game-frame'),
+      // Unity 的绘制缓冲（像素）应与 CSS 尺寸 × DPR 一致，否则浏览器会把小缓冲放大（糊）
+      canvasBuffer: canvas ? { w: canvas.width, h: canvas.height } : null,
+      canvasCss: canvas
+        ? { w: canvas.clientWidth, h: canvas.clientHeight, dpr, expectW: Math.round(canvas.clientWidth * dpr), expectH: Math.round(canvas.clientHeight * dpr) }
+        : null,
+    };
+  });
+
+  check(m.scrollW <= m.innerW + 1, `${label}（Playing）无横向溢出（${m.scrollW} ≤ ${m.innerW}）`);
+  check(m.scrollH <= m.innerH + 1, `${label}（Playing）无纵向溢出（${m.scrollH} ≤ ${m.innerH}）`);
+  check(m.startHidden === true, `${label}（Playing）开始按钮隐藏`);
+
+  if (tallPortrait) {
+    // 高竖屏：菜单保留（不可点），画布尺寸与 Ready 相同，页面不跳
+    check(m.difficultyHidden === false, `${label}（Playing）高竖屏保留难度区`);
+    check(m.difficultyLocked === true && m.cardsDisabled === true, `${label}（Playing）难度卡禁用并弱化`);
+    check(
+      Math.abs(m.frame.w - ready.frame.w) <= 0.5 && Math.abs(m.frame.h - ready.frame.h) <= 0.5,
+      `${label}（Playing）画布与 Ready 同尺寸（${Math.round(m.frame.w)}×${Math.round(m.frame.h)} vs ${Math.round(ready.frame.w)}×${Math.round(ready.frame.h)}）`,
+    );
+  } else {
+    check(m.difficultyHidden === true, `${label}（Playing）短屏/横屏/桌面隐藏难度区`);
+    check(m.frame.h > ready.frame.h + 0.5, `${label}（Playing）画面比 Ready 大（${Math.round(m.frame.h)} > ${Math.round(ready.frame.h)}）`);
+  }
+
+  check(!!m.frame && m.frame.bottom <= m.innerH + 0.5, `${label}（Playing）画面在视口内`);
+
+  const buf = m.canvasBuffer;
+  const css = m.canvasCss;
+  const ratioOk = !!buf && !!css && Math.abs(buf.w - css.expectW) <= 2 && Math.abs(buf.h - css.expectH) <= 2;
+  check(
+    ratioOk,
+    `${label}（Playing）绘制缓冲匹配 CSS×DPR（buffer ${buf?.w}×${buf?.h} vs expect ${css?.expectW}×${css?.expectH}, dpr ${css?.dpr}）`,
+  );
+
+  await page.screenshot({ path: evidence(`m6-h5-playing-${label}.png`) });
+  console.log(`      截图 → docs/evidence/m6-h5-playing-${label}.png`);
+
+  // Result：无论视口多高都不显示菜单（结算卡优先，避免溢出）
+  await page.evaluate(() => {
+    window.SurvivalApp.onStateChange(JSON.stringify({ protocol: 2, state: 'Playing' }));
+    window.SurvivalApp.onGameOver(JSON.stringify({
+      protocol: 2,
+      event: 'gameOver',
+      payload: {
+        result: 'lose', score: 100, survivedSeconds: 10, kills: 0, nickname: '布局',
+        difficulty: 'normal', breakdown: { survival: 100, kills: 0, winBonus: 0 },
+      },
+    }));
+  });
+  await page.waitForTimeout(200);
+  const resultMenuHidden = await page.evaluate(() => document.querySelector('#difficulty')?.hidden === true);
+  check(resultMenuHidden, `${label}（Result）隐藏难度区`);
+
+  await page.close();
+}
+
 async function checkReadyFullscreen(context, width, height) {
   const page = await context.newPage();
   attachConsole(page, 'fullscreen');
@@ -318,19 +414,39 @@ try {
     hasTouch: true,
   });
 
-  console.log('\n[1/3] Ready 布局（6 视口）');
-  for (const [w, h] of [[320, 568], [390, 844], [844, 390]]) {
-    await checkLayout(mobile, w, h);
-  }
-  for (const [w, h] of [[768, 1024], [1280, 720], [1920, 1080]]) {
-    await checkLayout(desktop, w, h);
+  // ONLY=ready|storage|fullscreen|playing 只跑其中一段（调布局时省时间）；不传则全跑。
+  const only = (process.env.ONLY || '').trim();
+  const want = (section) => !only || only === section;
+
+  if (want('ready')) {
+    console.log('\n[1/4] Ready 布局（6 视口）');
+    for (const [w, h] of [[320, 568], [390, 844], [844, 390]]) {
+      await checkLayout(mobile, w, h);
+    }
+    for (const [w, h] of [[768, 1024], [1280, 720], [1920, 1080]]) {
+      await checkLayout(desktop, w, h);
+    }
   }
 
-  console.log('\n[2/3] 选档 / 迁移 / 跨档最高分');
-  await checkStorageFlow(mobile, 390, 844);
+  if (want('storage')) {
+    console.log('\n[2/4] 选档 / 迁移 / 跨档最高分');
+    await checkStorageFlow(mobile, 390, 844);
+  }
 
-  console.log('\n[3/3] Ready 全屏');
-  await checkReadyFullscreen(desktop, 1280, 720);
+  if (want('fullscreen')) {
+    console.log('\n[3/4] Ready 全屏');
+    await checkReadyFullscreen(desktop, 1280, 720);
+  }
+
+  if (want('playing')) {
+    console.log('\n[4/4] Playing 布局与绘制缓冲');
+    for (const [w, h] of [[320, 568], [844, 390]]) {
+      await checkPlaying(mobile, w, h);
+    }
+    for (const [w, h] of [[390, 844], [1280, 720], [768, 1024]]) {
+      await checkPlaying(w === 390 ? mobile : desktop, w, h);
+    }
+  }
 
   const noise = /INVALID_ENUM|GL_INVALID_OPERATION|favicon|AudioContext|WebGL: CONTEXT_LOST/i;
   const realErrors = consoleErrors.filter((line) => !noise.test(line));

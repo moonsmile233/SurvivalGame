@@ -170,6 +170,27 @@ namespace Survival.Core
             Debug.Log("[GameManager] state=Playing (resume)");
         }
 
+        /// <summary>
+        /// 中止本局并回到 Ready（H5「返回主菜单」，协议 v2 §2）。
+        /// 允许从 Playing / Paused / Won / Lost 进入；**不结算、不发 onGameOver**——
+        /// 状态直接走 Ready，桥接层只在 Won/Lost 发结算，所以中止局不会写最高分。
+        /// 停在菜单时不能继续刷怪：ResetRound 内部的 BeginRound 会重新开跑，随后立刻 StopSpawning。
+        /// </summary>
+        public void ReturnToMenu()
+        {
+            if (State == GameState.Ready)
+            {
+                return;
+            }
+
+            Time.timeScale = 1f;
+            _enemySpawner.StopSpawning();
+            ResetRound();
+            _enemySpawner.StopSpawning();
+            SetState(GameState.Ready);
+            Debug.Log("[GameManager] state=Ready (return to menu)");
+        }
+
         /// <summary>Won / Lost → Playing，全量重置（不重载场景）。</summary>
         public void RestartGame()
         {
