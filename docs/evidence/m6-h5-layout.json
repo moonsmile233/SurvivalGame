@@ -68,7 +68,7 @@
       "bottom": 320.1875,
       "right": 144
     },
-    "fullscreenButtonVisible": true
+    "fullscreenButtonVisible": false
   },
   {
     "label": "390x844",
@@ -117,18 +117,18 @@
     },
     "frame": {
       "x": 12,
-      "y": 381.96875,
+      "y": 350.375,
       "w": 366,
       "h": 205.875,
-      "bottom": 587.84375,
+      "bottom": 556.25,
       "right": 378
     },
     "controls": {
       "x": 12,
       "y": 294.375,
       "w": 366,
-      "h": 75.59375,
-      "bottom": 369.96875,
+      "h": 44,
+      "bottom": 338.375,
       "right": 378
     },
     "start": {
@@ -139,7 +139,7 @@
       "bottom": 338.375,
       "right": 144
     },
-    "fullscreenButtonVisible": true
+    "fullscreenButtonVisible": false
   },
   {
     "label": "844x390",
@@ -210,7 +210,7 @@
       "bottom": 189.1875,
       "right": 140
     },
-    "fullscreenButtonVisible": true
+    "fullscreenButtonVisible": false
   },
   {
     "label": "768x1024",
@@ -281,7 +281,7 @@
       "bottom": 241.375,
       "right": 144
     },
-    "fullscreenButtonVisible": true
+    "fullscreenButtonVisible": false
   },
   {
     "label": "1280x720",
@@ -352,7 +352,7 @@
       "bottom": 241.375,
       "right": 304
     },
-    "fullscreenButtonVisible": true
+    "fullscreenButtonVisible": false
   },
   {
     "label": "1920x1080",
@@ -423,6 +423,6 @@
       "bottom": 241.375,
       "right": 624
     },
-    "fullscreenButtonVisible": true
+    "fullscreenButtonVisible": false
   }
 ]

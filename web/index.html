@@ -55,6 +55,7 @@
     </section>
 
     <!-- 开始/全屏在画布上方：Ready 首屏一定能看到开始；Playing 时只隐藏开始按钮，行高不变。
+         全屏按钮只在 Playing/Paused 出现（Ready/Starting/Result 不提供全屏）。
          页面允许纵向滚动（菜单常驻后高度会超出小屏），画布自己 touch-action:none，拖动摇杆不会滚页。 -->
     <section class="controls">
       <button id="btn-start" class="btn" type="button" disabled>开始游戏</button>
@@ -124,9 +125,6 @@
       <span class="dot" aria-hidden="true">·</span>
       <span id="build-time">-</span>
     </footer>
-
-    <!-- 全屏时页头/操作区会被隐藏；这个浮动按钮放在画面外的黑边里用于退出（Esc/返回键也可退出）。 -->
-    <button id="btn-exit-fullscreen" class="btn fullscreen-exit" type="button" hidden>退出全屏</button>
   </main>
 
   <script src="js/storage.js?v=1.1.0"></script>

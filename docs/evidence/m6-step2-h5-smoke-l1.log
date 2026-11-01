@@ -1,0 +1,49 @@
+本地静态服务：http://127.0.0.1:8123（root=D:\unityFile\SurvivalGame\web）
+
+[1/8] 打开页面等待 onReady（chrome）
+PASS  onReady 后开始按钮可见且可用
+      截图 → docs/evidence/e2e-local-chrome-desktop-ready.png
+
+[2/8] 填昵称并开始
+PASS  H5 显示「游戏中」
+PASS  开始按钮已隐藏
+      截图 → docs/evidence/e2e-local-chrome-desktop-playing.png
+
+[3/8] 桌面键盘 Esc 暂停 / P 恢复（3-2-1）
+PASS  按 Esc 暂停后 H5 显示「已暂停」
+      截图 → docs/evidence/e2e-local-chrome-desktop-hotkey-paused.png
+PASS  按 P 后先停 3-2-1，H5 仍是「已暂停」
+      截图 → docs/evidence/e2e-local-chrome-desktop-hotkey-countdown.png
+PASS  倒计时中再按 P 不会立刻恢复
+PASS  3-2-1 结束后恢复「游戏中」
+      截图 → docs/evidence/e2e-local-chrome-desktop-hotkey-resumed.png
+
+[4/8] 真实失焦 → 暂停 → 切回仍暂停 → 主动恢复 3-2-1
+PASS  失焦后 H5 显示「已暂停」
+      截图 → docs/evidence/e2e-local-chrome-desktop-paused.png
+PASS  切回后仍保持「已暂停」，不自动恢复
+      截图 → docs/evidence/e2e-local-chrome-desktop-focus-return-paused.png
+PASS  能触发玩家主动恢复
+      截图 → docs/evidence/e2e-local-chrome-desktop-countdown.png
+PASS  主动恢复的 3-2-1 结束后进入「游戏中」
+      截图 → docs/evidence/e2e-local-chrome-desktop-resumed.png
+
+[5/8] 等待一局结束（不操作，约 20~40 秒）
+      截图 → docs/evidence/e2e-local-chrome-desktop-result.png
+PASS  结算后「重新开始」在首屏可见（y=739）
+PASS  结果标题正确（失败）
+PASS  本次得分合理（195）
+PASS  最高分不低于本次（195 >= 195）
+PASS  结算昵称是玩家昵称（E2E测试）
+PASS  存活秒数格式正确（15.6 秒）
+PASS  游戏画布仍在页面上（H5 未替换画布）
+      截图 → docs/evidence/e2e-local-chrome-desktop-result-round1.png
+
+[7/8] 刷新页面校验本地存储
+PASS  刷新后昵称仍在（E2E测试）
+PASS  刷新后最高分仍在（195 >= 195）
+
+[8/8] console 检查
+PASS  console 无未预期的 error（0）
+
+全部通过

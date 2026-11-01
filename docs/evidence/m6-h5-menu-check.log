@@ -1,5 +1,5 @@
 
-[1/4] Ready 布局（6 视口）
+[1/3] Ready 布局（6 视口）
 PASS  320x568 无横向溢出（scrollW 320 ≤ innerW 320）
 PASS  320x568 难度区可见
 PASS  320x568 三张难度卡都在（3）
@@ -7,7 +7,7 @@ PASS  320x568 难度卡命中区 ≥44px（64/64/64）
 PASS  320x568 开始按钮在首屏内（bottom 320 ≤ 568）
 PASS  320x568 难度区在操作区之上
 PASS  320x568 开始/全屏在画布上方
-PASS  320x568 Ready 下全屏按钮可见
+PASS  320x568 Ready 不显示全屏按钮（全屏只属于 Playing/Paused）
 PASS  320x568 页面状态 body[data-page]=Ready
       截图 → docs/evidence/m6-h5-ready-320x568.png
 PASS  390x844 无横向溢出（scrollW 390 ≤ innerW 390）
@@ -17,7 +17,7 @@ PASS  390x844 难度卡命中区 ≥44px（70/70/70）
 PASS  390x844 开始按钮在首屏内（bottom 338 ≤ 844）
 PASS  390x844 难度区在操作区之上
 PASS  390x844 开始/全屏在画布上方
-PASS  390x844 Ready 下全屏按钮可见
+PASS  390x844 Ready 不显示全屏按钮（全屏只属于 Playing/Paused）
 PASS  390x844 页面状态 body[data-page]=Ready
       截图 → docs/evidence/m6-h5-ready-390x844.png
 PASS  844x390 无横向溢出（scrollW 844 ≤ innerW 844）
@@ -27,7 +27,7 @@ PASS  844x390 难度卡命中区 ≥36px（49/49/49）
 PASS  844x390 开始按钮在首屏内（bottom 189 ≤ 390）
 PASS  844x390 难度区在操作区之上
 PASS  844x390 开始/全屏在画布上方
-PASS  844x390 Ready 下全屏按钮可见
+PASS  844x390 Ready 不显示全屏按钮（全屏只属于 Playing/Paused）
 PASS  844x390 页面状态 body[data-page]=Ready
       截图 → docs/evidence/m6-h5-ready-844x390.png
 PASS  768x1024 无横向溢出（scrollW 768 ≤ innerW 768）
@@ -37,7 +37,7 @@ PASS  768x1024 难度卡命中区 ≥44px（70/70/70）
 PASS  768x1024 开始按钮在首屏内（bottom 241 ≤ 1024）
 PASS  768x1024 难度区在操作区之上
 PASS  768x1024 开始/全屏在画布上方
-PASS  768x1024 Ready 下全屏按钮可见
+PASS  768x1024 Ready 不显示全屏按钮（全屏只属于 Playing/Paused）
 PASS  768x1024 页面状态 body[data-page]=Ready
       截图 → docs/evidence/m6-h5-ready-768x1024.png
 PASS  1280x720 无横向溢出（scrollW 1280 ≤ innerW 1280）
@@ -47,7 +47,7 @@ PASS  1280x720 难度卡命中区 ≥44px（70/70/70）
 PASS  1280x720 开始按钮在首屏内（bottom 241 ≤ 720）
 PASS  1280x720 难度区在操作区之上
 PASS  1280x720 开始/全屏在画布上方
-PASS  1280x720 Ready 下全屏按钮可见
+PASS  1280x720 Ready 不显示全屏按钮（全屏只属于 Playing/Paused）
 PASS  1280x720 页面状态 body[data-page]=Ready
       截图 → docs/evidence/m6-h5-ready-1280x720.png
 PASS  1920x1080 无横向溢出（scrollW 1920 ≤ innerW 1920）
@@ -57,11 +57,11 @@ PASS  1920x1080 难度卡命中区 ≥44px（70/70/70）
 PASS  1920x1080 开始按钮在首屏内（bottom 241 ≤ 1080）
 PASS  1920x1080 难度区在操作区之上
 PASS  1920x1080 开始/全屏在画布上方
-PASS  1920x1080 Ready 下全屏按钮可见
+PASS  1920x1080 Ready 不显示全屏按钮（全屏只属于 Playing/Paused）
 PASS  1920x1080 页面状态 body[data-page]=Ready
       截图 → docs/evidence/m6-h5-ready-1920x1080.png
 
-[2/4] 选档 / 迁移 / 跨档最高分
+[2/3] 选档 / 迁移 / 跨档最高分
 PASS  旧最高分迁到普通档（normal=500）
 PASS  迁移成功后旧键已删除（legacy=null）
 PASS  最高分行显示普通档 500（普通 500）
@@ -80,16 +80,7 @@ PASS  简单局只写简单档（800/1160/500）
 PASS  简单局结算卡正确（简单 / 800）
       截图 → docs/evidence/m6-h5-result-difficulty.png
 
-[3/4] Ready 全屏
-PASS  Ready 能进入全屏
-PASS  全屏 Ready 下难度区可见
-PASS  全屏 Ready 下开始按钮可见
-PASS  全屏退出按钮可见
-PASS  全屏 Ready 下开始按钮在视口内（173 ≤ 720）
-      截图 → docs/evidence/m6-h5-ready-fullscreen-1280x720.png
-PASS  能退出全屏
-
-[4/4] Playing 布局与绘制缓冲
+[3/3] Playing 布局与绘制缓冲
 PASS  320x568（Playing）开始有 3-2-1 倒计时（3/Starting）
 PASS  320x568（Playing）无横向溢出（320 ≤ 320）
 PASS  320x568（Playing）开始按钮隐藏

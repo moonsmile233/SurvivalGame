@@ -1,6 +1,7 @@
 # 验收记录（living document）
 
-> 最后更新：2026-11-01（M6 第 2 步：三档难度 + H5 主界面 + `ReturnToMenu` 自动化全绿，见 §3.3；
+> 最后更新：2026-11-01（L1 全屏口径：全屏内无网页按钮、全屏只属于 Playing/Paused，见 §3.4；
+> M6 第 2 步：三档难度 + H5 主界面 + `ReturnToMenu` 自动化全绿，见 §3.3；
 > 此前 M5-3：无水印 1.0.0 构建 `2026-10-31T14:53:47Z`、M4.7 摇杆/响应式/全屏验收、无头 E2E、build 入库 `f19fcb79`、
 > Release `v1.0.0`、干净克隆通过；人工/真机仍待测）
 > 规则：只写实际跑过的结果；没跑就写「待测」。证据放 `docs/evidence/`。
@@ -130,7 +131,8 @@
 - **H5 主界面/响应式（`menu-check.mjs`，137 PASS / 0 FAIL）**：6 视口（320×568 / 390×844 / 844×390 / 768×1024 /
   1280×720 / 1920×1080）Ready + Playing + Result；难度卡首屏可见且命中区 ≥44px（短横屏 ≥36）；无横向溢出；
   **画布在 Ready/Playing 同尺寸**且绘制缓冲 = CSS × DPR；`touch-action:none`；分档最高分旧键迁移/跨档不串分；
-  Ready 全屏可开始（`m6-h5-ready-*.png`、`m6-h5-playing-*.png`、`m6-h5-layout.json`、`m6-h5-menu-check.log`）。
+  （M6 验收时）Ready 全屏可开始；**L1 起 Ready 不再提供全屏**（见 §3.4）。
+  证据 `m6-h5-ready-*.png`、`m6-h5-playing-*.png`、`m6-h5-layout.json`、`m6-h5-menu-check.log`。
   页面允许纵向滚动：**画布上滚轮由 H5 接管**（`onCanvasWheel`，单次 40px 恰好滚 40px、无双重），
   画布外走原生滚动；全屏内不滚（`fullscreen-states` 断言 scrollY=0）。
 - **画布滚轮穿透（2026-11-01，策划确认）**：`onCanvasWheel` 在 document 捕获阶段接管画布 wheel，
@@ -139,11 +141,33 @@
   全屏内 scrollY=0。证据 `m6-h5-menu-check.log`、`m6-fullscreen-states.log`。
 - **回归（`smoke.mjs` 桌面 3 局 = 25 PASS / 0 FAIL；`fullscreen-states.mjs` 11 PASS / 0 FAIL）**：
   加载 → 昵称 → 开始 3-2-1 → 暂停/Esc/P/失焦保持暂停 → 恢复 3-2-1 → 结算 → 重开 ×2 → 刷新昵称/最高分；
-  Ready 全屏可开始、Playing/Paused 可全屏、Result 隐藏全屏（`m6-step2-h5-smoke.log`、`m6-fullscreen-states.log`）。
+  （M6 验收时）Ready 全屏可开始、Playing/Paused 可全屏、Result 隐藏全屏；L1 后口径见 §3.4
+  （`m6-step2-h5-smoke.log`、`m6-fullscreen-states.log`）。
 - **移动视口 smoke（390×844、`MOBILE=1`，19 PASS / 0 FAIL）**：CDP 真实触摸拖动可移动玩家、拖动时页面不滚动
   （`scrollY=0`）、暂停/恢复倒计时、结算、刷新（`m6-step2-h5-smoke-mobile.log`）。
 - 17 条需求：1–16 的自动化回归仍全绿（见 3.1/3.2 证据 + 本次 smoke/menu-check）；第 17 条交付物仍是 1.0.0，
   M6 发版（1.1.0）未做。
+
+## 3.4 L1 全屏口径（2026-11-01，用户明确要求）
+
+**决策**：全屏按平台原生习惯——**全屏里不保留任何网页端按钮/外壳**；**全屏只属于局内（Playing/Paused）**。
+推翻 M6 §2 的「Ready 全屏可开始」与 M4.5 §1 的「全屏内固定退出按钮」。
+
+- 删除 `#btn-exit-fullscreen`（HTML/CSS/JS）；退出只靠 `Esc`（桌面）/ 浏览器手势 / 返回键（手机），
+  `fullscreenchange` 负责恢复页面。
+- `#btn-fullscreen` 只在 Playing/Paused 显示；Ready/Starting/Result 不显示（Ready 不能进全屏）。
+- 全屏内隐藏：header、难度区、controls（开始/全屏/状态提示/全屏失败提示）、footer、op-hint、rotate-hint、
+  结算卡、H5 倒计时覆盖层；画布内 Unity 暂停按钮/面板保留（不算网页控件）。
+- **证据（`fullscreen-states.mjs` 17 PASS / 0 FAIL，1280×800 无头 Chrome）**：
+  - Ready 无全屏按钮（网页可见按钮仅「开始」=1）；Playing 有全屏按钮且在控制区内。
+  - Playing 全屏内**网页端可见按钮 = 0**，上述外壳全部不可见。
+  - 全屏内按 `P` 能暂停/恢复（Unity 暂停面板与 3-2-1 正常），Paused 全屏内仍无网页按钮/外壳。
+  - `Esc` 或 `document.exitFullscreen()` 退出后，全屏按钮/难度区/页头恢复可见。
+  - Result 不提供全屏、结算卡可见。
+  截图 `resp-1280x800-fullscreen-gate-{playing,paused,exited}.png`、日志 `m6-fullscreen-states.log`。
+- **回归**：`menu-check` 131 PASS（6 视口 Ready 断言「不显示全屏按钮」）；`smoke` L1 后 1 局 21 PASS。
+- **已知边界**：无头 Chrome 的 `Esc` 不退出全屏却会传给 Unity（Esc 也是暂停热键），测试已按该分支恢复；
+  真实浏览器通常由浏览器消费 `Esc`，有头/真机行为仍待确认。
 
 ## 4. 未关闭项
 
@@ -158,8 +182,10 @@
 7. **M4.5 §2/§3**：暂停菜单「重新开始」未做；Unity 主菜单按 M6 D1 决定不做（主界面在 H5，三档难度已实现）。
    全屏 §1 已完成。
 8. **M6 第 2 步遗留**：真机未测（Honor 90 Pro 三档各 1 局 + 40 只 `?perf=1`）；
-   全屏 Playing/Paused/Result 下难度卡隐藏（全屏例外，换档需退出全屏）；Result 下难度卡与结算卡不同屏。
+   全屏内不显示任何网页控件（L1）——换档需先退出全屏；Result 下难度卡与结算卡不同屏。
    这些不影响功能链路，但人工验收时要按此口径检查。
+9. **L1 全屏边界**：无头 Chrome 的 `Esc` 不退出全屏却会传给 Unity 触发暂停；有头浏览器/真机尚未确认
+   `Esc` 是否由浏览器消费。若真机上出现「按 Esc 退出全屏后游戏被暂停」，记录后另行决定是否在 H5 捕获阶段拦截。
 
 ## 5. 结论
 

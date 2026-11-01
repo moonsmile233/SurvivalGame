@@ -36,7 +36,6 @@
   var btnStart = document.getElementById('btn-start');
   var btnRestart = document.getElementById('btn-restart');
   var btnFullscreen = document.getElementById('btn-fullscreen');
-  var btnExitFullscreen = document.getElementById('btn-exit-fullscreen');
   var fullscreenHint = document.getElementById('fullscreen-hint');
   var nicknameInput = document.getElementById('nickname');
   var statusHint = document.getElementById('status-hint');
@@ -245,11 +244,10 @@
     btnRestart.hidden = page !== 'Result';
     btnRestart.disabled = page !== 'Result' || !!countdown.pending;
 
-    // M6 §2：Ready 也允许全屏（CSS 已改成按 body[data-page] 隐藏，Ready 会保留难度区 + 开始）。
-    // Result 不进全屏：结算卡在页面里，全屏只剩画面会让玩家卡住；退出按钮单独控制。
+    // 全屏只属于局内：Ready/Starting/Result 不提供全屏（L1 用户口径，推翻 M6 §2 的 Ready 全屏）。
+    // Result 不进全屏：结算卡在页面里，全屏只剩画面会让玩家卡住。
     if (btnFullscreen) {
-      btnFullscreen.hidden = page !== 'Ready' && page !== 'Starting' &&
-        page !== 'Playing' && page !== 'Paused';
+      btnFullscreen.hidden = page !== 'Playing' && page !== 'Paused';
     }
 
     nicknameInput.disabled = page !== 'Ready';
@@ -257,7 +255,7 @@
 
   function setPage(page) {
     state.page = page;
-    // CSS 用 body[data-page] 区分「局内全屏只留画面」与「Ready 全屏保留难度/开始」（M6 §2 全屏修复）。
+    // CSS 用 body[data-page] 区分状态；全屏按钮只在 Playing/Paused 显示（L1 口径）。
     document.body.dataset.page = page;
     // 回 Ready（返回主菜单）也要收起结算卡；否则难度区回去了、旧成绩卡还挂在下面。
     if (page === 'Playing' || page === 'Ready') {
@@ -677,10 +675,10 @@
     }, 5000);
   }
 
+  // 全屏里不放任何网页端按钮（L1）：进入后按钮随 .controls 一起隐藏，退出靠 Esc / 系统手势；
+  // 这里只处理横屏锁定与页面恢复（退出全屏后 CSS 自动恢复外壳，状态仍由 body[data-page] 驱动）。
   function updateFullscreenUi() {
     var active = isFullscreen();
-    if (btnExitFullscreen) btnExitFullscreen.hidden = !active;
-    if (btnFullscreen) btnFullscreen.textContent = active ? '退出全屏' : '全屏';
 
     if (active) {
       // 横屏锁定是 best-effort：桌面/部分浏览器会 reject，失败就保留 H5 竖屏提示。
@@ -720,22 +718,6 @@
     }
   }
 
-  function exitFullscreen() {
-    var exit = document.exitFullscreen || document.webkitExitFullscreen;
-    if (!exit) return;
-    try {
-      var result = exit.call(document);
-      if (result && typeof result.catch === 'function') result.catch(function () {});
-    } catch (error) {
-      // 已经不在全屏，忽略。
-    }
-  }
-
-  function toggleFullscreen() {
-    if (isFullscreen()) exitFullscreen();
-    else requestFullscreen();
-  }
-
   // ---------- 画布滚轮穿透（M6 §1.3） ----------
 
   /**
@@ -772,8 +754,8 @@
 
   // ---------- 初始化 ----------
 
-  if (btnFullscreen) btnFullscreen.addEventListener('click', toggleFullscreen);
-  if (btnExitFullscreen) btnExitFullscreen.addEventListener('click', toggleFullscreen);
+  // 只负责进入全屏；退出交给浏览器的 Esc / 系统手势，不在页面里提供按钮（L1）。
+  if (btnFullscreen) btnFullscreen.addEventListener('click', requestFullscreen);
   document.addEventListener('fullscreenchange', updateFullscreenUi);
   document.addEventListener('webkitfullscreenchange', updateFullscreenUi);
   updateFullscreenUi();

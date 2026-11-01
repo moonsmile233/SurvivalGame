@@ -1,4 +1,5 @@
-// M6 §2 H5 主界面检查：6 视口 Ready 布局 + 选档记忆 + 旧最高分迁移 + 跨档不串分 + Ready 全屏可开始。
+// M6 §2 H5 主界面检查：6 视口 Ready 布局 + 选档记忆 + 旧最高分迁移 + 跨档不串分。
+// L1 起 Ready 不提供全屏（全屏只属于 Playing/Paused），这里的 Ready 断言按新口径检查。
 // 这一轮对着仓库里的 1.0.0 构建跑（旧 Unity 忽略 difficulty → normal 是预期），
 // 只验 H5 自身；难度真正生效由 ② 的构建验收。
 //
@@ -148,7 +149,7 @@ async function checkLayout(context, width, height) {
   check(!!m.start && m.start.bottom <= m.innerH + 0.5 && m.start.y >= 0, `${label} 开始按钮在首屏内（bottom ${Math.round(m.start.bottom)} ≤ ${m.innerH}）`);
   check(m.difficulty.bottom <= m.controls.y + 0.5, `${label} 难度区在操作区之上`);
   check(m.controls.bottom <= m.frame.y + 0.5, `${label} 开始/全屏在画布上方`);
-  check(m.fullscreenButtonVisible, `${label} Ready 下全屏按钮可见`);
+  check(!m.fullscreenButtonVisible, `${label} Ready 不显示全屏按钮（全屏只属于 Playing/Paused）`);
   check(m.page === 'Ready', `${label} 页面状态 body[data-page]=Ready`);
 
   await page.screenshot({ path: evidence(`m6-h5-ready-${label}.png`) });
@@ -421,47 +422,6 @@ async function checkPlaying(context, width, height) {
   await page.close();
 }
 
-async function checkReadyFullscreen(context, width, height) {
-  const page = await context.newPage();
-  attachConsole(page, 'fullscreen');
-  await page.setViewportSize({ width, height });
-  await waitReady(page);
-
-  await page.click('#btn-fullscreen');
-  await page.waitForTimeout(500);
-
-  const state = await page.evaluate(() => {
-    const visible = (selector) => {
-      const el = document.querySelector(selector);
-      if (!el || el.hidden) return false;
-      const r = el.getBoundingClientRect();
-      return r.width > 0 && r.height > 0;
-    };
-    return {
-      fullscreen: !!document.fullscreenElement,
-      start: visible('#btn-start'),
-      difficulty: visible('#difficulty'),
-      exit: visible('#btn-exit-fullscreen'),
-      startBottom: document.querySelector('#btn-start')?.getBoundingClientRect().bottom,
-      innerH: window.innerHeight,
-    };
-  });
-
-  check(state.fullscreen, 'Ready 能进入全屏');
-  check(state.difficulty, '全屏 Ready 下难度区可见');
-  check(state.start, '全屏 Ready 下开始按钮可见');
-  check(state.exit, '全屏退出按钮可见');
-  check(state.startBottom <= state.innerH + 0.5, `全屏 Ready 下开始按钮在视口内（${Math.round(state.startBottom)} ≤ ${state.innerH}）`);
-
-  await page.screenshot({ path: evidence(`m6-h5-ready-fullscreen-${width}x${height}.png`) });
-  console.log(`      截图 → docs/evidence/m6-h5-ready-fullscreen-${width}x${height}.png`);
-
-  await page.click('#btn-exit-fullscreen');
-  await page.waitForTimeout(300);
-  check(!(await page.evaluate(() => !!document.fullscreenElement)), '能退出全屏');
-  await page.close();
-}
-
 // ---------- 主流程 ----------
 
 const server = await startServer();
@@ -476,12 +436,12 @@ try {
     hasTouch: true,
   });
 
-  // ONLY=ready|storage|fullscreen|playing 只跑其中一段（调布局时省时间）；不传则全跑。
+  // ONLY=ready|storage|playing 只跑其中一段（调布局时省时间）；不传则全跑。
   const only = (process.env.ONLY || '').trim();
   const want = (section) => !only || only === section;
 
   if (want('ready')) {
-    console.log('\n[1/4] Ready 布局（6 视口）');
+    console.log('\n[1/3] Ready 布局（6 视口）');
     for (const [w, h] of [[320, 568], [390, 844], [844, 390]]) {
       await checkLayout(mobile, w, h);
     }
@@ -491,17 +451,12 @@ try {
   }
 
   if (want('storage')) {
-    console.log('\n[2/4] 选档 / 迁移 / 跨档最高分');
+    console.log('\n[2/3] 选档 / 迁移 / 跨档最高分');
     await checkStorageFlow(mobile, 390, 844);
   }
 
-  if (want('fullscreen')) {
-    console.log('\n[3/4] Ready 全屏');
-    await checkReadyFullscreen(desktop, 1280, 720);
-  }
-
   if (want('playing')) {
-    console.log('\n[4/4] Playing 布局与绘制缓冲');
+    console.log('\n[3/3] Playing 布局与绘制缓冲');
     for (const [w, h] of [[320, 568], [844, 390]]) {
       await checkPlaying(mobile, w, h);
     }

@@ -1,4 +1,4 @@
-// 全屏验收截图（M4.5 §1）：进入全屏 → Playing / Paused → 退出全屏。
+// 全屏验收截图（M4.5 §1；L1 后全屏内无网页按钮）：Playing 进全屏 → Paused → Esc/原生 API 退出。
 // 用法：BASE_URL=http://127.0.0.1:8000 VIEWPORT=390x844 node fullscreen-shot.mjs
 // 失败降级：FALLBACK=1 时把 requestFullscreen 替换成 reject，验证提示文案。
 import { chromium } from 'playwright';
@@ -48,10 +48,14 @@ if (FALLBACK) {
 
   const state = await page.evaluate(() => {
     const frame = document.querySelector('.game-frame').getBoundingClientRect();
+    const buttons = Array.from(document.querySelectorAll('button')).filter((el) => {
+      const rect = el.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    }).length;
     return {
       fullscreen: !!document.fullscreenElement,
       headerDisplay: getComputedStyle(document.querySelector('.header')).display,
-      exitVisible: !document.querySelector('#btn-exit-fullscreen').hidden,
+      visibleButtons: buttons,
       frame: { w: Math.round(frame.width), h: Math.round(frame.height) },
       inner: { w: innerWidth, h: innerHeight },
     };
@@ -68,8 +72,13 @@ if (FALLBACK) {
   await page.waitForTimeout(500);
   await page.screenshot({ path: path.join(evidenceDir, `resp-${label}-fullscreen-paused.png`) });
 
-  await page.click('#btn-exit-fullscreen');
-  await page.waitForFunction(() => !document.fullscreenElement, null, { timeout: 8000 });
+  // 全屏里没有网页退出按钮（L1）：先试 Esc，无头环境不生效就退回原生 API。
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(600);
+  if (await page.evaluate(() => !!document.fullscreenElement)) {
+    await page.evaluate(() => document.exitFullscreen());
+    await page.waitForFunction(() => !document.fullscreenElement, null, { timeout: 8000 });
+  }
   await page.waitForTimeout(400);
   await page.screenshot({ path: path.join(evidenceDir, `resp-${label}-fullscreen-exited.png`) });
 }

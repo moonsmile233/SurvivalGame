@@ -95,6 +95,8 @@
    `menu-check` 在 320/844/1280 断言「画布上 40px → 恰好 40px（不双重）+ 画布外可滚」，
    `fullscreen-states` 断言全屏内不滚，均 PASS。
 2. **全屏 Paused 下难度卡被 CSS 隐藏**（全屏例外），且旧的两个「返回主菜单」按钮已删除；换档需先退出全屏。属规格内（全屏例外），但要在验收说明里写清。
+   **L1 修订（2026-11-01 用户口径）**：全屏只属于 Playing/Paused，Ready/Starting/Result 不提供全屏；
+   全屏内隐藏所有网页外壳与按钮（含删除「退出全屏」），退出只靠 Esc/系统手势。见 `acceptance.md §3.4`。
 3. **Result 下难度卡在画布上方**：结算卡出现时可能把菜单滚出视口，换档需要向上滚动。属预期，但体验上要确认。
 4. `docs/evidence/` 里 `m6-h5-*`、`m6-difficulty-*` 部分截图来自旧交互（按钮版/缩画布版），**最终状态以重跑为准**。
 5. 预编译警告 `_pausedByVisibility` assigned but never used（M4.6 遗留，未处理）。
