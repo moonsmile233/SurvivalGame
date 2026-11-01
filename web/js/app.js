@@ -3,8 +3,21 @@
 
   var DEFAULT_NICKNAME = '玩家';
   var MAX_NICKNAME = 16;
-  var BEST_KEY = 'bestScore';
+  // 旧版（v1.0.0）单一最高分：只在迁移时读，迁完即删（见 loadBests）。
+  var LEGACY_BEST_KEY = 'bestScore';
   var NICKNAME_KEY = 'nickname';
+  var DIFFICULTY_KEY = 'difficulty';
+  var PROTOCOL_VERSION = 2;
+
+  // 难度是 H5 的概念，Unity 只认 easy/normal/hard 三个字符串（协议 v2 §2.2）。
+  // 卡面倍率文案与 Unity 的 DifficultyProfile 是两处，改数值时必须同时改这里和资产。
+  var DIFFICULTIES = ['easy', 'normal', 'hard'];
+  var DIFFICULTY_META = {
+    easy: { name: '简单', bestKey: 'bestScore.easy' },
+    normal: { name: '普通', bestKey: 'bestScore.normal' },
+    hard: { name: '困难', bestKey: 'bestScore.hard' }
+  };
+  var DEFAULT_DIFFICULTY = 'normal';
 
   // 点开始后的兜底时限。正常首帧响应 <100ms（SendMessage 同步）；9 秒只覆盖
   // 「指令真的丢了 / Unity 卡住」的情况，不能短到把慢机器上的正常启动误判。
@@ -31,14 +44,20 @@
   var resultNickname = document.getElementById('result-nickname');
   var resultSurvived = document.getElementById('result-survived');
   var resultRecord = document.getElementById('result-record');
+  var resultDifficulty = document.getElementById('result-difficulty');
   var versionEl = document.getElementById('version');
   var buildTimeEl = document.getElementById('build-time');
+  var difficultySection = document.getElementById('difficulty');
+  var difficultyInputs = Array.prototype.slice.call(document.querySelectorAll('.difficulty-input'));
+  var bestLabel = document.getElementById('best-label');
+  var bestValue = document.getElementById('best-value');
 
   var state = {
     page: 'Loading',
     ready: false,
     unityInstance: null,
-    best: storage ? storage.getInt(BEST_KEY, 0) : 0,
+    difficulty: loadStoredDifficulty(),
+    bests: loadBests(),
     gameOverHandled: false,
     startTimeout: null
   };
@@ -86,18 +105,92 @@
     return chars.length > 0 ? chars.join('') : DEFAULT_NICKNAME;
   }
 
+  function normalizeDifficulty(value) {
+    return DIFFICULTIES.indexOf(value) >= 0 ? value : null;
+  }
+
+  function loadStoredDifficulty() {
+    var saved = storage ? normalizeDifficulty(storage.get(DIFFICULTY_KEY)) : null;
+    return saved || DEFAULT_DIFFICULTY;
+  }
+
+  /**
+   * 分档最高分 + 旧键迁移（M6 §2/§4）。
+   * 迁移只在 bestScore.normal 不存在且旧值有效时跑一次；**写入成功才删旧键**，
+   * 写失败（隐私模式/配额）保留旧键，下次加载再试。不换算：v1.0.0 的分数没有难度倍率，
+   * 按原值迁到普通档，避免旧纪录凭空变高。
+   */
+  function loadBests() {
+    var bests = { easy: 0, normal: 0, hard: 0 };
+    if (!storage) {
+      return bests;
+    }
+
+    var legacy = storage.getInt(LEGACY_BEST_KEY, -1);
+    if (legacy >= 0 && storage.get(DIFFICULTY_META.normal.bestKey) === null) {
+      if (storage.set(DIFFICULTY_META.normal.bestKey, legacy)) {
+        storage.remove(LEGACY_BEST_KEY);
+        console.log('[App] 旧最高分已迁移到普通档：' + legacy);
+      }
+    }
+
+    for (var i = 0; i < DIFFICULTIES.length; i++) {
+      var id = DIFFICULTIES[i];
+      bests[id] = storage.getInt(DIFFICULTY_META[id].bestKey, 0);
+    }
+
+    return bests;
+  }
+
+  function renderDifficulty() {
+    for (var i = 0; i < difficultyInputs.length; i++) {
+      var input = difficultyInputs[i];
+      var selected = input.value === state.difficulty;
+      input.checked = selected;
+      if (input.parentElement) {
+        input.parentElement.classList.toggle('is-selected', selected);
+      }
+    }
+
+    var meta = DIFFICULTY_META[state.difficulty];
+    if (bestLabel) bestLabel.textContent = meta.name;
+    if (bestValue) bestValue.textContent = String(state.bests[state.difficulty]);
+  }
+
+  function selectDifficulty(value) {
+    var id = normalizeDifficulty(value);
+    if (!id || id === state.difficulty) {
+      return;
+    }
+
+    state.difficulty = id;
+    if (storage) {
+      storage.set(DIFFICULTY_KEY, id);
+    }
+    renderDifficulty();
+  }
+
   function renderButtons(page) {
     var showStart = page === 'Loading' || page === 'Ready' || page === 'Starting';
     btnStart.hidden = !showStart;
     btnStart.disabled = page !== 'Ready';
 
+    // 难度只在开局前可见/可改；进入 Playing 后难度由 Unity 快照锁定（协议 v2 §2.2）。
+    if (difficultySection) {
+      difficultySection.hidden = !showStart;
+    }
+    for (var i = 0; i < difficultyInputs.length; i++) {
+      difficultyInputs[i].disabled = page !== 'Ready';
+    }
+
     btnRestart.hidden = page !== 'Result';
     btnRestart.disabled = page !== 'Result';
 
-    // 全屏只在局内（Playing/Paused）开放：Ready 进全屏会隐藏 .controls（开始按钮不可见），
-    // Result 进全屏会隐藏 .result 结算卡，玩家只能被迫退出全屏。退出按钮在画面内单独控制。
+    // M6 §2：Ready 也允许全屏（CSS 已改成按 body[data-page] 隐藏，Ready 会保留难度区 + 开始）。
+    // Result 不进全屏：结算卡在页面里，全屏只剩画面会让玩家卡住；退出按钮单独控制。
     if (btnFullscreen) {
-      btnFullscreen.hidden = page !== 'Playing' && page !== 'Paused';
+      btnFullscreen.hidden = page !== 'Ready' && page !== 'Starting' &&
+        page !== 'Playing' && page !== 'Paused';
     }
 
     nicknameInput.disabled = page !== 'Ready';
@@ -105,6 +198,8 @@
 
   function setPage(page) {
     state.page = page;
+    // CSS 用 body[data-page] 区分「局内全屏只留画面」与「Ready 全屏保留难度/开始」（M6 §2 全屏修复）。
+    document.body.dataset.page = page;
     if (page === 'Playing') {
       resultEl.hidden = true;
     }
@@ -168,7 +263,7 @@
       }
     }, START_RESPONSE_TIMEOUT_MS);
 
-    if (!sendMessage('StartGame', JSON.stringify({ nickname: nickname }))) {
+    if (!sendMessage('StartGame', JSON.stringify({ nickname: nickname, difficulty: state.difficulty }))) {
       window.clearTimeout(state.startTimeout);
       setPage('Ready');
       setHint('开始指令发送失败，请刷新页面重试');
@@ -210,8 +305,9 @@
     }
 
     var message = parseJson(json);
-    if (message && message.protocol !== undefined && message.protocol !== 1) {
-      console.warn('[App] 协议版本不一致：' + message.protocol);
+    // 旧 Unity（protocol 1）不会读 difficulty，开局会按 normal；只告警，不阻塞（协议 v2 §2.2 兼容矩阵）。
+    if (message && message.protocol !== undefined && message.protocol !== PROTOCOL_VERSION) {
+      console.warn('[App] 协议版本不一致：' + message.protocol + '（期望 ' + PROTOCOL_VERSION + '）');
     }
 
     state.ready = true;
@@ -288,12 +384,14 @@
     survived = isFinite(survived) && survived > 0 ? survived : 0;
 
     var nickname = normalizeNickname(payload.nickname);
-    var previousBest = state.best;
+    // 以 Unity 回传的实际档位为准（非法/缺省已被回落为 normal）；旧 Unity 没有该字段时用本局选择。
+    var roundDifficulty = normalizeDifficulty(payload.difficulty) || state.difficulty;
+    var previousBest = state.bests[roundDifficulty];
     var isNewRecord = score > previousBest;
 
     if (isNewRecord) {
-      state.best = score;
-      if (storage && !storage.set(BEST_KEY, score)) {
+      state.bests[roundDifficulty] = score;
+      if (storage && !storage.set(DIFFICULTY_META[roundDifficulty].bestKey, score)) {
         setHint('本次成绩无法保存（浏览器存储不可用）');
       }
     }
@@ -301,7 +399,8 @@
     function showResultCard() {
       resultTitle.textContent = won ? '胜利' : '失败';
       resultScore.textContent = String(score);
-      resultBest.textContent = String(state.best);
+      resultBest.textContent = String(state.bests[roundDifficulty]);
+      if (resultDifficulty) resultDifficulty.textContent = DIFFICULTY_META[roundDifficulty].name;
       resultNickname.textContent = nickname;
       resultSurvived.textContent = survived.toFixed(1) + ' 秒';
       resultRecord.hidden = !isNewRecord;
@@ -331,7 +430,8 @@
         setHint('');
       }
 
-      console.log('[App] gameOver score=' + score + ' best=' + state.best + ' newRecord=' + isNewRecord);
+      console.log('[App] gameOver score=' + score + ' difficulty=' + roundDifficulty +
+        ' best=' + state.bests[roundDifficulty] + ' newRecord=' + isNewRecord);
     }
 
     // 全屏下 H5 结算卡被 CSS 隐藏；先退出全屏，等退出完成再显示结算，避免玩家只看到游戏画面。
@@ -488,6 +588,12 @@
   if (btnStart) btnStart.addEventListener('click', startGame);
   if (btnRestart) btnRestart.addEventListener('click', restartGame);
 
+  for (var inputIndex = 0; inputIndex < difficultyInputs.length; inputIndex++) {
+    difficultyInputs[inputIndex].addEventListener('change', function () {
+      if (this.checked) selectDifficulty(this.value);
+    });
+  }
+
   if (btnRetry) {
     btnRetry.addEventListener('click', function () {
       window.location.reload();
@@ -527,6 +633,8 @@
     setHint('当前浏览器无法保存成绩，刷新后会丢失');
   }
 
+  document.body.dataset.page = state.page;
+  renderDifficulty();
   renderButtons(state.page);
 
   window.SurvivalApp = {

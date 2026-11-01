@@ -52,11 +52,26 @@ body {
   gap: 12px;
 }
 
+.header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
 .title {
   margin: 0;
   font-size: 18px;
   font-weight: 600;
   letter-spacing: 0.02em;
+}
+
+/* 一句话规则（M6 §2 主界面顺序：标题 → 规则 → 昵称） */
+.tagline {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--muted);
 }
 
 .nickname-field {
@@ -157,6 +172,96 @@ body {
   font-size: 14px;
   color: var(--muted);
   line-height: 1.5;
+}
+
+/* ---------- 难度（M6 §2） ---------- */
+
+.difficulty {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.difficulty-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+/* 整卡可点（label 包住 radio），保证 ≥44px 命中区；短横屏由下面的媒体查询压到 36。 */
+.difficulty-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-height: 64px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.difficulty-card.is-selected {
+  border-color: var(--accent);
+  background: rgba(124, 92, 255, 0.16);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+/* 原生 radio：只做视觉隐藏，键盘/读屏能力保留（不要 display:none 或 visibility:hidden）。 */
+.difficulty-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+}
+
+.difficulty-input:focus-visible + .difficulty-name {
+  outline: 3px solid #b9a7ff;
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+.difficulty-input:disabled ~ * {
+  opacity: 0.65;
+}
+
+.difficulty-name {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.difficulty-desc {
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.difficulty-mult {
+  font-size: 12px;
+  color: #b9a7ff;
+  font-variant-numeric: tabular-nums;
+}
+
+.best-line {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.best-line b {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.difficulty-note {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
 }
 
 /* ---------- 操作区 ---------- */
@@ -386,6 +491,16 @@ body {
     display: none;
   }
 
+  /* 菜单态多了难度卡 + 说明，画面要给它们让高度；局内仍是原来的 132px 预算。 */
+  .difficulty-card {
+    min-height: 44px;
+    padding: 6px 10px;
+  }
+
+  .difficulty-desc {
+    display: none;
+  }
+
   /* 用高度定尺寸，宽度由 16:9 反推：保证页头+按钮+提示刚好占满一屏，不出现纵向滚动。 */
   .game-frame {
     height: calc(100vh - 132px);
@@ -393,6 +508,46 @@ body {
     width: auto;
     max-width: 100%;
     align-self: center;
+  }
+
+  body[data-page="Ready"] .game-frame,
+  body[data-page="Starting"] .game-frame,
+  body[data-page="Loading"] .game-frame {
+    height: calc(100vh - 250px);
+    height: calc(100dvh - 250px);
+  }
+}
+
+/* 320 宽的小屏：三列难度卡放不下描述，只留名称 + 倍率，保证开始按钮留在首屏 */
+@media (max-width: 360px) {
+  .difficulty-desc {
+    display: none;
+  }
+}
+
+/* 菜单态（Ready）要同时放难度卡 + 开始，画面按「剩余高度」反推尺寸；
+   局内恢复原来的尺寸，避免因为菜单把游玩画面永久压小。
+   短横屏有自己的规则（见上面的 max-height: 560px 段），这里不覆盖。 */
+@media (min-height: 561px) {
+  body[data-page="Ready"] .game-frame,
+  body[data-page="Starting"] .game-frame,
+  body[data-page="Loading"] .game-frame {
+    width: min(100%, calc((100vh - 420px) * 16 / 9));
+    width: min(100%, calc((100dvh - 420px) * 16 / 9));
+  }
+}
+
+/* 小屏竖屏（320×568 一类）：菜单占的固定高度更多，再把画面压一档并收紧间距 */
+@media (max-height: 620px) and (orientation: portrait) {
+  .shell {
+    gap: 8px;
+  }
+
+  body[data-page="Ready"] .game-frame,
+  body[data-page="Starting"] .game-frame,
+  body[data-page="Loading"] .game-frame {
+    width: min(100%, calc((100vh - 470px) * 16 / 9));
+    width: min(100%, calc((100dvh - 470px) * 16 / 9));
   }
 }
 
@@ -421,11 +576,32 @@ html:fullscreen .shell {
 
 html:fullscreen .header,
 html:fullscreen .rotate-hint,
-html:fullscreen .controls,
 html:fullscreen .op-hint,
 html:fullscreen .footer,
 html:fullscreen .result {
   display: none !important;
+}
+
+/* 局内/结算的全屏只留画面与浮动退出按钮；Ready 的全屏要保留难度区 + 开始（M6 §2 修复） */
+html:fullscreen body[data-page="Playing"] .controls,
+html:fullscreen body[data-page="Paused"] .controls,
+html:fullscreen body[data-page="Result"] .controls {
+  display: none !important;
+}
+
+/* 全屏里用左下浮动按钮退出即可，不再重复一个「退出全屏」 */
+html:fullscreen #btn-fullscreen {
+  display: none !important;
+}
+
+/* Ready 全屏同时有画面 + 菜单，按剩余高度反推画面宽度，避免把开始按钮挤出屏幕 */
+html:fullscreen body[data-page="Ready"] .game-frame,
+html:fullscreen body[data-page="Starting"] .game-frame,
+html:fullscreen body[data-page="Loading"] .game-frame {
+  width: min(100vw, calc((100vh - 220px) * 16 / 9));
+  width: min(100vw, calc((100dvh - 220px) * 16 / 9));
+  height: auto;
+  max-width: 100%;
 }
 
 html:fullscreen .game-frame {

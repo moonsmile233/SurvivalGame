@@ -7,12 +7,15 @@
   <title>SurvivalGame — 2D 生存挑战</title>
   <!-- 空的 favicon，避免浏览器自动请求 /favicon.ico 产生 404 -->
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="css/style.css?v=1.0.0">
+  <link rel="stylesheet" href="css/style.css?v=1.1.0">
 </head>
 <body>
   <main class="shell">
     <header class="header">
-      <h1 class="title">SurvivalGame</h1>
+      <div class="header-text">
+        <h1 class="title">SurvivalGame</h1>
+        <p class="tagline">躲开追踪你的敌人，存活 60 秒</p>
+      </div>
       <div class="nickname-field">
         <label class="nickname-label" for="nickname">昵称</label>
         <input id="nickname" class="nickname-input" type="text" maxlength="16" autocomplete="nickname"
@@ -21,6 +24,34 @@
     </header>
 
     <p class="rotate-hint">横屏体验更佳</p>
+
+    <!-- 难度（M6 §2）：只在 Loading/Ready/Starting 可见，开局后锁死。
+         用原生 radio + label：方向键、读屏、disabled 都交给浏览器，不额外写键盘处理。 -->
+    <section id="difficulty" class="difficulty" role="radiogroup" aria-label="难度" hidden>
+      <div class="difficulty-cards">
+        <label class="difficulty-card">
+          <input class="difficulty-input" type="radio" name="difficulty" value="easy" disabled>
+          <span class="difficulty-name">简单</span>
+          <span class="difficulty-desc">敌人更慢、更少</span>
+          <span class="difficulty-mult">×1.0</span>
+        </label>
+        <label class="difficulty-card">
+          <input class="difficulty-input" type="radio" name="difficulty" value="normal" disabled>
+          <span class="difficulty-name">普通</span>
+          <span class="difficulty-desc">标准节奏</span>
+          <span class="difficulty-mult">×1.3</span>
+        </label>
+        <label class="difficulty-card">
+          <input class="difficulty-input" type="radio" name="difficulty" value="hard" disabled>
+          <span class="difficulty-name">困难</span>
+          <span class="difficulty-desc">敌人更快、更多</span>
+          <span class="difficulty-mult">×1.6</span>
+        </label>
+      </div>
+      <p id="best-line" class="best-line"><span id="best-label">普通</span>最高分 <b id="best-value">0</b></p>
+      <!-- 倍率只乘存活分；胜利奖励固定 200（协议 v2 §3），一句话说清，避免误以为总分乘倍率。 -->
+      <p class="difficulty-note">倍率只作用于存活分，胜利奖励固定 +200</p>
+    </section>
 
     <section class="game-frame" aria-label="游戏画面">
       <canvas id="unity-canvas" tabindex="0"></canvas>
@@ -53,8 +84,12 @@
           <dd id="result-score">0</dd>
         </div>
         <div class="result-item">
-          <dt>历史最高分</dt>
+          <dt>本难度最高分</dt>
           <dd id="result-best">0</dd>
+        </div>
+        <div class="result-item">
+          <dt>难度</dt>
+          <dd id="result-difficulty">普通</dd>
         </div>
         <div class="result-item">
           <dt>昵称</dt>
@@ -84,10 +119,10 @@
     <button id="btn-exit-fullscreen" class="btn fullscreen-exit" type="button" hidden>退出全屏</button>
   </main>
 
-  <script src="js/storage.js?v=1.0.0"></script>
-  <script src="js/app.js?v=1.0.0"></script>
+  <script src="js/storage.js?v=1.1.0"></script>
+  <script src="js/app.js?v=1.1.0"></script>
   <!-- 压测叠层：没有 ?perf=1&overlay=1 时立即返回，不影响正常页面。必须在 bridge.js 之前。 -->
-  <script src="js/perf-overlay.js?v=1.0.0"></script>
-  <script src="js/bridge.js?v=1.0.0"></script>
+  <script src="js/perf-overlay.js?v=1.1.0"></script>
+  <script src="js/bridge.js?v=1.1.0"></script>
 </body>
 </html>

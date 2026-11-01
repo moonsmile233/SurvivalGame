@@ -32,9 +32,16 @@ const visible = async (locator) => {
 await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
 await page.waitForSelector('#btn-start:not([disabled])', { timeout: 300000 });
 
-// Ready：不能进全屏（否则开始按钮消失）
-check('Ready 时全屏按钮隐藏', !(await visible(fullscreenButton())));
+// Ready：M6 §2 起允许全屏，且全屏里必须还能选难度 + 点开始（CSS 按 body[data-page] 保留 .controls）
+check('Ready 时全屏按钮可见', await visible(fullscreenButton()));
+await page.click('#btn-fullscreen');
+await page.waitForTimeout(500);
+check('Ready 能进入全屏', await page.evaluate(() => !!document.fullscreenElement));
+check('全屏 Ready 下开始按钮仍可见', await visible(page.locator('#btn-start')));
+check('全屏 Ready 下难度区仍可见', await visible(page.locator('#difficulty')));
 await page.screenshot({ path: path.join(evidenceDir, `resp-${label}-fullscreen-gate-ready.png`) });
+await page.click('#btn-exit-fullscreen');
+await page.waitForTimeout(300);
 
 await page.fill('#nickname', '全屏门禁');
 await page.click('#btn-start');

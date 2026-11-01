@@ -446,9 +446,10 @@ async function main() {
 
     const savedNickname = await page.inputValue('#nickname');
     // 最高分走 web/js/storage.js 的封装（localStorage key 带 `survival.` 前缀），不要直接读裸 key。
+    // M6 §2 起最高分按难度分档；本用例不点难度卡，默认普通档。
     const savedBest = await page.evaluate(() => {
       try {
-        return window.SurvivalStorage ? window.SurvivalStorage.getInt('bestScore', 0) : NaN;
+        return window.SurvivalStorage ? window.SurvivalStorage.getInt('bestScore.normal', 0) : NaN;
       } catch {
         return NaN;
       }
