@@ -571,19 +571,34 @@ html:fullscreen .shell {
   justify-content: center;
 }
 
-/* L1 用户口径：全屏里不留任何网页端控件与外壳（含全屏提示、倒计时覆盖层），
-   退出只靠 Esc / 系统手势；页面状态仍由 body[data-page] 与 fullscreenchange 恢复。
-   全屏按钮本身也随 .controls 隐藏；Ready/Starting/Result 根本不给全屏入口。 */
+/* L1.1 用户口径：「全屏无网页控件」只针对游戏中的 Playing/Paused；
+   Ready/Starting 全屏保留难度区 + 最高分行 + 开始（否则进全屏没法开局，M4.5 行为）。
+   全屏按钮自身在任何全屏下隐藏，退出只靠 Esc / 系统手势。 */
 html:fullscreen .header,
 html:fullscreen .rotate-hint,
 html:fullscreen .op-hint,
 html:fullscreen .footer,
 html:fullscreen .result,
-html:fullscreen .difficulty,
-html:fullscreen .controls,
-html:fullscreen .countdown,
-html:fullscreen #fullscreen-hint {
+html:fullscreen #fullscreen-hint,
+html:fullscreen #btn-fullscreen {
   display: none !important;
+}
+
+/* 游戏中（含暂停）全屏：网页外壳与按钮全部收起，只留画面。 */
+html:fullscreen body[data-page="Playing"] .controls,
+html:fullscreen body[data-page="Paused"] .controls,
+html:fullscreen body[data-page="Playing"] .difficulty,
+html:fullscreen body[data-page="Paused"] .difficulty {
+  display: none !important;
+}
+
+/* Ready/Starting 全屏：画面 + 菜单同屏，按剩余高度反推画面宽度，避免把开始按钮挤出屏幕。 */
+html:fullscreen body[data-page="Ready"] .game-frame,
+html:fullscreen body[data-page="Starting"] .game-frame {
+  width: min(100vw, calc((100vh - 220px) * 16 / 9));
+  width: min(100vw, calc((100dvh - 220px) * 16 / 9));
+  height: auto;
+  max-width: 100%;
 }
 
 html:fullscreen .game-frame {

@@ -1,13 +1,16 @@
-PASS  Ready 不显示全屏按钮
-PASS  Ready 网页可见按钮只有开始（不提供全屏） — buttons=1
-PASS  Playing 时全屏按钮可见
-PASS  Playing 全屏按钮落在控制区
-PASS  Playing 能进入全屏
-PASS  全屏内网页端可见按钮为 0 — buttons=0
-PASS  全屏内页头/难度/控制区/页脚/操作提示全部隐藏 — {"header":false,"difficulty":false,"controls":false,"footer":false,"opHint":false,"result":false,"fullscreenHint":false,"countdown":false}
+PASS  Ready 显示全屏按钮
+PASS  Ready 能进入全屏
+PASS  全屏 Ready 下难度区可见
+PASS  全屏 Ready 下最高分行可见
+PASS  全屏 Ready 下开始按钮可见且可用
+PASS  全屏 Ready 下页头隐藏（只留菜单 + 画面）
+PASS  全屏 Starting 保留 H5 3-2-1 覆盖层 — {"page":"Starting","countdownHidden":false,"countdownValue":"3","fullscreen":true}
+PASS  全屏里点开始能进入 Playing
+PASS  Playing 全屏内网页端可见按钮为 0 — buttons=0
+PASS  Playing 全屏内页头/难度/控制区/页脚/操作提示全部隐藏 — {"header":false,"difficulty":false,"controls":false,"footer":false,"opHint":false,"result":false,"fullscreenHint":false}
 PASS  全屏内按 P 能暂停（Unity 暂停面板仍可用）
-PASS  Paused 全屏内仍无网页外壳 — {"header":false,"difficulty":false,"controls":false,"footer":false,"opHint":false,"result":false,"fullscreenHint":false,"countdown":false}
 PASS  Paused 全屏内仍无网页按钮
+PASS  Paused 全屏内仍无网页外壳
 PASS  全屏内从暂停恢复（3-2-1 后回到游戏）
       注：无头 Chrome 下 Esc 未退出全屏，改用 document.exitFullscreen()（平台原生 API）
 PASS  Esc / 原生 API 能退出全屏

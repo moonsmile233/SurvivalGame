@@ -1,6 +1,6 @@
 # 验收记录（living document）
 
-> 最后更新：2026-11-01（L1 全屏口径：全屏内无网页按钮、全屏只属于 Playing/Paused，见 §3.4；
+> 最后更新：2026-11-01（L1.1 全屏口径：Ready/Starting 可全屏且保留菜单，游戏中全屏无网页按钮，见 §3.4；
 > M6 第 2 步：三档难度 + H5 主界面 + `ReturnToMenu` 自动化全绿，见 §3.3；
 > 此前 M5-3：无水印 1.0.0 构建 `2026-10-31T14:53:47Z`、M4.7 摇杆/响应式/全屏验收、无头 E2E、build 入库 `f19fcb79`、
 > Release `v1.0.0`、干净克隆通过；人工/真机仍待测）
@@ -148,24 +148,34 @@
 - 17 条需求：1–16 的自动化回归仍全绿（见 3.1/3.2 证据 + 本次 smoke/menu-check）；第 17 条交付物仍是 1.0.0，
   M6 发版（1.1.0）未做。
 
-## 3.4 L1 全屏口径（2026-11-01，用户明确要求）
+## 3.4 L1/L1.1 全屏口径（2026-11-01，用户明确要求）
 
-**决策**：全屏按平台原生习惯——**全屏里不保留任何网页端按钮/外壳**；**全屏只属于局内（Playing/Paused）**。
-推翻 M6 §2 的「Ready 全屏可开始」与 M4.5 §1 的「全屏内固定退出按钮」。
+**决策**：全屏按平台原生习惯——**游戏中（Playing/Paused）全屏不保留任何网页端按钮/外壳**；
+**主界面（Ready/Starting）也能进全屏，且全屏里保留难度区 + 最高分行 + 开始按钮**（否则进全屏没法开局）。
+删除网页「退出全屏」按钮，退出只靠 `Esc`（桌面）/ 浏览器手势 / 返回键（手机）。
 
-- 删除 `#btn-exit-fullscreen`（HTML/CSS/JS）；退出只靠 `Esc`（桌面）/ 浏览器手势 / 返回键（手机），
-  `fullscreenchange` 负责恢复页面。
-- `#btn-fullscreen` 只在 Playing/Paused 显示；Ready/Starting/Result 不显示（Ready 不能进全屏）。
-- 全屏内隐藏：header、难度区、controls（开始/全屏/状态提示/全屏失败提示）、footer、op-hint、rotate-hint、
-  结算卡、H5 倒计时覆盖层；画布内 Unity 暂停按钮/面板保留（不算网页控件）。
-- **证据（`fullscreen-states.mjs` 17 PASS / 0 FAIL，1280×800 无头 Chrome）**：
-  - Ready 无全屏按钮（网页可见按钮仅「开始」=1）；Playing 有全屏按钮且在控制区内。
-  - Playing 全屏内**网页端可见按钮 = 0**，上述外壳全部不可见。
-  - 全屏内按 `P` 能暂停/恢复（Unity 暂停面板与 3-2-1 正常），Paused 全屏内仍无网页按钮/外壳。
-  - `Esc` 或 `document.exitFullscreen()` 退出后，全屏按钮/难度区/页头恢复可见。
+> L1.1 修正：L1 初版把「全屏无网页按钮」过度应用到了 Ready，导致主界面看不到全屏入口；
+> 用户反馈后恢复 Ready/Starting 全屏菜单（M4.5 行为），「无网页控件」仅约束游戏中的 Playing/Paused。
+
+- 删除 `#btn-exit-fullscreen`（HTML/CSS/JS）；`fullscreenchange` 负责恢复页面。
+- `#btn-fullscreen` 在 Ready/Starting/Playing/Paused 显示，Result 不显示。
+- **Ready/Starting 全屏**：保留难度区、最高分行、开始按钮（可点击）、H5 3-2-1 覆盖层；隐藏页头/页脚/操作提示。
+- **Playing/Paused 全屏**：header、难度区、controls（开始/全屏/状态提示/全屏失败提示）、footer、op-hint、
+  rotate-hint、结算卡全部隐藏；画布内 Unity 暂停按钮/面板保留（不算网页控件）。
+- **证据（`fullscreen-states.mjs`，1280×800 无头 Chrome）**：
+  - Ready 显示全屏按钮；全屏 Ready 下难度区/最高分行/开始按钮可见且可用，页头隐藏；
+  - 全屏 Ready 点开始 → Starting 的 3-2-1 覆盖层可见 → 进入 Playing；
+  - Playing 全屏内**网页端可见按钮 = 0**、外壳全隐藏；Paused 全屏内仍无按钮/外壳，P 暂停/恢复正常；
+  - `Esc` 或 `document.exitFullscreen()` 退出后，全屏按钮/难度区/页头恢复可见；
   - Result 不提供全屏、结算卡可见。
-  截图 `resp-1280x800-fullscreen-gate-{playing,paused,exited}.png`、日志 `m6-fullscreen-states.log`。
-- **回归**：`menu-check` 131 PASS（6 视口 Ready 断言「不显示全屏按钮」）；`smoke` L1 后 1 局 21 PASS。
+  截图 `resp-1280x800-fullscreen-gate-{ready-menu,ready,playing,paused,exited}.png`、日志 `m6-fullscreen-states.log`。
+- **局域网全新浏览器上下文复核（2026-11-01，`http://192.168.1.100:8000/`，Playwright 新 context 无缓存）**：
+  同样 21 项 PASS；Ready 显示「开始游戏 + 全屏」，全屏 Ready 显示难度/最高分/开始；Playing 全屏网页按钮 = 0。
+  证据 `m6-fullscreen-states-lan.log`、`resp-lan-1280x800-fullscreen-gate-{ready-menu,ready,playing}.png`。
+- **缓存修正（同次）**：`index.html` 的 H5 资源 `?v=` 由 `1.1.0` 升到 `1.1.1`；新增 `web/serve.py`
+  （`start-local` 默认使用，`Cache-Control: no-store` + 正确 MIME）。旧 `python -m http.server` 不发缓存头，
+  改完必须 `Ctrl+F5`；规则写入 `docs/协作协议.md §6`。
+- **回归**：`menu-check` 131 PASS（6 视口 Ready 断言「显示全屏按钮」）；`smoke` 1 局。
 - **已知边界**：无头 Chrome 的 `Esc` 不退出全屏却会传给 Unity（Esc 也是暂停热键），测试已按该分支恢复；
   真实浏览器通常由浏览器消费 `Esc`，有头/真机行为仍待确认。
 
@@ -182,7 +192,7 @@
 7. **M4.5 §2/§3**：暂停菜单「重新开始」未做；Unity 主菜单按 M6 D1 决定不做（主界面在 H5，三档难度已实现）。
    全屏 §1 已完成。
 8. **M6 第 2 步遗留**：真机未测（Honor 90 Pro 三档各 1 局 + 40 只 `?perf=1`）；
-   全屏内不显示任何网页控件（L1）——换档需先退出全屏；Result 下难度卡与结算卡不同屏。
+   游戏中（Playing/Paused）全屏不显示网页控件（L1.1）——换档需先退出全屏；Result 下难度卡与结算卡不同屏。
    这些不影响功能链路，但人工验收时要按此口径检查。
 9. **L1 全屏边界**：无头 Chrome 的 `Esc` 不退出全屏却会传给 Unity 触发暂停；有头浏览器/真机尚未确认
    `Esc` 是否由浏览器消费。若真机上出现「按 Esc 退出全屏后游戏被暂停」，记录后另行决定是否在 H5 捕获阶段拦截。

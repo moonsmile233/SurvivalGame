@@ -10,17 +10,26 @@ echo   地址：http://localhost:8000
 echo   关闭此窗口即停止服务。
 echo.
 
+rem 优先 serve.py：它会发 Cache-Control: no-store，避免 H5 改了浏览器还跑旧 app.js。
 where py >nul 2>nul
 if %errorlevel%==0 (
   start "" http://localhost:8000
-  py -3 -m http.server 8000
+  if exist serve.py (
+    py -3 serve.py 8000
+  ) else (
+    py -3 -m http.server 8000
+  )
   goto :eof
 )
 
 where python >nul 2>nul
 if %errorlevel%==0 (
   start "" http://localhost:8000
-  python -m http.server 8000
+  if exist serve.py (
+    python serve.py 8000
+  ) else (
+    python -m http.server 8000
+  )
   goto :eof
 )
 

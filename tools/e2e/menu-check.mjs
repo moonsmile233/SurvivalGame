@@ -1,5 +1,5 @@
 // M6 §2 H5 主界面检查：6 视口 Ready 布局 + 选档记忆 + 旧最高分迁移 + 跨档不串分。
-// L1 起 Ready 不提供全屏（全屏只属于 Playing/Paused），这里的 Ready 断言按新口径检查。
+// L1.1：Ready/Starting/Playing/Paused 都能进全屏，Result 不提供；Ready 全屏保留菜单（见 fullscreen-states）。
 // 这一轮对着仓库里的 1.0.0 构建跑（旧 Unity 忽略 difficulty → normal 是预期），
 // 只验 H5 自身；难度真正生效由 ② 的构建验收。
 //
@@ -149,7 +149,7 @@ async function checkLayout(context, width, height) {
   check(!!m.start && m.start.bottom <= m.innerH + 0.5 && m.start.y >= 0, `${label} 开始按钮在首屏内（bottom ${Math.round(m.start.bottom)} ≤ ${m.innerH}）`);
   check(m.difficulty.bottom <= m.controls.y + 0.5, `${label} 难度区在操作区之上`);
   check(m.controls.bottom <= m.frame.y + 0.5, `${label} 开始/全屏在画布上方`);
-  check(!m.fullscreenButtonVisible, `${label} Ready 不显示全屏按钮（全屏只属于 Playing/Paused）`);
+  check(m.fullscreenButtonVisible, `${label} Ready 显示全屏按钮（L1.1：主界面可进全屏）`);
   check(m.page === 'Ready', `${label} 页面状态 body[data-page]=Ready`);
 
   await page.screenshot({ path: evidence(`m6-h5-ready-${label}.png`) });

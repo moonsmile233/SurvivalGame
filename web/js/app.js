@@ -244,10 +244,11 @@
     btnRestart.hidden = page !== 'Result';
     btnRestart.disabled = page !== 'Result' || !!countdown.pending;
 
-    // 全屏只属于局内：Ready/Starting/Result 不提供全屏（L1 用户口径，推翻 M6 §2 的 Ready 全屏）。
-    // Result 不进全屏：结算卡在页面里，全屏只剩画面会让玩家卡住。
+    // 主界面也能进全屏（L1.1 用户口径）：Ready/Starting 全屏保留难度区 + 开始，否则进全屏没法开局。
+    // 「全屏无网页按钮」只作用于游戏中的 Playing/Paused；Result 不提供全屏（结算卡会卡在页面外）。
     if (btnFullscreen) {
-      btnFullscreen.hidden = page !== 'Playing' && page !== 'Paused';
+      btnFullscreen.hidden = page !== 'Ready' && page !== 'Starting' &&
+        page !== 'Playing' && page !== 'Paused';
     }
 
     nicknameInput.disabled = page !== 'Ready';

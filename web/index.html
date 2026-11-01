@@ -7,7 +7,7 @@
   <title>SurvivalGame — 2D 生存挑战</title>
   <!-- 空的 favicon，避免浏览器自动请求 /favicon.ico 产生 404 -->
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="css/style.css?v=1.1.0">
+  <link rel="stylesheet" href="css/style.css?v=1.1.1">
 </head>
 <body>
   <main class="shell">
@@ -55,7 +55,7 @@
     </section>
 
     <!-- 开始/全屏在画布上方：Ready 首屏一定能看到开始；Playing 时只隐藏开始按钮，行高不变。
-         全屏按钮只在 Playing/Paused 出现（Ready/Starting/Result 不提供全屏）。
+         全屏按钮在 Ready/Starting/Playing/Paused 出现（Result 不提供）；Ready/Starting 全屏保留菜单。
          页面允许纵向滚动（菜单常驻后高度会超出小屏），画布自己 touch-action:none，拖动摇杆不会滚页。 -->
     <section class="controls">
       <button id="btn-start" class="btn" type="button" disabled>开始游戏</button>
@@ -127,10 +127,10 @@
     </footer>
   </main>
 
-  <script src="js/storage.js?v=1.1.0"></script>
-  <script src="js/app.js?v=1.1.0"></script>
+  <script src="js/storage.js?v=1.1.1"></script>
+  <script src="js/app.js?v=1.1.1"></script>
   <!-- 压测叠层：没有 ?perf=1&overlay=1 时立即返回，不影响正常页面。必须在 bridge.js 之前。 -->
-  <script src="js/perf-overlay.js?v=1.1.0"></script>
-  <script src="js/bridge.js?v=1.1.0"></script>
+  <script src="js/perf-overlay.js?v=1.1.1"></script>
+  <script src="js/bridge.js?v=1.1.1"></script>
 </body>
 </html>

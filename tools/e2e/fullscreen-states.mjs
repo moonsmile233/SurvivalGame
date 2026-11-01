@@ -1,8 +1,8 @@
-// 全屏口径（L1 用户要求，推翻 M6 §2 的「Ready 全屏」）：
-// - 只有 Playing / Paused 提供全屏；Ready / Starting / Result 不显示全屏按钮。
-// - 全屏里网页端可见按钮 = 0：不提供「退出全屏」等任何网页控件，退出靠 Esc / 系统手势；
-//   页头、难度区、控制区、页脚、结算卡、全屏提示、倒计时覆盖层全部隐藏。
-// - Unity 暂停面板/暂停按钮在画布内，不算网页控件；全屏下仍可用。
+// 全屏口径（L1.1 用户要求）：
+// - Ready / Starting / Playing / Paused 都能进全屏；Result 不提供。
+// - Ready / Starting 全屏保留菜单：难度区 + 最高分行 + 开始按钮（否则进全屏没法开局）。
+// - 游戏中（Playing / Paused）全屏：网页端可见按钮 = 0，网页外壳全部隐藏；画布内 Unity 控件保留。
+// - 全屏内没有网页「退出全屏」按钮：退出靠 Esc / 系统手势 / 原生 API；fullscreenchange 负责恢复。
 // 用法：BASE_URL=http://127.0.0.1:8125 VIEWPORT=1280x800 node fullscreen-states.mjs
 import { chromium } from 'playwright';
 import { chromiumLaunchOptions } from './launch.mjs';
@@ -52,7 +52,6 @@ const shellVisible = () => page.evaluate(() => {
     opHint: isVisible('.op-hint'),
     result: isVisible('#result'),
     fullscreenHint: isVisible('#fullscreen-hint'),
-    countdown: isVisible('#countdown'),
   };
 });
 const allHidden = (shell) => Object.values(shell).every((value) => value === false);
@@ -60,39 +59,54 @@ const allHidden = (shell) => Object.values(shell).every((value) => value === fal
 await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
 await page.waitForSelector('#btn-start:not([disabled])', { timeout: 300000 });
 
-// Ready：不给全屏入口（L1 推翻 M6 §2 的 Ready 全屏）。
-check('Ready 不显示全屏按钮', !(await visible(fullscreenButton())));
-const readyButtons = await visibleButtonCount();
-check('Ready 网页可见按钮只有开始（不提供全屏）', readyButtons === 1, `buttons=${readyButtons}`);
-
+// ---------- Ready：主界面能进全屏，且全屏里仍可看菜单、点开始 ----------
+// 昵称在页头里，全屏时页头隐藏，所以先填昵称再进全屏。
 await page.fill('#nickname', '全屏门禁');
+check('Ready 显示全屏按钮', await visible(fullscreenButton()));
+await page.screenshot({ path: path.join(evidenceDir, `resp-${label}-fullscreen-gate-ready-menu.png`) });
+await page.click('#btn-fullscreen');
+await page.waitForFunction(() => !!document.fullscreenElement, null, { timeout: 8000 });
+await page.waitForTimeout(500);
+check('Ready 能进入全屏', await page.evaluate(() => !!document.fullscreenElement));
+check('全屏 Ready 下难度区可见', await visible(page.locator('#difficulty')));
+check('全屏 Ready 下最高分行可见', await visible(page.locator('#best-line')));
+check('全屏 Ready 下开始按钮可见且可用', await page.evaluate(() => {
+  const button = document.querySelector('#btn-start');
+  if (!button || button.hidden || button.disabled) return false;
+  const rect = button.getBoundingClientRect();
+  return rect.width > 0 && rect.height > 0 && rect.bottom <= innerHeight;
+}));
+check('全屏 Ready 下页头隐藏（只留菜单 + 画面）', !(await shellVisible()).header);
+await page.screenshot({ path: path.join(evidenceDir, `resp-${label}-fullscreen-gate-ready.png`) });
+
+// ---------- Starting：全屏里开始 3-2-1 可见，倒计时结束进入 Playing ----------
 await page.click('#btn-start');
+await page.waitForTimeout(200);
+const starting = await page.evaluate(() => ({
+  page: document.body.dataset.page,
+  countdownHidden: document.querySelector('#countdown')?.hidden,
+  countdownValue: document.querySelector('#countdown-value')?.textContent,
+  fullscreen: !!document.fullscreenElement,
+}));
+check('全屏 Starting 保留 H5 3-2-1 覆盖层',
+  starting.page === 'Starting' && starting.countdownHidden === false && starting.countdownValue === '3',
+  JSON.stringify(starting));
 await page.waitForFunction(
   () => (document.querySelector('#status-hint')?.textContent || '').includes('游戏中'),
   null,
   { timeout: 30000 },
 );
-check('Playing 时全屏按钮可见', await visible(fullscreenButton()));
-check('Playing 全屏按钮落在控制区', await page.evaluate(() => {
-  const button = document.querySelector('#btn-fullscreen');
-  const controls = document.querySelector('.controls');
-  return !!button && !!controls && controls.contains(button);
-}));
-
-await page.click('#btn-fullscreen');
-await page.waitForFunction(() => !!document.fullscreenElement, null, { timeout: 8000 });
 await page.waitForTimeout(500);
-check('Playing 能进入全屏', await page.evaluate(() => !!document.fullscreenElement));
+check('全屏里点开始能进入 Playing', await page.evaluate(() => !!document.fullscreenElement));
 
-// 核心口径：全屏里没有任何网页端按钮 / 外壳。
+// ---------- Playing：0 网页按钮 + 外壳全隐藏 ----------
 const fsButtons = await visibleButtonCount();
-check('全屏内网页端可见按钮为 0', fsButtons === 0, `buttons=${fsButtons}`);
+check('Playing 全屏内网页端可见按钮为 0', fsButtons === 0, `buttons=${fsButtons}`);
 const fsShell = await shellVisible();
-check('全屏内页头/难度/控制区/页脚/操作提示全部隐藏', allHidden(fsShell), JSON.stringify(fsShell));
+check('Playing 全屏内页头/难度/控制区/页脚/操作提示全部隐藏', allHidden(fsShell), JSON.stringify(fsShell));
 await page.screenshot({ path: path.join(evidenceDir, `resp-${label}-fullscreen-gate-playing.png`) });
 
-// Paused 全屏：Unity 暂停面板仍可用（键盘 P 走的是 Unity 暂停/恢复状态机；
-// 面板本身的「继续」按钮在画布内，不是网页控件）。
+// ---------- Paused：Unity 暂停面板仍可用，网页端仍无按钮 ----------
 await page.keyboard.press('p');
 await page.waitForFunction(
   () => (document.querySelector('#status-hint')?.textContent || '').includes('已暂停'),
@@ -100,9 +114,8 @@ await page.waitForFunction(
   { timeout: 10000 },
 );
 check('全屏内按 P 能暂停（Unity 暂停面板仍可用）', true);
-const pausedShell = await shellVisible();
-check('Paused 全屏内仍无网页外壳', allHidden(pausedShell), JSON.stringify(pausedShell));
 check('Paused 全屏内仍无网页按钮', (await visibleButtonCount()) === 0);
+check('Paused 全屏内仍无网页外壳', allHidden(await shellVisible()));
 await page.screenshot({ path: path.join(evidenceDir, `resp-${label}-fullscreen-gate-paused.png`) });
 
 await page.keyboard.press('p');
@@ -113,7 +126,7 @@ await page.waitForFunction(
 );
 check('全屏内从暂停恢复（3-2-1 后回到游戏）', true);
 
-// 退出：优先 Esc；无头环境若 Esc 不生效，退回 exitFullscreen API（两者都是平台原生退出路径）。
+// ---------- 退出：Esc 或原生 API；退出后页面恢复 ----------
 await page.keyboard.press('Escape');
 await page.waitForTimeout(600);
 if (await page.evaluate(() => !!document.fullscreenElement)) {
@@ -128,8 +141,7 @@ check('退出后页面恢复：页头可见', await visible(page.locator('.heade
 await page.screenshot({ path: path.join(evidenceDir, `resp-${label}-fullscreen-gate-exited.png`) });
 
 // 无头 Chrome 不把 Esc 当全屏退出键，却会把 Esc 传给 Unity（Esc 也是暂停热键），
-// 于是退出全屏后游戏停在 Paused。真实浏览器里 Esc 由浏览器消费、通常不会到页面；
-// 这里按实际状态恢复，保证后面的自然结算用例不被暂停卡死。
+// 退出全屏后游戏可能停在 Paused；真实浏览器通常由浏览器消费 Esc。按实际状态恢复后再等结算。
 const hintAfterExit = await page.evaluate(() => document.querySelector('#status-hint')?.textContent || '');
 if (hintAfterExit.includes('已暂停')) {
   console.log('      注：Esc 同时触发 Unity 暂停，按 P 恢复后再等结算');
@@ -141,7 +153,7 @@ if (hintAfterExit.includes('已暂停')) {
   );
 }
 
-// 结算：不操作，等自然结束（最长 60 秒）。
+// ---------- Result：不提供全屏，结算卡可见 ----------
 await page.waitForSelector('#result:not([hidden])', { timeout: 120000 });
 await page.waitForTimeout(400);
 check('Result 不提供全屏', !(await visible(fullscreenButton())));
