@@ -1,6 +1,6 @@
 # 验收记录（living document）
 
-> 最后更新：2026-10-31（M4：触控/HUD/结算去重/失焦暂停/大地图与相机/敌人手感/键盘暂停/M4.6 暂停恢复语义；M4.6 构建已部署，线上三浏览器通过；真机/人工待测）
+> 最后更新：2026-11-01（M5-3：无水印 1.0.0 构建 `2026-10-31T14:53:47Z`、M4.7 摇杆/响应式/全屏验收、无头 E2E、build 入库 `f19fcb79`、Release `v1.0.0`、干净克隆通过；人工/真机仍待测）
 > 规则：只写实际跑过的结果；没跑就写「待测」。证据放 `docs/evidence/`。
 > 测试用例与门槛见 `docs/测试计划.md`。
 
@@ -8,14 +8,14 @@
 
 | # | 需求 | 状态 | 日期 | 设备/浏览器 | 证据 |
 |---|---|---|---|---|---|
-| 1 | 2D 场景（玩家/敌人/背景/UI） | ✅ | 2026-10-30 | Editor / Chromium | `m2-playing.png`、`m3-hud-enemies.png` |
+| 1 | 2D 场景（玩家/敌人/背景/UI） | ✅ | 2026-10-30 | Editor / Chromium | `m2-browser-playing-1280.png`、`m3-hud-enemies.png` |
 | 2 | 玩家移动（WASD/方向键，不出界） | ✅ Editor + 浏览器合成按键 | 2026-10-30 | Editor / Chromium | `m3-move-before/after.png` |
-| 3 | 敌人定时生成并追踪 | ✅ | 2026-10-30 | Editor / Chromium | `m2-playing-2.png` |
+| 3 | 敌人定时生成并追踪 | ✅ | 2026-10-30 | Editor / Chromium | `m3-hud-enemies.png` |
 | 4 | HP、受击掉血、无敌帧 | ✅ | 2026-10-30 | Editor | `docs/M1-执行记录.md` |
-| 5 | 生存 60 秒胜利 | ✅ 60.1s（M3）、60.0s/800 分（M4 构建，方形走位脚本）；**均为自动化，非人工** | 2026-10-30 / 2026-10-31 | 真实 Chrome（有头、GPU）+ 脚本 | `m3-win-result.png`、`m4-win-automated-local.png`；人工版待门禁 |
+| 5 | 生存 60 秒胜利 | ✅ 已实现：自动化 60.0s / 800 分；**人工 60 秒胜利：未测**（未到人工门禁） | 2026-10-30 / 2026-10-31 | 真实 Chrome（有头）+ 脚本 | `m3-win-result.png`、`m4-win-automated-local.png`；人工版未测 |
 | 6 | 失败 | ✅ | 2026-10-30 | 线上 Chromium | `m3-online-result.png` |
 | 7 | 重新开始（全量重置） | ✅ | 2026-10-30 | Editor / Chromium | `m3-restarted.png` |
-| 8 | 暂停 | ✅ Unity HUD 暂停 + 失焦自动暂停并**保持**；玩家点「继续」/按 Esc/P 后 3-2-1 才恢复（M4.6，真实窗口失焦） | 2026-10-31 | Chrome / Edge / Firefox（线上 M4.6） | `e2e-online-chrome-desktop-focus-return-paused.png`、`-countdown.png`、`-resumed.png`；手机 `e2e-local-chrome-mobile-countdown.png` |
+| 8 | 暂停 | ✅ 已验收：按钮 / Esc / P / 失焦；失焦保持暂停，主动恢复走 3-2-1 | 2026-11-01 | Chrome 桌面 1280×800 + 移动视口 390×844（无头） | `e2e-local-chrome-desktop-focus-return-paused.png`、`e2e-local-chrome-mobile-countdown.png`；全屏内 P：`resp-1280x720-fullscreen-paused.png` |
 | 9 | 分数与剩余时间 | ✅ | 2026-10-30 | Editor / 线上 | `m3-online-result.png` |
 | 10 | Unity WebGL 构建可在浏览器运行 | ✅ | 2026-10-30 | Chromium | 线上地址 |
 | 11 | 昵称输入，H5 显示 | ✅ | 2026-10-30 | Chromium | `m3-online-result.png` |
@@ -23,8 +23,8 @@
 | 13 | 嵌入游戏（非 iframe） | ✅ | 2026-10-30 | Chromium | `web/js/bridge.js` |
 | 14 | Unity → H5 传分 | ✅ | 2026-10-30 | 线上 Chromium | `m3-online-result.png` |
 | 15 | 最高分 localStorage，刷新仍在 | ✅ | 2026-10-30 | 线上 Chromium | `docs/M3-执行记录.md` |
-| 16 | 页面适配电脑和手机宽度 | ✅ 布局 + 手机 HUD 放大 + 全屏拖动触控（CDP 真实触摸事件，页面不滚动）；**真机仍待测** | 2026-10-31 | 390×844 / 844×390 视口（Chrome） | `e2e-local-chrome-mobile-playing.png`、`m4-landscape-844x390.png` |
-| 17 | 源码 + WebGL 构建文件 + README | ⏳ M5（`web/unity` 当前 ignore） | — | — | — |
+| 16 | 页面适配电脑和手机宽度 | ✅ 已实现：布局 + 手机 HUD 放大 + 触控；320～1920 视口无溢出；**真机安全区：未测**（无设备，未到门禁） | 2026-11-01 | Chrome 视口 320×568 / 390×844 / 844×390 / 768×1024 / 1280×720 / 1920×1080 | `resp-320x568-playing.png`、`resp-1920x1080-playing.png`、`m47-joystick-mobile-offset.png` |
+| 17 | 源码 + WebGL 构建文件 + README | ✅ 已验收：build 提交 `f19fcb79`；Release `v1.0.0` 附件 sha256 一致；干净克隆可跑 | 2026-11-01 | git clone main + Chrome | `docs/M5-执行记录.md`、<https://github.com/moonsmile233/SurvivalGame/releases/tag/v1.0.0> |
 
 ## 2. 浏览器 / 设备矩阵
 
@@ -87,26 +87,42 @@
   从未进过视野的出生敌不会被误杀；10 局重开列表无残留。
 - **触控语义**：锚点相对拖动，手指按住不动时玩家持续移动（相机滞后约 0.33 单位），松手归零（DPR2 390×844）。
 
+## 3.2 M5 已验证项（2026-11-01）
+
+- **无水印最终构建**：Unity `6000.3.22f1`，`2026-10-31T14:53:47Z`，1.0.0，约 9 MB；画面右下角无 `trial version`
+  （`m5-build-no-watermark-playing-1280x720.png`、`m5-build-no-watermark-corner.png`）。
+- **M4.7 浮动摇杆**：非中心触摸底座与手指点重合（±1px）；knob 只沿拖动方向、夹在环内；松手/暂停立即隐藏；
+  桌面鼠标不显示；可视半径随 Canvas 短边缩放（390×844 实测 ≈27.5 CSS px，期望 28.8）。
+  证据 `m47-joystick-{mobile,landscape,1280x720}{,-offset}*.png`、`m47-joystick-desktop.png`。
+- **响应式 6 视口**：320×568 / 390×844 / 844×390 / 768×1024 / 1280×720 / 1920×1080 的 Playing / Paused / Countdown / Result
+  均可读、无横向溢出、结算按钮可见（`resp-<vp>-*.png`）。已知小瑕疵：1280×720 非全屏页面高 730>720，约 10px 纵向滚动条（全屏无影响）。
+- **H5 全屏（M4.5 §1）**：390×844 / 844×390 / 1280×720 真全屏 + 16:9 letterbox；页头/页脚/提示隐藏；
+  全屏内 `P` 暂停；死亡自动退出全屏并显示结算卡；iPhone 失败降级提示；console 0 error。
+  门禁：Ready/Result 隐藏「全屏」按钮，Playing/Paused 可见（`fullscreen-states.mjs` 5/5 PASS，
+  `resp-1280x720-fullscreen-gate-{ready,result}.png`）。
+- **E2E（无头默认）**：Chrome 桌面 1 局 + 移动 390×844 1 局 PASS，console 0 error；
+  summary `e2e-local-chrome-desktop-summary.json`（2026-11-01T05:30:21Z）。无头为 SwiftShader 软件渲染，**不作帧率结论**。
+- **交付物**：build 提交 `f19fcb79`（`web/unity/**` 入库）；Release `v1.0.0`（附件 9,433,571 字节，
+  sha256 `dccc7bf6…`，公开下载校验一致）；干净克隆 main → 自带 `start-local.sh` 起服务 → 加载/开始/Playing，console 0 error。
+  详见 `docs/M5-执行记录.md`。
+
 ## 4. 未关闭项
 
-1. **线上人工 / 真机门禁未跑**：M4.6 构建已部署（deploy `6ae5bd3b…`）并通过 Chrome/Edge/Firefox smoke；
-   线上**人工** 60 秒胜利、iPhone Safari / Android Chrome 真机仍未测（见第 2、3 条）。
-   M4.6 残余（倒计时中再失焦停表 E2E、按键残留输入）见 `docs/M4-执行记录.md` §6。
-2. **手机真机**（iPhone Safari / Android Chrome）：触控、HUD、安全区、DPR/帧率仍未测；目前只有 390×844 / 844×390 / 768×1024 的浏览器视口证据。
-   Honor 90 Pro 线上加载受阻（2026-10-31），先排查是 CDN 带宽还是设备侧，见 `docs/遗留问题.md` 第 6 节
-3. **人工 5 局平衡数据**：用户决定延后到难度分级/敌人变体之后（单局体感「偏简单」，非正式统计）；
-   自动化脚本（M3 60.1s、M4 60.0s）只证明功能链路，不算难度验收
-4. **正式美术 / 音效**：仍是占位圆点 + 网格；素材接缝已在 `EnemyDefinition`
-5. **加载性能**：WebGL 产物约 9.3MB（wasm 6.97MB + data 2.45MB + framework/loader），Netlify 实测约 165KB/s、首次加载 50～61s；国内托管评估见 `docs/部署与托管.md`
-6. **M5 交付**：`web/unity` 入库/Release zip、README/交付报告、干净克隆构建
-7. **全屏 / 暂停菜单 / 主菜单 + 难度（M4.5，可选）**：见 `docs/tickets/M4.5-入口主菜单与全屏.md`；
-   全屏下 P/Esc 的行为要在全屏功能落地后补验；不得挤占 M5 必需交付
+1. **人工 60 秒胜利未测**：自动化脚本（M3 60.1s、M4 60.0s）只证明功能链路，**不算人工验收**；需在最终构建上人工跑 1 次。
+2. **人工 5 局平衡基线未测**：用户此前决定延后到难度分级之后；未做正式统计，不能宣称难度达标。
+3. **真机未测**（Honor 90 Pro / iPhone Safari）：触控跟手、HUD 可读、安全区、横竖屏、帧率均未测；
+   目前只有浏览器视口证据。Honor 90 Pro 线上加载受阻（2026-10-31），先局域网确认设备侧，见 `docs/遗留问题.md` 第 6 节。
+4. **最终构建未上线**：线上 Netlify 仍是 M4.6 构建（`2026-10-31T10:02:10Z`，deploy `6ae5bd3b…`）；
+   1.0.0 构建已入库并发布 Release，但**国内托管未做、Netlify 未更新**，不能宣称「线上可玩最终版」。
+5. **正式美术 / 音效**：仍是占位圆点 + 网格。
+6. **加载性能**：约 9 MB/次；Netlify 国内实测很慢（首次 50～61s），国内托管方案见 `docs/部署与托管.md`。
+7. **M4.5 §2/§3**：暂停菜单「重新开始」、Unity 主菜单 + 难度未做（不阻塞交付）。全屏 §1 已完成。
 
 ## 5. 结论
 
-- M0–M4.6 的演示闭环可用；线上 <https://survivalgame-demo.netlify.app> 已是 **M4.6 构建**（Unity `2026-10-31T10:02:10Z`，
-  H5 `0.1.0-m4.5`，deploy `6ae5bd3b…`），Chrome/Edge/Firefox smoke 通过。
-- M4-B0/B1 + M4.6（大地图/相机/敌人/键盘暂停/暂停恢复语义/结算呈现）已部署并线上验证；
-  **人工 5 局平衡数据与真机门禁未做**，不要宣称 M4 收口。
-- 17 条中第 16 条（手机适配/触控）已由视口级验证转绿，真机待测；只剩第 17 条（M5 交付）未做。第 5 条人工体验仍待门禁。
-- M5 时把状态改为最终结论并附设备/日期。
+- 17 条中 1–4、6–15、17 已验收；第 5 条功能已实现但**人工 60 秒未测**；第 16 条视口级已验收、**真机未测**。
+- 最终构建 **1.0.0**（`2026-10-31T14:53:47Z`，无水印）已入 `main`（build `f19fcb79`）并发布
+  Release `v1.0.0`；干净克隆可运行。
+- 线上 Netlify 仍是 M4.6 构建；**国内托管未做**，在线链接只能标「待定」。
+- **不能宣称 M4/M5 收口**：人工 60 秒、5 局基线、Honor 90 Pro / iPhone 真机仍未做。
+- M5-5 人工门禁在最终构建上执行后，把日期/设备/结果补进本文件。
