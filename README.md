@@ -7,8 +7,8 @@
 ## 试玩 / 下载
 
 - **国内在线试玩：待定（未上线）**。国内托管（腾讯云 CloudBase）尚未执行，手机 4G 直连能进游戏的链接**还不存在**。
-- **海外备份**：<https://survivalgame-demo.netlify.app>（Netlify；国内网络可能打不开或很慢。线上仍是 M4.6 构建
-  `2026-10-31T10:02:10Z`，本仓库的 1.0.0 最终构建待部署）。
+- **海外备份**：<https://survivalgame-demo.netlify.app>（Netlify；国内网络可能打不开或很慢。
+  线上已是 **1.0.0** 构建 `2026-10-31T14:53:47Z`，deploy `6ae6d3d1…`）。
 - **离线包**：<https://github.com/moonsmile233/SurvivalGame/releases/tag/v1.0.0> 的
   `SurvivalGame-web-1.0.0.zip`（9,433,571 字节，sha256 `dccc7bf650f9e54508fbe03f93c90bebbf1398a0b61d0680bbe3635149a2e799`）。
   解压后双击 `start-local.bat`（Windows）或运行 `sh start-local.sh`，打开 <http://localhost:8000>。
