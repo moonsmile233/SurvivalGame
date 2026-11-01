@@ -2,6 +2,7 @@
 // 用法：BASE_URL=http://127.0.0.1:8000 VIEWPORT=390x844 node responsive-shot.mjs
 // 证据：docs/evidence/resp-<label>-playing|paused|result.png
 import { chromium } from 'playwright';
+import { chromiumLaunchOptions } from './launch.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -13,11 +14,11 @@ const [width, height] = (process.env.VIEWPORT || '390x844').split('x').map(Numbe
 const label = process.env.LABEL || `${width}x${height}`;
 const E2E_PROXY = (process.env.E2E_PROXY || '').trim();
 
-const browser = await chromium.launch({
-  channel: 'chrome',
-  headless: false,
-  ...(E2E_PROXY ? { proxy: { server: E2E_PROXY } } : {}),
-});
+const browser = await chromium.launch(
+  chromiumLaunchOptions({
+    ...(E2E_PROXY ? { proxy: { server: E2E_PROXY } } : {}),
+  }),
+);
 const context = await browser.newContext({
   viewport: { width, height },
   deviceScaleFactor: 1,

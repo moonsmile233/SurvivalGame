@@ -1,6 +1,8 @@
 // M4 E2E smoke：加载 → 昵称 → 开始 → 失焦暂停 → 3-2-1 恢复 → 结算 → 重开 → 刷新最高分。
-// 用真实浏览器窗口切换制造 blur/focus（不是改 document.hidden 模拟），见 tools/e2e/README.md。
+// 用 CDP 关掉焦点模拟 + 另一个标签页抢焦点制造真实 blur/focus（不是改 document.hidden 模拟），
+// 无头模式同样成立；见 tools/e2e/README.md 与 launch.mjs。
 import { chromium, firefox } from 'playwright';
+import { HEADED, chromiumLaunchOptions } from './launch.mjs';
 import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
@@ -17,7 +19,6 @@ const BROWSER = (process.env.BROWSER || 'chrome').toLowerCase();
 // 用 E2E_PROXY 显式给浏览器挂代理；只影响测试浏览器，不改游戏/H5 的网络行为。
 const E2E_PROXY = (process.env.E2E_PROXY || '').trim();
 const PORT = Number(process.env.PORT || 8123);
-const HEADLESS = process.env.HEADLESS === '1';
 const MOBILE = process.env.MOBILE === '1';
 const READY_TIMEOUT = Number(process.env.READY_TIMEOUT || 180000);
 const RESULT_TIMEOUT = Number(process.env.RESULT_TIMEOUT || 300000);
@@ -247,13 +248,15 @@ async function main() {
 
     const launchProxy = E2E_PROXY ? { proxy: { server: E2E_PROXY } } : {};
     if (BROWSER === 'firefox') {
-      browser = await firefox.launch({ headless: HEADLESS, ...launchProxy });
+      // Firefox 不认 Chrome 的窗口/SwiftShader 参数；HEADED=1 时窗口位置由系统决定。
+      browser = await firefox.launch({ headless: !HEADED, ...launchProxy });
     } else {
-      browser = await chromium.launch({
-        headless: HEADLESS,
-        channel: BROWSER === 'edge' ? 'msedge' : 'chrome',
-        ...launchProxy,
-      });
+      browser = await chromium.launch(
+        chromiumLaunchOptions({
+          channel: BROWSER === 'edge' ? 'msedge' : 'chrome',
+          ...launchProxy,
+        }),
+      );
     }
 
     const context = await browser.newContext({
@@ -348,8 +351,9 @@ async function main() {
       const cdp = await context.newCDPSession(page);
       await cdp.send('Emulation.setFocusEmulationEnabled', { enabled: false });
 
-      const otherContext = await browser.newContext();
-      const otherPage = await otherContext.newPage();
+      // 同一个 context 里新开标签页再 bringToFront：无头下跨 context 的窗口不会抢焦点，
+      // 只有同一 context 的标签页切换才会触发真实 blur（2026-11-01 无头实测）。
+      const otherPage = await context.newPage();
       await otherPage.goto('about:blank');
       await otherPage.bringToFront();
 
@@ -358,7 +362,6 @@ async function main() {
       await screenshot(page, 'paused');
 
       await otherPage.close();
-      await otherContext.close();
       await page.bringToFront();
 
       // M4.6：切回只清标记，保持 Paused，不自动倒数、不自动恢复。

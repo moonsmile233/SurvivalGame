@@ -7,7 +7,8 @@
 ```bash
 cd tools/e2e
 npm install            # 首次（Playwright 会复用本机 Chrome/Edge，不下载 Chromium）
-node smoke.mjs         # 默认：本地起静态服务 + 系统 Chrome（有头）
+node smoke.mjs         # 默认：本地起静态服务 + 系统 Chrome（无头，不弹窗）
+HEADED=1 node smoke.mjs  # 需要看真实窗口时：窗口移到屏幕外，仍然不打断使用
 ```
 
 可用环境变量：
@@ -19,7 +20,7 @@ node smoke.mjs         # 默认：本地起静态服务 + 系统 Chrome（有头
 | `READY_TIMEOUT` | `180000` | 等 `onReady` 的毫秒数；线上经代理建议 `300000` |
 | `BROWSER` | `chrome` | `chrome` / `edge` / `firefox`（firefox 用 Playwright 自带内核） |
 | `MOBILE` | `0` | `1` → 390×844 触屏上下文，并做一次 CDP 触摸拖动 |
-| `HEADLESS` | `0` | `1` → 无头（Unity WebGL 在无头下帧率低，仅用于快速冒烟） |
+| `HEADED` | `0` | 默认无头（不弹窗，避免打扰使用者）；`1` → 开真实窗口并移到屏幕外。无头 Chrome 走 SwiftShader 软件渲染，只验证流程/布局，**帧率与性能结论必须用真机** |
 | `PORT` | `8123` | 本地静态服务端口 |
 | `RESULT_TIMEOUT` | `300000` | 等一局结束的毫秒数（不操作时约 20~40s 死亡，无头会更慢） |
 | `ROUNDS` | `3` | 总局数（第 1 局结束后点「重新开始」跑满） |

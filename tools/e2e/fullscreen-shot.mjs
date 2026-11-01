@@ -2,6 +2,7 @@
 // 用法：BASE_URL=http://127.0.0.1:8000 VIEWPORT=390x844 node fullscreen-shot.mjs
 // 失败降级：FALLBACK=1 时把 requestFullscreen 替换成 reject，验证提示文案。
 import { chromium } from 'playwright';
+import { chromiumLaunchOptions } from './launch.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -13,7 +14,7 @@ const [width, height] = (process.env.VIEWPORT || '390x844').split('x').map(Numbe
 const label = process.env.LABEL || `${width}x${height}`;
 const FALLBACK = process.env.FALLBACK === '1';
 
-const browser = await chromium.launch({ channel: 'chrome', headless: false });
+const browser = await chromium.launch(chromiumLaunchOptions());
 const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1 });
 const page = await context.newPage();
 const consoleErrors = [];

@@ -3,6 +3,7 @@
 // Playing / Paused 才显示「全屏」。一次跑完，截图写 docs/evidence/resp-<label>-fullscreen-gate-*.png。
 // 用法：BASE_URL=http://127.0.0.1:8125 VIEWPORT=1280x800 node fullscreen-states.mjs
 import { chromium } from 'playwright';
+import { chromiumLaunchOptions } from './launch.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -13,7 +14,7 @@ const BASE_URL = (process.env.BASE_URL || 'http://127.0.0.1:8000').replace(/\/$/
 const [width, height] = (process.env.VIEWPORT || '1280x800').split('x').map(Number);
 const label = process.env.LABEL || `${width}x${height}`;
 
-const browser = await chromium.launch({ channel: 'chrome', headless: false });
+const browser = await chromium.launch(chromiumLaunchOptions());
 const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1 });
 const page = await context.newPage();
 

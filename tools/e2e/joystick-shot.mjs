@@ -5,6 +5,7 @@
 //   BASE_URL=http://127.0.0.1:8125 MOUSE=1 node joystick-shot.mjs   # 桌面鼠标：应看不到摇杆
 // 触摸用 CDP 真实事件；截图时手指保持按住，松手/暂停各截一张。
 import { chromium } from 'playwright';
+import { chromiumLaunchOptions } from './launch.mjs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -21,11 +22,11 @@ const MARK_TOUCH = process.env.MARK_TOUCH === '1';
 const label = process.env.LABEL || (MOUSE ? 'desktop' : width > height ? 'landscape' : 'mobile');
 const E2E_PROXY = (process.env.E2E_PROXY || '').trim();
 
-const browser = await chromium.launch({
-  channel: 'chrome',
-  headless: false,
-  ...(E2E_PROXY ? { proxy: { server: E2E_PROXY } } : {}),
-});
+const browser = await chromium.launch(
+  chromiumLaunchOptions({
+    ...(E2E_PROXY ? { proxy: { server: E2E_PROXY } } : {}),
+  }),
+);
 const context = await browser.newContext({
   viewport: { width, height },
   deviceScaleFactor: MOUSE ? 1 : 2,
