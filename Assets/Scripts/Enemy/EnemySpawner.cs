@@ -10,13 +10,13 @@ namespace Survival.Enemy
     /// 敌人是运行时动态物体，场景里不预摆（CLAUDE.md 硬约束 1）。
     /// 敌人类型来自 <see cref="EnemyDefinition"/> 数组（M4 只有 1 个基础追击定义）。
     ///
-    /// M6 拥挤修复（2026-11-01）——解决"玻璃球互推/微抖"：
-    /// - **站位槽唯一**：不再 12 槽轮转（20～40 只时一槽 2～4 只共享同一目标点，走到位后又被推开、再走回去，
-    ///   形成每帧小抖动）。现在按环半径生成尽量多的槽位（环半径 = 停距 + ring × 间距，环容量 = 周长/间距），
-    ///   每只敌人拿到唯一槽位；槽位随回收释放、新敌人优先补内圈空位。
-    /// - **分离修正**：改成 20Hz + 均匀网格邻域 + Jacobi（先累加再统一应用）+ 阻尼 + 滞回（< 0.9×间距才推，
-    ///   推到间距为止）+ 单次最大位移；已经到位的敌人（IsSettled）不参与位移，站位环被"钉住"。
-    /// - 接触伤害仍只在最内环（停距恰好让 CircleCollider2D 触发）；外环只是视觉/包围，不造成伤害。
+    /// M6 拥挤重做（2026-11-01）：
+    /// - **没有站位槽**：敌人只在自己的 <see cref="EnemyAI"/> 里 seek「玩家 + 停距」，
+    ///   被挤开就自然换位，不会被拉回固定点（旧的“站定 = 钉子”已删除）。
+    /// - 本类只做两件事：均匀网格选出每只敌人最近的 ≤8 个邻居（30Hz），以及统计
+    ///   <see cref="MinPairDistance"/> 给压测探针验收“没有两只长期 &lt;0.3”。
+    ///   移动、软墙投影、切向让位、防重合兜底全部在 EnemyAI 里逐帧做。
+    /// - 接触伤害仍是 Trigger 判定（EnemyAI.OnTriggerStay2D），玩家可穿过人群。
     /// </summary>
     public class EnemySpawner : MonoBehaviour
     {
@@ -29,11 +29,14 @@ namespace Survival.Enemy
         private const float SpawnViewMargin = 0.05f;
         private const int SpawnAttempts = 8;
 
+        // 出生点与现有敌人的最小中心距：太小会一出生就重合（防重合兜底只应是异常路径）。
+        private const float SpawnMinEnemyDistance = 0.45f;
+
         // 内圈停距留的缝隙：玩家半径 + 敌人半径 − 0.08，刚好让 Trigger 接触。
         private const float StopDistancePadding = 0.08f;
 
-        // 槽位总容量上限：环数 × 每环容量，到 80 只压测都够用。
-        private const int MaxStanceSlots = 128;
+        // 每只敌人保留的邻居数（六边形密排 6 个 + 少量外圈）。
+        private const int MaxNeighbors = 8;
 
         [SerializeField] private GameConfig _config;
         [SerializeField] private Transform _playerTarget;
@@ -43,36 +46,34 @@ namespace Survival.Enemy
 
         private readonly List<EnemyAI> _enemies = new List<EnemyAI>(24);
 
-        // 站位槽：一环一圈，同环内角度均分；相邻环错开半格，避免径向正对。
-        private struct StanceSlot
-        {
-            public float Angle;
-            public float Radius;
-        }
-
-        private StanceSlot[] _slots;
-        private bool[] _slotUsed;
-        private int _slotCursor;
-        private int _roundGeneration;
-
         private Transform _root;
         private float _elapsed;
         private float _spawnTimer;
         private bool _running;
         private float _separationAccumulator;
+        private float _playerRadius = 0.4f;
 
-        // 均匀网格（分离修正用）：cell ≈ 间距，只查相邻 9 格；字典与 bucket 列表复用，稳态无分配。
+        // 均匀网格（选邻居用）：cell ≈ 软分离半径，只查相邻 9 格；字典与 bucket 列表复用，稳态无分配。
         private readonly Dictionary<long, List<int>> _grid = new Dictionary<long, List<int>>(256);
-        private float[] _pushX = new float[MaxStanceSlots];
-        private float[] _pushY = new float[MaxStanceSlots];
         private float _cellSize = 1f;
+
+        // 邻居选择的临时缓冲（单线程、循环内复用，不分配）。
+        private readonly EnemyAI[] _neighborScratch = new EnemyAI[MaxNeighbors];
+        private readonly float[] _neighborDistanceSqr = new float[MaxNeighbors];
 
         public int ActiveCount => _enemies.Count;
 
         /// <summary>本局已进行秒数，供压力曲线使用（M4-B1）。</summary>
         public float RoundElapsed => _elapsed;
 
-        /// <summary>只读列表，供分离修正与压测探针读取；调用方不得增删。</summary>
+        /// <summary>
+        /// 最近一次邻居刷新时，全场最小的敌人中心距；没有两只在软分离半径内时返回软分离半径。
+        /// 30Hz 更新（比帧率低），压测探针读的是“最后一个 tick 的值”——一次 33ms 的瞬时穿透可能漏采，
+        /// 但验收口径是“不长期 &lt;0.3”，这个精度足够。
+        /// </summary>
+        public float MinPairDistance { get; private set; }
+
+        /// <summary>只读列表，供压测探针读取；调用方不得增删。</summary>
         public IReadOnlyList<EnemyAI> ActiveEnemies => _enemies;
 
         private void Awake()
@@ -85,7 +86,8 @@ namespace Survival.Enemy
                 _camera = Camera.main;
             }
 
-            BuildStanceSlots();
+            CachePlayerRadius();
+            MinPairDistance = _config != null ? _config.EnemySeparationRadius : 1f;
         }
 
         private void Update()
@@ -107,55 +109,54 @@ namespace Survival.Enemy
                 }
             }
 
-            // 分离修正是低频的强制定量位移：20Hz 足够，跑 60Hz 反而会和 seek 打架（玻璃球感的来源之一）。
+            // 邻居表 30Hz：只决定“看得见谁”；扣速度/积分仍在 EnemyAI 里逐帧做。
             float interval = 1f / Mathf.Max(1f, _config.EnemySeparationHz);
             _separationAccumulator += Time.deltaTime;
             if (_separationAccumulator >= interval)
             {
-                _separationAccumulator = 0f;
-                ApplySeparationCorrection();
+                // 用减法保留余数（高刷新率下不会漂到低于目标频率）；卡顿帧最多补 2 个 tick。
+                _separationAccumulator -= interval;
+                if (_separationAccumulator > interval)
+                {
+                    _separationAccumulator = interval;
+                }
+
+                RefreshNeighbors();
             }
         }
 
         /// <summary>
-        /// 均匀网格 + Jacobi 分离：先在位置快照上累加每只敌人受到的推力，最后统一应用并钳制单次位移。
-        /// 不按顺序两两修改（旧实现顺序修正会把同一只敌人推两三次，越推越抖）。
-        /// 只要有一方已经进入站位区（IsNearStance，&lt; 1.0），这一对就不推：
-        /// 站位环是钉子（不被推走），同时也不会把赶路的敌人挡在环外（否则新敌人挤不进内圈）。
+        /// 均匀网格 + 每敌最近 ≤8 个邻居（存引用，AI 逐帧读实时位置）：
+        /// 只查相邻 9 格，O(n × 邻居) 而不是 O(n²)；同时统计全场最小中心距。
         /// </summary>
-        private void ApplySeparationCorrection()
+        private void RefreshNeighbors()
         {
             int count = _enemies.Count;
-            if (count < 2)
+            if (count == 0)
             {
+                MinPairDistance = _config.EnemySeparationRadius;
                 return;
             }
 
-            EnsurePushBuffers(count);
-            for (int i = 0; i < count; i++)
-            {
-                _pushX[i] = 0f;
-                _pushY[i] = 0f;
-            }
-
+            _cellSize = Mathf.Max(0.5f, _config.EnemySeparationRadius);
             BuildGrid(count);
 
-            float spacing = _config.EnemySpacing;
-            float startDistance = spacing * _config.EnemySeparationStartRatio;
-            float startSqr = startDistance * startDistance;
-            float damping = _config.EnemySeparationDamping;
+            float radius = _config.EnemySeparationRadius;
+            float radiusSqr = radius * radius;
+            float minSqr = float.MaxValue;
 
             for (int i = 0; i < count; i++)
             {
-                EnemyAI first = _enemies[i];
-                if (first == null)
+                EnemyAI enemy = _enemies[i];
+                if (enemy == null)
                 {
                     continue;
                 }
 
-                Vector2 firstPosition = first.transform.position;
-                int cellX = Mathf.FloorToInt(firstPosition.x / _cellSize);
-                int cellY = Mathf.FloorToInt(firstPosition.y / _cellSize);
+                Vector2 position = enemy.transform.position;
+                int cellX = Mathf.FloorToInt(position.x / _cellSize);
+                int cellY = Mathf.FloorToInt(position.y / _cellSize);
+                int neighborCount = 0;
 
                 for (int dx = -1; dx <= 1; dx++)
                 {
@@ -169,90 +170,71 @@ namespace Survival.Enemy
                         for (int b = 0; b < bucket.Count; b++)
                         {
                             int j = bucket[b];
-                            if (j <= i)
+                            if (j == i)
                             {
                                 continue;
                             }
 
-                            EnemyAI second = _enemies[j];
-                            if (second == null)
+                            EnemyAI other = _enemies[j];
+                            if (other == null)
                             {
                                 continue;
                             }
 
-                            // 只要有一方已进入站位区（< 1.0），这一对就不推：
-                            // - 站位环是钉子，不能被推走（否则「推开—走回」微抖）；
-                            // - 环也不能挡住赶路的敌人，否则外环变成不可穿透的壳，后到内圈的敌人
-                            //   永远挤不进来（实测会卡在 6.5 单位外）。穿过时短暂交叠可以接受。
-                            if (first.IsNearStance || second.IsNearStance)
+                            Vector2 otherPosition = other.transform.position;
+                            float deltaX = otherPosition.x - position.x;
+                            float deltaY = otherPosition.y - position.y;
+                            float sqr = deltaX * deltaX + deltaY * deltaY;
+                            if (sqr >= radiusSqr)
                             {
                                 continue;
                             }
 
-                            Vector2 delta = (Vector2)second.transform.position - firstPosition;
-                            float sqrDistance = delta.sqrMagnitude;
-                            if (sqrDistance >= startSqr || sqrDistance <= 0.000001f)
+                            if (sqr < minSqr)
                             {
-                                continue;
+                                minSqr = sqr;
                             }
 
-                            float distance = Mathf.Sqrt(sqrDistance);
-                            Vector2 direction = delta / distance;
-                            float push = (spacing - distance) * 0.5f * damping;
-
-                            _pushX[i] -= direction.x * push;
-                            _pushY[i] -= direction.y * push;
-                            _pushX[j] += direction.x * push;
-                            _pushY[j] += direction.y * push;
+                            neighborCount = InsertNeighbor(other, sqr, neighborCount);
                         }
                     }
                 }
+
+                enemy.SetNeighbors(_neighborScratch, neighborCount);
             }
 
-            float maxStep = _config.EnemySeparationMaxStep;
-            for (int i = 0; i < count; i++)
-            {
-                EnemyAI enemy = _enemies[i];
-                if (enemy == null || enemy.IsNearStance)
-                {
-                    continue;
-                }
-
-                float pushX = _pushX[i];
-                float pushY = _pushY[i];
-                float magnitude = Mathf.Sqrt(pushX * pushX + pushY * pushY);
-                if (magnitude <= 0.00001f)
-                {
-                    continue;
-                }
-
-                if (magnitude > maxStep)
-                {
-                    float scale = maxStep / magnitude;
-                    pushX *= scale;
-                    pushY *= scale;
-                }
-
-                Vector3 position = enemy.transform.position;
-                enemy.transform.position = new Vector3(position.x + pushX, position.y + pushY, position.z);
-            }
+            MinPairDistance = minSqr < float.MaxValue ? Mathf.Sqrt(minSqr) : radius;
         }
 
-        private void EnsurePushBuffers(int count)
+        /// <summary>把候选按距离插入最近 MaxNeighbors 个（小数组插入排序，无分配）。</summary>
+        private int InsertNeighbor(EnemyAI candidate, float distanceSqr, int count)
         {
-            if (_pushX.Length >= count)
+            int limit = Mathf.Min(count, MaxNeighbors);
+            if (limit == MaxNeighbors && distanceSqr >= _neighborDistanceSqr[MaxNeighbors - 1])
             {
-                return;
+                return count;
             }
 
-            int size = Mathf.Max(count, _pushX.Length * 2);
-            _pushX = new float[size];
-            _pushY = new float[size];
+            int insert = limit;
+            while (insert > 0 && _neighborDistanceSqr[insert - 1] > distanceSqr)
+            {
+                insert--;
+            }
+
+            int last = Mathf.Min(limit, MaxNeighbors - 1);
+            for (int k = last; k > insert; k--)
+            {
+                _neighborScratch[k] = _neighborScratch[k - 1];
+                _neighborDistanceSqr[k] = _neighborDistanceSqr[k - 1];
+            }
+
+            _neighborScratch[insert] = candidate;
+            _neighborDistanceSqr[insert] = distanceSqr;
+            return Mathf.Min(limit + 1, MaxNeighbors);
         }
 
         private void BuildGrid(int count)
         {
-            _cellSize = Mathf.Max(0.5f, _config.EnemySpacing);
             foreach (List<int> bucket in _grid.Values)
             {
                 bucket.Clear();
@@ -283,15 +265,14 @@ namespace Survival.Enemy
             return ((long)cellX << 32) ^ (uint)cellY;
         }
 
-        /// <summary>开始新一局：清场 + 计时归零 + 开始生成；generation 递增让旧敌人的槽位释放失效。</summary>
+        /// <summary>开始新一局：清场 + 计时归零 + 开始生成。</summary>
         public void BeginRound()
         {
-            _roundGeneration++;
             ClearEnemies();
-            ResetStanceSlots();
             _elapsed = 0f;
             _spawnTimer = 0f;
             _separationAccumulator = 0f;
+            MinPairDistance = _config != null ? _config.EnemySeparationRadius : 1f;
             _running = true;
         }
 
@@ -356,22 +337,6 @@ namespace Survival.Enemy
                 return;
             }
 
-            int slotIndex = AcquireStanceSlot();
-            StanceSlot slot;
-            if (slotIndex >= 0)
-            {
-                slot = _slots[slotIndex];
-            }
-            else
-            {
-                // 槽位耗尽（只在压测 >100 只时可能）：退化为随机角度，外环再加一圈。
-                slot = new StanceSlot
-                {
-                    Angle = Random.Range(0f, Mathf.PI * 2f),
-                    Radius = GetBaseStopRadius() + 5f * _config.EnemySpacing,
-                };
-            }
-
             var go = new GameObject("Enemy");
             go.transform.SetParent(_root, false);
             go.transform.position = GetSpawnPosition();
@@ -388,9 +353,12 @@ namespace Survival.Enemy
             collider.isTrigger = true;
             collider.radius = definition.ColliderRadius;
 
+            // 停距按“本敌人”的碰撞半径算：以后加冲锋/绕行等变体时不用改生成器。
+            float enemyRadius = definition.ColliderRadius > 0f ? definition.ColliderRadius : 0.38f;
+            float stopRadius = _playerRadius + enemyRadius - StopDistancePadding;
+
             var ai = go.AddComponent<EnemyAI>();
-            ai.Initialize(_config, definition, _playerTarget, _playerHealth, this, _camera,
-                slot.Angle, slot.Radius, slotIndex, _roundGeneration);
+            ai.Initialize(_config, definition, _playerTarget, _playerHealth, this, _camera, stopRadius);
 
             Register(ai);
         }
@@ -414,143 +382,13 @@ namespace Survival.Enemy
             return Mathf.Max(_config.SpawnIntervalMin, interval);
         }
 
-        // ---------- 站位槽 ----------
-
-        /// <summary>
-        /// 按「环半径 = 基础停距 + ring × 间距、容量 = 周长 / 间距」生成槽位。
-        /// 同环角度均分，相邻环错开半格；槽位总数远超常见上限（≥80），保证每只敌人有唯一目标点。
-        /// 只在 Awake 构建一次：间距/停距都是本局不变的值。
-        /// </summary>
-        private void BuildStanceSlots()
-        {
-            if (_config == null)
-            {
-                _slots = new StanceSlot[0];
-                _slotUsed = new bool[0];
-                return;
-            }
-
-            float spacing = Mathf.Max(0.1f, _config.EnemySpacing);
-            float baseRadius = GetBaseStopRadius();
-            var slots = new List<StanceSlot>(MaxStanceSlots);
-            const float TwoPi = Mathf.PI * 2f;
-
-            for (int ring = 0; ring < 8 && slots.Count < MaxStanceSlots; ring++)
-            {
-                float radius = baseRadius + ring * spacing;
-                int capacity = Mathf.Max(1, Mathf.FloorToInt(TwoPi * radius / spacing));
-                float phase = (ring % 2) * 0.5f;
-
-                for (int k = 0; k < capacity; k++)
-                {
-                    slots.Add(new StanceSlot
-                    {
-                        Angle = (k + phase) * (TwoPi / capacity),
-                        Radius = radius,
-                    });
-                }
-            }
-
-            _slots = slots.ToArray();
-            _slotUsed = new bool[_slots.Length];
-        }
-
-        private void ResetStanceSlots()
-        {
-            if (_slotUsed == null)
-            {
-                return;
-            }
-
-            for (int i = 0; i < _slotUsed.Length; i++)
-            {
-                _slotUsed[i] = false;
-            }
-
-            _slotCursor = 0;
-        }
-
-        /// <summary>取一个空槽（从上次位置向后找，尽量把内圈先填满）；满则返回 -1。</summary>
-        private int AcquireStanceSlot()
-        {
-            if (_slotUsed == null || _slotUsed.Length == 0)
-            {
-                return -1;
-            }
-
-            for (int k = 0; k < _slotUsed.Length; k++)
-            {
-                int index = (_slotCursor + k) % _slotUsed.Length;
-                if (_slotUsed[index])
-                {
-                    continue;
-                }
-
-                _slotUsed[index] = true;
-                _slotCursor = (index + 1) % _slotUsed.Length;
-                return index;
-            }
-
-            return -1;
-        }
-
-        /// <summary>
-        /// 释放槽位。用 generation 防旧回合：清场时旧敌人的 OnDestroy 可能在同一帧晚到，
-        /// 此时新回合可能已经重新占用同编号槽位，不能误释放别人的槽。
-        /// </summary>
-        public void ReleaseStanceSlot(int slotIndex, int generation)
-        {
-            if (generation != _roundGeneration || _slotUsed == null)
-            {
-                return;
-            }
-
-            if (slotIndex >= 0 && slotIndex < _slotUsed.Length)
-            {
-                _slotUsed[slotIndex] = false;
-            }
-        }
-
-        /// <summary>内圈停距：玩家半径 + 敌人半径 − 0.08（与旧 EnemyAI 的算法一致，保证接触触发）。</summary>
-        private float GetBaseStopRadius()
-        {
-            float playerRadius = 0.4f;
-            if (_playerHealth != null)
-            {
-                var circle = _playerHealth.GetComponent<CircleCollider2D>();
-                if (circle != null)
-                {
-                    Vector3 scale = circle.transform.lossyScale;
-                    playerRadius = circle.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y));
-                }
-            }
-
-            float enemyRadius = 0f;
-            if (_enemyDefinitions != null)
-            {
-                for (int i = 0; i < _enemyDefinitions.Length; i++)
-                {
-                    if (_enemyDefinitions[i] != null)
-                    {
-                        enemyRadius = Mathf.Max(enemyRadius, _enemyDefinitions[i].ColliderRadius);
-                    }
-                }
-            }
-
-            if (enemyRadius <= 0f)
-            {
-                enemyRadius = 0.38f;
-            }
-
-            return playerRadius + enemyRadius - StopDistancePadding;
-        }
-
         // ---------- 出生点 ----------
 
         /// <summary>
         /// 出生点：以玩家为中心、半径约 1.15×相机半对角线的随机点，且必须在相机视野外（M4-B0）。
         /// 相机跟随有滞后，只按相机视口算会在相机前进方向的边缘「脸上刷怪」，所以以玩家为圆心。
         /// 允许落在地图外（虚空），敌人走进来即可。
+        /// 候选点与现有敌人 &lt;0.45 时重试，避免一出生就完全重合（重合兜底只留给异常）。
         /// </summary>
         private Vector3 GetSpawnPosition()
         {
@@ -575,7 +413,7 @@ namespace Survival.Enemy
                 Vector3 candidate = center + (Vector3)(direction.normalized * radius);
                 candidate.z = 0f;
 
-                if (!IsInsideView(candidate))
+                if (!IsInsideView(candidate) && IsSpawnPositionClear(candidate))
                 {
                     return candidate;
                 }
@@ -590,6 +428,47 @@ namespace Survival.Enemy
             }
 
             return fallback;
+        }
+
+        private bool IsSpawnPositionClear(Vector3 candidate)
+        {
+            float minSqr = SpawnMinEnemyDistance * SpawnMinEnemyDistance;
+            for (int i = 0; i < _enemies.Count; i++)
+            {
+                EnemyAI enemy = _enemies[i];
+                if (enemy == null)
+                {
+                    continue;
+                }
+
+                Vector2 position = enemy.transform.position;
+                float deltaX = position.x - candidate.x;
+                float deltaY = position.y - candidate.y;
+                if (deltaX * deltaX + deltaY * deltaY < minSqr)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private void CachePlayerRadius()
+        {
+            _playerRadius = 0.4f;
+            if (_playerHealth == null)
+            {
+                return;
+            }
+
+            var circle = _playerHealth.GetComponent<CircleCollider2D>();
+            if (circle == null)
+            {
+                return;
+            }
+
+            Vector3 scale = circle.transform.lossyScale;
+            _playerRadius = circle.radius * Mathf.Max(Mathf.Abs(scale.x), Mathf.Abs(scale.y));
         }
 
         private float GetSpawnRadius()

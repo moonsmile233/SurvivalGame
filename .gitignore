@@ -51,6 +51,10 @@ sysinfo.txt
 /.netlify/
 node_modules/
 
+# ---- 证据视频（体积大，放本地供人工审阅，不入库；截图/JSON 仍入库）----
+docs/evidence/*.webm
+docs/evidence/.video-tmp/
+
 # ---- 编辑器 / Claude Code 本地设置 ----
 .claude/settings.local.json
 

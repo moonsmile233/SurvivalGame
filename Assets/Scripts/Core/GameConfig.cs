@@ -24,16 +24,34 @@ namespace Survival.Core
         [SerializeField] private float _enemySpeedJitter = 0.12f;
         [Tooltip("扰动后的速度上限；必须明显低于玩家速度，否则无法躲开。")]
         [SerializeField] private float _enemySpeedMax = 2.2f;
-        [Tooltip("敌人之间的最小间距：站位环按它分环（环半径 = 停距 + ring × 间距），分离修正也以它为目标距离。")]
-        [SerializeField] private float _enemySpacing = 0.95f;
-        [Tooltip("分离修正频率（Hz）。移动/渲染仍每帧；修正是低频强制定量位移，60Hz 会和 seek 打架。")]
-        [SerializeField] private float _enemySeparationHz = 20f;
-        [Tooltip("分离阻尼：每次只走重叠量的这个比例，避免来回弹（玻璃球感）。")]
-        [SerializeField, Range(0.1f, 1f)] private float _enemySeparationDamping = 0.45f;
-        [Tooltip("滞回起点（×间距）：小于 0.9×间距才开始推，推到间距为止，防止在边界反复触发。")]
-        [SerializeField, Range(0.5f, 1f)] private float _enemySeparationStartRatio = 0.9f;
-        [Tooltip("单次修正的最大位移（世界单位）：一次最多挪这么多，防止一格大跳。")]
-        [SerializeField] private float _enemySeparationMaxStep = 0.12f;
+        [Tooltip("软墙：两只敌人中心距小于该值就停止靠近（允许约 25% 精灵重叠，而不是被推开）。")]
+        [SerializeField] private float _enemySoftWallDistance = 0.70f;
+        [Tooltip("开始减速的邻居距离：0.90→0.70 之间线性扣掉逼近速度；≥0.90 完全不干预。")]
+        [SerializeField] private float _enemySeparationRadius = 0.90f;
+        [Tooltip("邻居表刷新频率（Hz）。移动/积分仍逐帧，这里只决定“看得见谁”。")]
+        [SerializeField] private float _enemySeparationHz = 30f;
+        [Tooltip("速度指数平滑（1/s）：16 ≈ 62ms 时间常数，越小越软、越大越跟手。")]
+        [SerializeField] private float _enemyVelocitySmoothing = 16f;
+        [Tooltip("追击比例增益（1/s）：离停距的偏差换算成速度，0.2u 内从 0 到满速。")]
+        [SerializeField] private float _enemySeekGain = 5f;
+        [Tooltip("停距内的让位速度（×当前速度）：玩家压进人群时敌人最多以该比例退开。")]
+        [SerializeField] private float _enemyBackOutRatio = 0.6f;
+        [Tooltip("被邻居挡住时的切向让位速度上限（u/s）。")]
+        [SerializeField] private float _enemySidestepSpeed = 0.35f;
+        [Tooltip("被后面的人顶着时，给挡路者让开的侧移速度上限（u/s）：只在前排/被压时生效，不主动绕圈。")]
+        [SerializeField] private float _enemyYieldSpeed = 0.2f;
+        [Tooltip("左右压力差滞回：差值超过该值才换边，避免每帧翻向。")]
+        [SerializeField] private float _enemySideMargin = 0.15f;
+        [Tooltip("玩家移动穿过人群时的侧向闪避强度（×玩家接近速度）。")]
+        [SerializeField] private float _enemyPlayerDodgeFactor = 0.5f;
+        [Tooltip("防重合兜底触发距离：正常软墙 0.70 就停，只有出生重叠等异常才进这个区间。")]
+        [SerializeField] private float _enemyEmergencyDistance = 0.5f;
+        [Tooltip("兜底最大外推速度（u/s）。")]
+        [SerializeField] private float _enemyEmergencyStrength = 2.0f;
+        [Tooltip("兜底速度的逼近加速度（u/s²）：3.6 → 60fps 下每帧 Δv ≤0.06，保证连续。")]
+        [SerializeField] private float _enemyEmergencyAccel = 3.6f;
+        [Tooltip("总速度上限 = 该比例 × EnemySpeedMax（1.2 → 2.64，仍低于玩家 3.2）。")]
+        [SerializeField] private float _enemyMaxVelocityRatio = 1.2f;
         [Tooltip("离开相机视野（含 0.05 margin）持续 N 秒则回收，释放 20 只名额（M4-B0）。")]
         [SerializeField] private float _enemyRecycleSeconds = 3f;
         [Tooltip("压力曲线终值：敌人速度随局内时间从 1.0 倍升到该倍率，作用于已存在的敌人（M4-B1）。")]
@@ -67,11 +85,21 @@ namespace Survival.Core
         public int EnemyLimit => _perfEnemyLimitOverride > 0 ? _perfEnemyLimitOverride : _enemyLimit;
         public float EnemySpeedJitter => _enemySpeedJitter;
         public float EnemySpeedMax => _enemySpeedMax;
-        public float EnemySpacing => _enemySpacing;
+        public float EnemySoftWallDistance => _enemySoftWallDistance;
+        public float EnemySeparationRadius => _enemySeparationRadius;
         public float EnemySeparationHz => _enemySeparationHz;
-        public float EnemySeparationDamping => _enemySeparationDamping;
-        public float EnemySeparationStartRatio => _enemySeparationStartRatio;
-        public float EnemySeparationMaxStep => _enemySeparationMaxStep;
+        public float EnemyVelocitySmoothing => _enemyVelocitySmoothing;
+        public float EnemySeekGain => _enemySeekGain;
+        public float EnemyBackOutRatio => _enemyBackOutRatio;
+        public float EnemySidestepSpeed => _enemySidestepSpeed;
+        public float EnemyYieldSpeed => _enemyYieldSpeed;
+        public float EnemySideMargin => _enemySideMargin;
+        public float EnemyPlayerDodgeFactor => _enemyPlayerDodgeFactor;
+        public float EnemyEmergencyDistance => _enemyEmergencyDistance;
+        public float EnemyEmergencyStrength => _enemyEmergencyStrength;
+        public float EnemyEmergencyAccel => _enemyEmergencyAccel;
+        public float EnemyMaxVelocityRatio => _enemyMaxVelocityRatio;
+        public float EnemyMaxVelocity => _enemySpeedMax * _enemyMaxVelocityRatio;
         public float EnemyRecycleSeconds => _enemyRecycleSeconds;
         public float EnemyPressureMaxMultiplier => _enemyPressureMaxMultiplier;
 

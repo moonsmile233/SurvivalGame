@@ -208,8 +208,9 @@ async function runCap(browser, baseUrl, cap, buildInfo) {
   fs.mkdirSync(evidenceDir, { recursive: true });
   await page.screenshot({ path: screenshotPath });
 
-  // 拥挤验收（M6）：再等 5 秒拍第二张。玩家静止 + 站位成型时，两张的游戏区应几乎一致
-  // （只有时间/分数文字在变）；差异用 tools/e2e/jitter-diff.py 量化。
+  // 拥挤验收（M6 2026-11-01 重做后）：再等 5 秒拍第二张。敌群应该持续有小幅挤动，
+  // **不再要求两帧像素一致**；这两张只作为“有没有动/有没有整块跳变”的辅助证据，
+  // 主判定看 [PERF-CROWD] 的 lateralOver03 / swaps / minPairDist。
   await page.waitForTimeout(5000);
   const screenshotBName = `perf-local-${BROWSER}-desktop-cap${cap}${suffix}-b.png`;
   const screenshotBPath = path.join(evidenceDir, screenshotBName);
@@ -252,7 +253,7 @@ async function runCap(browser, baseUrl, cap, buildInfo) {
     `结果 cap=${cap}: 到顶 ${s.capAt ?? '-'}s  ` +
       `稳态 ${s.steadyFps ?? '-'} FPS / p95 ${s.steadyP95ms ?? '-'}ms / p99 ${s.steadyP99ms ?? '-'}ms / ` +
       `alloc ${s.steadyAllocKBps ?? '-'} KB/s / heap ${((s.heapKB ?? 0) / 1024).toFixed(1)}MB / ` +
-      `wasm ${s.wasmMB ?? '-'}MB / 站位抖动 ${s.steadyMotionUps ?? '-'} u/s（站定 ${s.steadySettled ?? '-'}）`,
+      `wasm ${s.wasmMB ?? '-'}MB / 群体位移 ${s.steadyMotionUps ?? '-'} u/s（前环 ${s.steadySettled ?? '-'}）`,
   );
   console.log(`      证据 → docs/evidence/perf-local-${BROWSER}-desktop-cap${cap}${suffix}.json`);
 
@@ -304,7 +305,7 @@ async function main() {
         s.steadyMotionUps ?? '-',
       ].join(' | ');
     });
-    console.log('\n上限 | 到顶s | 稳态敌人数 | FPS | p95ms | maxms | allocKB/s | 总分配MB | heapMB | wasmMB | 抖动u/s');
+    console.log('\n上限 | 到顶s | 稳态敌人数 | FPS | p95ms | maxms | allocKB/s | 总分配MB | heapMB | wasmMB | 挤动u/s');
     for (const line of lines) {
       console.log(line);
     }

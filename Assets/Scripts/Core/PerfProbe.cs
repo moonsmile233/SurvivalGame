@@ -41,16 +41,37 @@ namespace Survival.Core
         private readonly int[] _ringAlloc = new int[MaxSamples];
         private readonly float[] _ringMotion = new float[MaxSamples];
         private readonly int[] _ringSettled = new int[MaxSamples];
+        private readonly float[] _ringMinPair = new float[MaxSamples];
         private readonly float[] _scratch = new float[MaxSamples];
         private readonly StringBuilder _line = new StringBuilder(384);
 
         // 拥挤度指标（M6 拥挤修复验收）：每帧累加所有敌人的位移，换算成"每只敌人每秒移动多少世界单位"。
-        // 站定后应接近 0；1 单位 = 32px，所以 0.1 u/s ≈ 3.2px/s。
+        // 新口径下敌群稳态应**持续有小幅挤动**（motionUps > 0），0 不再是目标；1 单位 = 32px。
         private readonly Vector2[] _lastPositions = new Vector2[128];
         private int _trackedCount = -1;
         private float _frameMotion;
         private int _frameSettled;
         private float _windowUnsettledMax;
+        private float _windowPlayerPeakUps;
+
+        // 10 秒挤动窗口（[PERF-CROWD]）：分 blocked / unblocked 两组报告，避免“整群恒定侧移”冒充挤动。
+        private const float CrowdWindowSeconds = 10f;
+        private const int CrowdCapacity = 128;
+        private const float CrowdSwapInterval = 0.1f;
+        private readonly Vector2[] _crowdStartPositions = new Vector2[CrowdCapacity];
+        private readonly Vector2[] _crowdLastPositions = new Vector2[CrowdCapacity];
+        private readonly float[] _crowdLateralPath = new float[CrowdCapacity];
+        private readonly bool[] _crowdBlocked = new bool[CrowdCapacity];
+        private readonly bool[] _crowdYielding = new bool[CrowdCapacity];
+        private readonly sbyte[] _crowdOrderSign = new sbyte[CrowdCapacity * CrowdCapacity];
+        private int _crowdTrackedCount = -1;
+        private float _crowdElapsed;
+        private float _crowdMaxFrameDisp;
+        private float _crowdPlayerPeakUps;
+        private float _crowdMinPair = float.MaxValue;
+        private Vector2 _crowdLastPlayer;
+        private int _crowdSwapCount;
+        private float _crowdSwapTimer;
 
         private int _ringHead;
         private int _ringCount;
@@ -61,6 +82,7 @@ namespace Survival.Core
         private float _collectMotion;
         private int _collectSettled;
         private int _collectCount;
+        private float _collectMinPair;
 
         private GameManager _manager;
         private EnemySpawner _spawner;
@@ -204,6 +226,7 @@ namespace Survival.Core
             }
 
             TrackEnemyMotion(dt);
+            TrackCrowdMetrics(dt);
             Push(dt, _lastAlive, alloc, _frameMotion, _frameSettled);
 
             if (_elapsed >= _nextWindowAt)
@@ -229,6 +252,7 @@ namespace Survival.Core
             _ringAlloc[_ringHead] = alloc;
             _ringMotion[_ringHead] = motion;
             _ringSettled[_ringHead] = settled;
+            _ringMinPair[_ringHead] = _spawner != null ? _spawner.MinPairDistance : 0f;
             _ringHead = (_ringHead + 1) % MaxSamples;
             if (_ringCount < MaxSamples)
             {
@@ -276,13 +300,270 @@ namespace Survival.Core
                 Vector2 position = enemy.transform.position;
                 _frameMotion += (position - _lastPositions[i]).magnitude;
                 _lastPositions[i] = position;
-                if (enemy.IsSettled)
+                if (enemy.IsAtFront)
                 {
                     _frameSettled++;
                 }
-                else if (enemy.StanceDistance > _windowUnsettledMax)
+                else if (enemy.ExcessDistance > _windowUnsettledMax)
                 {
-                    _windowUnsettledMax = enemy.StanceDistance;
+                    _windowUnsettledMax = enemy.ExcessDistance;
+                }
+            }
+        }
+
+        /// <summary>
+        /// 10 秒挤动窗口：分 blocked / unblocked 两组统计横向位移，另记换位次数、单帧位移（归一化到 1/60s）、
+        /// 全场最小中心距、玩家实际速度峰值。只读敌人位置/BlockW，不参与玩法。
+        /// </summary>
+        private void TrackCrowdMetrics(float dt)
+        {
+            if (_spawner == null || _health == null || dt <= 0f)
+            {
+                return;
+            }
+
+            IReadOnlyList<EnemyAI> enemies = _spawner.ActiveEnemies;
+            int count = Mathf.Min(enemies.Count, CrowdCapacity);
+            Vector2 playerPosition = _health.transform.position;
+
+            if (count != _crowdTrackedCount)
+            {
+                ResetCrowdWindow(enemies, count, playerPosition);
+                return;
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                EnemyAI enemy = enemies[i];
+                if (enemy == null)
+                {
+                    continue;
+                }
+
+                Vector2 position = enemy.transform.position;
+                Vector2 delta = position - _crowdLastPositions[i];
+                float displacement = delta.magnitude;
+
+                // 归一化到 60fps 的单帧位移：30fps 或卡顿帧不会被误判成“瞬移”。
+                float normalized = displacement * (1f / 60f) / dt;
+                if (normalized > _crowdMaxFrameDisp)
+                {
+                    _crowdMaxFrameDisp = normalized;
+                }
+
+                Vector2 toPlayer = playerPosition - position;
+                float distance = toPlayer.magnitude;
+                if (distance > 0.0001f)
+                {
+                    Vector2 perpendicular = new Vector2(-toPlayer.y, toPlayer.x) / distance;
+                    _crowdLateralPath[i] += Mathf.Abs(Vector2.Dot(delta, perpendicular));
+                }
+
+                if (enemy.BlockW > 0.05f)
+                {
+                    _crowdBlocked[i] = true;
+                }
+
+                if (enemy.BehindBlock > 0.05f && enemy.FrontBlock <= 0.05f)
+                {
+                    _crowdYielding[i] = true;
+                }
+
+                _crowdLastPositions[i] = position;
+            }
+
+            float playerSpeed = (playerPosition - _crowdLastPlayer).magnitude / dt;
+            if (playerSpeed > _crowdPlayerPeakUps)
+            {
+                _crowdPlayerPeakUps = playerSpeed;
+            }
+
+            if (playerSpeed > _windowPlayerPeakUps)
+            {
+                _windowPlayerPeakUps = playerSpeed;
+            }
+
+            _crowdLastPlayer = playerPosition;
+
+            float minPair = _spawner.MinPairDistance;
+            if (minPair < _crowdMinPair)
+            {
+                _crowdMinPair = minPair;
+            }
+
+            _crowdSwapTimer += dt;
+            if (_crowdSwapTimer >= CrowdSwapInterval)
+            {
+                _crowdSwapTimer = 0f;
+                CrowdSwapTick(enemies, count, playerPosition);
+            }
+
+            _crowdElapsed += dt;
+            if (_crowdElapsed >= CrowdWindowSeconds)
+            {
+                LogCrowdWindow(enemies, count, playerPosition);
+                ResetCrowdWindow(enemies, count, playerPosition);
+            }
+        }
+
+        private void ResetCrowdWindow(IReadOnlyList<EnemyAI> enemies, int count, Vector2 playerPosition)
+        {
+            _crowdTrackedCount = count;
+            _crowdElapsed = 0f;
+            _crowdMaxFrameDisp = 0f;
+            _crowdPlayerPeakUps = 0f;
+            _crowdMinPair = float.MaxValue;
+            _crowdSwapCount = 0;
+            _crowdSwapTimer = 0f;
+            _crowdLastPlayer = playerPosition;
+
+            for (int i = 0; i < count; i++)
+            {
+                EnemyAI enemy = enemies[i];
+                Vector2 position = enemy != null ? (Vector2)enemy.transform.position : playerPosition;
+                _crowdStartPositions[i] = position;
+                _crowdLastPositions[i] = position;
+                _crowdLateralPath[i] = 0f;
+                _crowdBlocked[i] = false;
+                _crowdYielding[i] = false;
+            }
+
+            Array.Clear(_crowdOrderSign, 0, _crowdOrderSign.Length);
+        }
+
+        /// <summary>输出 10 秒挤动数据；blocked 组看累计横向位移，unblocked 组看净位移（防止整群巡游冒充挤动）。</summary>
+        private void LogCrowdWindow(IReadOnlyList<EnemyAI> enemies, int count, Vector2 playerPosition)
+        {
+            if (count <= 0)
+            {
+                return;
+            }
+
+            int blockedCount = 0;
+            int blockedOver03 = 0;
+            int unblockedCount = 0;
+            int yieldCount = 0;
+            float unblockedNetMax = 0f;
+            float unblockedPathMax = 0f;
+            float yieldNetMax = 0f;
+
+            for (int i = 0; i < count; i++)
+            {
+                EnemyAI enemy = enemies[i];
+                if (enemy == null)
+                {
+                    continue;
+                }
+
+                float path = _crowdLateralPath[i];
+                Vector2 position = enemy.transform.position;
+                float net = (position - _crowdStartPositions[i]).magnitude;
+
+                if (_crowdBlocked[i])
+                {
+                    blockedCount++;
+                    if (path >= 0.3f)
+                    {
+                        blockedOver03++;
+                    }
+                }
+                else
+                {
+                    unblockedCount++;
+                    if (net > unblockedNetMax)
+                    {
+                        unblockedNetMax = net;
+                    }
+
+                    if (path > unblockedPathMax)
+                    {
+                        unblockedPathMax = path;
+                    }
+                }
+
+                if (_crowdYielding[i])
+                {
+                    yieldCount++;
+                    if (net > yieldNetMax)
+                    {
+                        yieldNetMax = net;
+                    }
+                }
+            }
+
+            float minPair = _crowdMinPair < float.MaxValue ? _crowdMinPair : 0f;
+            float blockedRatio = blockedCount > 0 ? (float)blockedOver03 / blockedCount : 0f;
+
+            _line.Clear();
+            _line.Append("[PERF-CROWD] {")
+                .Append("\"t\":").Append(F(_elapsed, 1))
+                .Append(",\"alive\":").Append(count)
+                .Append(",\"blockedN\":").Append(blockedCount)
+                .Append(",\"blockedOver03\":").Append(blockedOver03)
+                .Append(",\"blockedRatio\":").Append(F(blockedRatio, 2))
+                .Append(",\"unblockedN\":").Append(unblockedCount)
+                .Append(",\"unblockedNetMax\":").Append(F(unblockedNetMax, 3))
+                .Append(",\"unblockedPathMax\":").Append(F(unblockedPathMax, 3))
+                .Append(",\"yieldN\":").Append(yieldCount)
+                .Append(",\"yieldNetMax\":").Append(F(yieldNetMax, 3))
+                .Append(",\"maxFrameDisp\":").Append(F(_crowdMaxFrameDisp, 3))
+                .Append(",\"minPairDist\":").Append(F(minPair, 3))
+                .Append(",\"swaps\":").Append(_crowdSwapCount)
+                .Append(",\"playerPeakUps\":").Append(F(_crowdPlayerPeakUps, 2))
+                .Append(",\"playerX\":").Append(F(playerPosition.x, 1))
+                .Append(",\"playerY\":").Append(F(playerPosition.y, 1))
+                .Append('}');
+            Debug.Log(_line.ToString());
+        }
+
+        /// <summary>
+        /// 换位计数：两只都在人群半径内时，绕玩家的角度顺序翻转一次算一次（“后方绕过前方”的代理指标）。
+        /// 10Hz 采样，O(n²) 只在调试探针里跑。
+        /// </summary>
+        private void CrowdSwapTick(IReadOnlyList<EnemyAI> enemies, int count, Vector2 playerPosition)
+        {
+            const float crowdRadius = 3f;
+            float crowdSqr = crowdRadius * crowdRadius;
+
+            for (int i = 0; i < count; i++)
+            {
+                EnemyAI first = enemies[i];
+                if (first == null)
+                {
+                    continue;
+                }
+
+                Vector2 a = (Vector2)first.transform.position - playerPosition;
+                if (a.sqrMagnitude > crowdSqr)
+                {
+                    continue;
+                }
+
+                int row = i * CrowdCapacity;
+                for (int j = i + 1; j < count; j++)
+                {
+                    EnemyAI second = enemies[j];
+                    if (second == null)
+                    {
+                        continue;
+                    }
+
+                    Vector2 b = (Vector2)second.transform.position - playerPosition;
+                    if (b.sqrMagnitude > crowdSqr)
+                    {
+                        _crowdOrderSign[row + j] = 0;
+                        continue;
+                    }
+
+                    float cross = a.x * b.y - a.y * b.x;
+                    sbyte sign = cross > 0f ? (sbyte)1 : (cross < 0f ? (sbyte)-1 : (sbyte)0);
+                    sbyte previous = _crowdOrderSign[row + j];
+                    if (previous != 0 && sign != 0 && previous != sign)
+                    {
+                        _crowdSwapCount++;
+                    }
+
+                    _crowdOrderSign[row + j] = sign;
                 }
             }
         }
@@ -298,6 +579,7 @@ namespace Survival.Core
             long alloc = 0;
             float motionSum = 0f;
             int settledSum = 0;
+            float minPair = float.MaxValue;
 
             for (int k = 0; k < _ringCount; k++)
             {
@@ -313,6 +595,11 @@ namespace Survival.Core
                 alloc += _ringAlloc[index];
                 motionSum += _ringMotion[index];
                 settledSum += _ringSettled[index];
+                float pair = _ringMinPair[index];
+                if (pair > 0f && pair < minPair)
+                {
+                    minPair = pair;
+                }
             }
 
             _collectCount = count;
@@ -320,6 +607,7 @@ namespace Survival.Core
             _collectAlloc = alloc;
             _collectMotion = motionSum;
             _collectSettled = settledSum;
+            _collectMinPair = minPair < float.MaxValue ? minPair : 0f;
             return count;
         }
 
@@ -350,6 +638,8 @@ namespace Survival.Core
             int count = Collect(_elapsed - WindowSeconds, _elapsed);
             if (count < 2)
             {
+                _windowUnsettledMax = 0f;
+                _windowPlayerPeakUps = 0f;
                 return;
             }
 
@@ -366,6 +656,8 @@ namespace Survival.Core
                 .Append(",\"settled\":").Append(F(settledAvg, 1))
                 .Append(",\"motionUps\":").Append(F(motionUps, 3))
                 .Append(",\"unsettledMax\":").Append(F(_windowUnsettledMax, 2))
+                .Append(",\"minPairDist\":").Append(F(_collectMinPair, 3))
+                .Append(",\"playerUps\":").Append(F(_windowPlayerPeakUps, 2))
                 .Append(",\"fps\":").Append(F(seconds > 0f ? count / seconds : 0f, 1))
                 .Append(",\"p95ms\":").Append(F(PercentileSorted(_scratch, count, 0.95f) * 1000f, 2))
                 .Append(",\"p99ms\":").Append(F(PercentileSorted(_scratch, count, 0.99f) * 1000f, 2))
@@ -377,6 +669,7 @@ namespace Survival.Core
                 .Append('}');
             Debug.Log(_line.ToString());
             _windowUnsettledMax = 0f;
+            _windowPlayerPeakUps = 0f;
         }
 
         /// <summary>
@@ -400,6 +693,7 @@ namespace Survival.Core
                 ? _collectMotion / (steadySeconds * steadyAlive)
                 : 0f;
             float steadySettled = steadyCount > 0 ? (float)_collectSettled / steadyCount : 0f;
+            float steadyMinPair = _collectMinPair;
 
             float fillSeconds = 0f;
             float fillFps = 0f;
@@ -431,6 +725,7 @@ namespace Survival.Core
                 .Append(",\"steadyAllocKBps\":").Append(F(steadyAlloc, 1))
                 .Append(",\"steadyMotionUps\":").Append(F(steadyMotion, 3))
                 .Append(",\"steadySettled\":").Append(F(steadySettled, 1))
+                .Append(",\"steadyMinPairDist\":").Append(F(steadyMinPair, 3))
                 .Append(",\"totalAllocMB\":").Append(F(_allocTotal / 1048576f, 2))
                 .Append(",\"heapKB\":").Append(GC.GetTotalMemory(false) / 1024)
                 .Append(",\"wasmMB\":").Append(F(GetWasmHeapBytes() / 1048576f, 1))
@@ -490,7 +785,7 @@ namespace Survival.Core
             }
 
             float hudScale = Mathf.Max(1f, Screen.height / 720f);
-            var box = new Rect(0f, 0f, Mathf.Min(Screen.width, 640f * hudScale), 108f * hudScale);
+            var box = new Rect(0f, 0f, Mathf.Min(Screen.width, 640f * hudScale), 132f * hudScale);
             Color previous = GUI.color;
             GUI.color = new Color(0f, 0f, 0f, 0.65f);
             GUI.Box(box, GUIContent.none);
@@ -510,8 +805,10 @@ namespace Survival.Core
             float alloc = seconds > 0f ? _collectAlloc / 1024f / seconds : 0f;
             float wasm = GetWasmHeapBytes() / 1048576f;
 
+            float minPair = _spawner != null ? _spawner.MinPairDistance : 0f;
             return "PERF limit " + _activeLimit + "  alive " + _lastAlive + "  peak " + _peakAlive
                    + "\nfps " + F(fps, 0) + "   p95 " + F(p95, 1) + "ms"
+                   + "\nminPair " + F(minPair, 2) + "   front " + _frameSettled
                    + "\nalloc " + F(alloc, 0) + " KB/s   heap " + F(GC.GetTotalMemory(false) / 1048576f, 1)
                    + " MB   wasm " + F(wasm, 0) + " MB";
         }
