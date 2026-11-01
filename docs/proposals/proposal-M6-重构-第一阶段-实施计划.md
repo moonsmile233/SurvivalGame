@@ -115,7 +115,8 @@ public enum GameState
 - 计时器由 `GameManager` 持有（状态权威），`Time.unscaledDeltaTime`，单帧夹到 0.1s（防止切回时一帧走完）。
 - 新增 `CountdownRemaining`、`OnCountdownChanged(int)`；`PausePanel` 删除自带倒计时，新增
   `Assets/Scripts/UI/StartCountdownPanel.cs` 统一显示遮罩 + 大数字。
-- 来源态记录 `_countdownReturnState`；`CancelStartCountdown()` 回到来源态（失焦时调用）。
+- 来源态记录 `_countdownReturnState`；`CancelStartCountdown()` 回到来源态（失焦时调用），并**复位 timeScale**：
+  回 `Menu` 置 1、回 `Paused`/`Result` 置 0（策划裁决 1）。
 - 倒计时结束后：`Menu/Paused(重开)/Result` 路径先 `ResetRound()`，再 `timeScale=1`、`Playing`；
   `Paused(继续)` 路径不重置。
 - 开局是否额外加 3-2-1：**按审前约束 2，加**（原计划“不加”作废）。
@@ -137,7 +138,7 @@ public enum GameState
 
 - 卡片短标签：`更慢更少 / 标准节奏 / 更快更多`；倍率 `×1.0 / ×1.3 / ×1.6`（读 `DifficultyProfile.ScoreMultiplier`，只展示）。
 - 选中态：紫色底色（如 `#6B4CFF`），未选中 `#212134`；点卡只改选择，不开局。
-- 默认选中上次难度（§4.6）；**菜单不显示最高分/昵称/全屏按钮**（用户已定）。
+- 默认选中上次难度（会话内，§4.6）；**菜单不显示最高分/昵称/全屏按钮**（用户已定）。
 - 菜单不提供「退出」；`Menu` 下 Esc/P 不做事。
 
 ### 4.2 暂停面板 `PausePanel`（改造）
@@ -150,8 +151,8 @@ public enum GameState
 ### 4.3 结算面板 `ResultPanel`（改造）
 
 - 始终显示（删除 `IsEmbedded` 与 `_bridge` 引用），`Result` 时显示；`Starting` 时隐藏。
-- 内容：标题（胜利/失败）、`本局得分 N`、`难度 普通 · 存活 60 秒 · 倍率 ×1.3`、
-  明细（存活分 / 击杀（>0 才显示）/ 胜利奖励（仅胜利））、按钮「再来一局 / 返回菜单」。
+- 内容（按 mock，策划裁决 5）：标题（胜利/失败）、`本局得分 N`、`难度 普通 · 存活 60 秒 · 倍率 ×1.3`、
+  按钮「再来一局 / 返回菜单」。**不显示**存活分/击杀/胜利奖励明细行（`ScoreService` 字段保留）。
 - 不显示昵称；按钮宽度用百分比锚点。
 
 ### 4.4 倒计时面板 `StartCountdownPanel`（新增）
@@ -173,11 +174,11 @@ public enum GameState
 - 真实失焦验证：沿用 `tools/e2e/smoke.mjs` 的做法（CDP `Emulation.setFocusEmulationEnabled(false)` +
   第二个页面抢焦点），在 Standalone 页面重跑；无头下只验 Chrome/Edge（Firefox 无该开关）。
 
-### 4.6 难度持久化
+### 4.6 难度记忆（会话内）
 
-- `MenuPanel` 选中项写 `PlayerPrefs("survival.lastDifficulty")`；启动读取（非法/缺失 → `Normal`）。
+- **不用 `PlayerPrefs`**（策划裁决 6）：`MenuPanel` 用会话内字段记住选择；首次加载 = `Normal`；
+  本会话内 `ReturnToMenu` 保留上次选择；**刷新/重开页面重置为普通**。
 - `GameConfig.ActiveDifficulty` 仍是运行时字段（不加 `[SerializeField]`、不写回资产），`RestartGame` 沿用。
-- 若策划不要跨刷新记忆，可退化为会话内字段（§12-6）。
 
 ## 5. 文案与字体
 
@@ -418,3 +419,41 @@ public enum GameState
 - 实现 + 字体 + 文档：约 1~1.5 个工作日（不含评审）。
 - 构建：1 次（约 4 分钟）+ 最多 1 次修复。
 - 验收：Editor 状态机/截图 ~1 小时；Standalone/6 视口/失焦/40 只 ~2 小时（无头）。
+
+## 14. 策划裁决 2026-11-01（放行，覆盖 §12）
+
+> 记录人：程序；来源：策划会话放行消息。以下为最终口径，实现按此执行。
+
+1. **`Starting` 接受为第五态**，但只是内部过渡态：**不发 `onStateChange`、不进 H5 文案、暂停/结算面板不显示**。
+   文档/注释写「来源态 → Starting → Playing / 回来源态」。**取消回来源态必须复位 `Time.timeScale`**：
+   回 `Menu` = 1，回 `Paused`/`Result` = 0。
+2. **选 A**：线格式 `menu/playing/paused/result` 是 v3 契约（方案 §7 为准），内部枚举同步改名。
+   bridge 用**单一 `MapToWire` 表**；提交前 `grep GameState.Ready|Won|Lost` 清零；`onGameOver.result` 仍 `win/lose`；
+   旧 H5 只算过渡。
+3. **`Starting` 不发 `onStateChange`**（同意）。
+4. **同意重裁同名 OTF**（派生物，不算新增素材）：完整字体不入库、OFL 保留、`font-subset.py` 参数化并记录
+   source 路径与命令；截图证明无 tofu；**1024 图集放不下先停报，不自作主张上 2048**。
+5. **结算按 mock**：只显示「本局得分 / 难度 / 存活 / 倍率」+「再来一局 / 返回菜单」；
+   **不显示存活分/击杀/胜利奖励明细**（字段保留）。
+6. **否决 `PlayerPrefs`**：难度用会话内字段——首次加载=普通；会话内返回菜单保留；刷新重置。
+7. **接受旧 H5 过渡范围**：只保证进菜单/可玩/回传分数；不部署；文档写清「旧页状态文案可能不准、可能双结算卡」
+   是过渡现象。
+8. **`docs/参考拆解.md` 归策划**，程序不碰。
+9. **同意** `?v=1.2.0` + `productVersion=1.2.0`；本阶段不部署，README 版本一致性留 H5 阶段一起收。
+
+### 14.1 追加要求（A–E）
+
+- **A. 构建产物不入 wip**：`web/unity/` 是 main 里已入库的 1.0.0 产物。构建后先把产物复制到仓库外临时目录，
+  再 `jj restore web/unity`（并清掉未跟踪的新文件）；**只提交 `build-info.json` 摘要**
+  （productVersion/builtAt/sha256）+ 证据，不提交二进制。`BuildScript` 写 `ProjectSettings.asset` 的
+  `bundleVersion` 若只有这一行变化允许提交；出现别的设置改动即停。
+- **B. 压测入口**：`?perf=1`（Editor 自动化同）走 `GameManager.StartGameImmediate(difficulty)`：
+  绕过 `Starting`，直接 `ResetRound → Playing`，**仅测试专用**；正常 UI 永不调用。
+  另补 E2E：菜单点「困难」→ 短局（`?perf=1&roundDuration=5`，不 autostart）→
+  `onGameOver.difficulty=hard` 且倍率生效（分数按 hard 公式）。
+- **C. `SetPausedByVisibility("true")` 在 `Starting` 下也取消倒计时**，与 `ApplicationFocusPause` 一致；
+  失焦/切回仍保持 `Paused`、不自动恢复。
+- **D. E2E 点击坐标从布局锚点表推导**（`tools/e2e/ui-layout.mjs`，按 CanvasScaler 公式换算），不手填截图值；
+  至少补一条 **390×844** 的点击链（开始/暂停/结算），覆盖 640×360 参考分辨率分支。
+- **E. 失焦验收两种**：Standalone 用 CDP 真实 window blur + 切标签（visibilitychange），断言进出都保持 `Paused`；
+  若 Unity 原生焦点在无头下不触发，明确记录并退回「H5 环境信号为主」，**不许静默放过**。
