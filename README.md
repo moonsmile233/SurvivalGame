@@ -3,8 +3,9 @@
 2D 生存挑战：Unity WebGL 渲染、原生 H5 承载，玩家在 36×20 地图上躲开追踪敌人，存活 60 秒获胜。
 **Unity 是完整游戏**：主菜单、三档难度、开局 3-2-1、暂停/重开/返回、结算都在画布内；H5 只做昵称、
 进入游戏、数据面板（共享最高分/最近一局）、localStorage 与全屏入口。
-线上/Release 版本 **1.0.0**（旧版 H5 与旧 UI）；仓库当前是 **v1.2 薄壳 WIP**（Unity 1.2.0 构建在仓库外，
-尚未入库/部署），**以 `web/unity/build-info.json` 为准**。
+线上/Release 版本 **1.0.0**（旧版 H5 与旧 UI）；仓库当前是 **v1.2 薄壳**（`web/unity` 已入库
+`productVersion 1.2.0`，`builtAt 2026-11-02T11:02:31Z`），**尚未部署、未发 Release**；版本以
+`web/unity/build-info.json` 为准。
 
 ## 试玩 / 下载
 
@@ -59,9 +60,8 @@ python serve.py 8000
 需要 Python 3 或 Node；**直接双击 `index.html` 会失败**（`file://` 无法加载 Unity WebGL）。
 首次加载约 9 MB，页面有进度条。
 
-> **v1.2 中间态**：H5 薄壳要求 `protocol 3`，而仓库内 `web/unity` 目前是 1.0.0（protocol 2）产物。
-> 直接跑 WIP 会显示「版本不匹配」——这是预期的保护。用 v1.2 构建（`productVersion=1.2.0`）放到
-> `web/unity` 后即可；最终构建入库/部署按 M5 收口流程执行。
+> **v1.2 版本**：仓库内 `web/unity` 已是 1.2.0（protocol 3），本地按上面的方式启动即可直接玩；
+> `node tools/check-version.mjs` 校验 H5 `?v=` 与构建版本一致。线上仍是 1.0.0，部署/Release 待放行。
 
 > **改了 H5 看不到变化？** 浏览器可能缓存了旧的 `app.js`/`style.css`。
 > 用无痕窗口或 `Ctrl+F5` 硬刷新；开发时请用 `serve.py`（`start-local` 默认）——它发 `no-store`。
@@ -97,7 +97,8 @@ docs/              文档地图、规范、ticket、执行记录、验收、evid
 ## 需求对照（17 条）
 
 状态：已实现 = 功能可用且有自测；已验收 = 有日期/设备/证据；未测 = 还没做。
-下表证据属于**线上 1.0.0**；v1.2（Unity 菜单/状态机 + H5 薄壳）证据见 `docs/evidence/m6-refactor/`，尚未部署。
+下表证据属于**线上 1.0.0**；v1.2（Unity 菜单/状态机 + H5 薄壳，`web/unity` 1.2.0）证据见
+`docs/evidence/m6-refactor/`，**尚未部署/发 Release**。
 
 | # | 需求 | 状态 | 日期 / 设备 | 证据 |
 |---|---|---|---|---|

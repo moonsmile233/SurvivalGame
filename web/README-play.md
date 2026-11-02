@@ -8,7 +8,7 @@
 
 - Windows：双击 `start-local.bat`（优先用 Python 3，没有则用 Node）。
 - macOS / Linux：`sh start-local.sh`
-- 或者手动：在本目录执行 `python -m http.server 8000`，然后打开 <http://localhost:8000>。
+- 或者手动：在本目录执行 `python serve.py 8000`（带 `Cache-Control: no-store`），然后打开 <http://localhost:8000>。
 
 首次加载需要下载约 9MB 的 Unity 产物；页面有进度条，加载完成后「开始游戏」才可用。
 

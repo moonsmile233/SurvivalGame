@@ -1,6 +1,6 @@
 # 验收记录（living document）
 
-> 最后更新：2026-11-02（v1.2 第一阶段：Unity 菜单/状态机 + 协议 v3 骨架，见 §3.5；
+> 最后更新：2026-11-02（v1.2 D 收尾：最终证据重跑 + 1.2.0 入库，见 §3.7；v1.2 第一阶段：Unity 菜单/状态机 + 协议 v3 骨架，见 §3.5；
 > 2026-11-01：L1.1 全屏口径见 §3.4；M6 第 2 步三档难度 + H5 主界面 + `ReturnToMenu` 见 §3.3；
 > 此前 M5-3：无水印 1.0.0 构建 `2026-10-31T14:53:47Z`、M4.7 摇杆/响应式/全屏验收、无头 E2E、build 入库 `f19fcb79`、
 > Release `v1.0.0`、干净克隆通过；人工/真机仍待测）
@@ -220,6 +220,29 @@
 - **资源**：`NotoSansSC-UI-Subset-SDF.asset`（2.1MB，无引用）已按用户确认删除（C-26）；
   `SampleScene.unity` **保留**（模板默认场景）。`web/unity` 入库/部署/Release 等用户放行。
 
+## 3.7 v1.2 D 收尾（2026-11-02：最终证据 + 1.2.0 入库）
+
+> 构建 `productVersion 1.2.0`，`builtAt 2026-11-02T11:02:31Z`（clean 重建的仓库外副本）；
+> 已复制进 `web/unity` 作为最终交付产物，`node tools/check-version.mjs` PASS。
+> 本轮只重跑证据与文档，未改 `web/**`、`Assets/**`、`tools/**`；最终 build 提交见 `jj log`。
+
+- **H5 薄壳**（`h5-shell` core + viewports，19:30）：协议 3 / 昵称 / 进入 / 难度偏好 / 结算 / 最高分 / 迁移 / 全屏 PASS；
+  6 视口 320×568 / 390×844 / 844×390 / 768×1024 / 1280×720 / 1920×1080 全 ok。
+- **薄壳主流程**（`smoke`，19:31，9/9 PASS）：Shell 遮罩 / 只发一次 EnterGame / 画布菜单开局 / Esc 暂停→继续 /
+  短局结算「普通 265」/ 再来一局 / 暂停返回菜单 / 刷新保留最高分与昵称、最近一局清空；console 0 未预期 error。
+- **交付页 40 只**（`perf.mjs`，19:31–19:33）：capAt 49.44s，稳态 **165 FPS / p95 7ms / p99 7ms / alloc 29.2KB/s**；
+  证据 `docs/evidence/perf-local-chrome-desktop-cap40.json`。
+- **Standalone**（`web/unity/index.html`，19:33–19:36）：
+  - flow 1280×720：16 事件，hard 短局 232（`standalone-flow-events.json`、`standalone-flow-v1.2-*.png`）；
+  - mobile 390×844：走 640×360 参考分支（scale 0.609375），16 事件，hard 232；
+  - viewports：6 视口 menu / countdown / paused / result 截图重拍；
+  - focus：原生 blur 与 visibilitychange 都保持 Paused；Starting 中失焦回 Menu，Paused 继续倒计时中失焦回 Paused；
+  - perf 40：**165 FPS / p95 7ms / alloc 30.6KB/s / capAt 49.42s**（`perf-40.json`）。
+- **版本一致性**：`web/index.html` 5 处 `?v=1.2.0` == `web/unity/build-info.json.productVersion`；
+  `check-version` PASS（此前 1.0.0 中间态 FAIL 属预期）。
+- **最终产物**（总 **9,650,984 B**）：wasm 7,002,319 / data 2,435,213 / framework 75,669 / loader 117,894。
+- **仍未做**：部署、GitHub Release、1.2.0 干净克隆复验；真机 / DPR / 全屏语义见 §4。
+
 ## 4. 未关闭项
 
 1. **人工 60 秒胜利未测**：自动化脚本（M3 60.1s、M4 60.0s）只证明功能链路，**不算人工验收**；需在最终构建上人工跑 1 次。
@@ -231,18 +254,22 @@
 5. **正式美术 / 音效**：仍是占位圆点 + 网格。
 6. **加载性能**：约 9 MB/次；Netlify 国内实测很慢（首次 50～61s），国内托管方案见 `docs/部署与托管.md`。
 7. **M4.5 §2/§3（历史项）**：v1.2 已实现暂停菜单「重新开始 / 返回菜单」与 Unity 主菜单（难度 + 开始）；
-   H5 薄壳改版（昵称/进入/数据面板/全屏入口）仍在下一阶段。全屏 §1 已完成。
+   H5 薄壳改版（昵称 / 进入 / 数据面板 / 全屏入口）已在 v1.2 落地（§3.7）。全屏 §1 已完成。
 8. **M6 第 2 步遗留**：真机未测（Honor 90 Pro 三档各 1 局 + 40 只 `?perf=1`）；
-   游戏中（Playing/Paused）全屏不显示网页控件（L1.1）——换档需先退出全屏；Result 下难度卡与结算卡不同屏。
-   这些不影响功能链路，但人工验收时要按此口径检查。
+   v1.2 的难度在 Unity 主菜单选，局内换档需暂停 →「返回菜单」，H5 不再有难度卡；
+   游戏中（Playing/Paused）全屏不显示网页控件（L1.1）。这些不影响功能链路，但人工验收时要按此口径检查。
 9. **L1 全屏边界**：无头 Chrome 的 `Esc` 不退出全屏却会传给 Unity 触发暂停；有头浏览器/真机尚未确认
    `Esc` 是否由浏览器消费。若真机上出现「按 Esc 退出全屏后游戏被暂停」，记录后另行决定是否在 H5 捕获阶段拦截。
+10. **v1.2 交付未完成**：1.2.0 已入 `web/unity`（wip），但**未部署、未发 Release、未做 1.2.0 干净克隆复验**；
+    线上仍是 1.0.0。真机/DPR/全屏语义仍待用户设备验证（见 §2、§4.3、`docs/遗留问题.md`）。
 
 ## 5. 结论
 
 - 17 条中 1–4、6–15、17 已验收；第 5 条功能已实现但**人工 60 秒未测**；第 16 条视口级已验收、**真机未测**。
-- 最终构建 **1.0.0**（`2026-10-31T14:53:47Z`，无水印）已入 `main`（build `f19fcb79`）、发布
-  Release `v1.0.0`，并部署到 Netlify（deploy `6ae6d3d1…`，Chrome 无头 smoke PASS）；干净克隆可运行。
+- 线上 / Release 仍是 **1.0.0**（`2026-10-31T14:53:47Z`，无水印）：已入 `main`（build `f19fcb79`）、
+  发布 Release `v1.0.0`、部署到 Netlify（deploy `6ae6d3d1…`，Chrome 无头 smoke PASS）；干净克隆可运行。
+- **v1.2 1.2.0**（`2026-11-02T11:02:31Z`）已入 `web/unity`（wip 的 `build:` 提交），`check-version` PASS；
+  **未部署、未发 Release、未做 1.2.0 干净克隆复验**，`main` 未前移。
 - **国内托管未做**，国内在线链接只能标「待定」；Netlify 国内访问慢/不稳定，仅作海外备份。
 - **不能宣称 M4/M5 收口**：人工 60 秒、5 局基线、Honor 90 Pro / iPhone 真机仍未做。
 - M5-5 人工门禁在最终构建上执行后，把日期/设备/结果补进本文件。
