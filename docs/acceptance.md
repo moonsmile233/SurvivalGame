@@ -217,8 +217,8 @@
   （`docs/evidence/perf-local-chrome-desktop-cap40.json`、`m6-refactor/perf-40.json`）。
 - **D1/D5**：Editor Play 旧载荷 `{"nickname","difficulty":"hard"}` → `MenuDifficulty Normal→Hard`；
   perf 40 记录 `difficultyAfterStart=hard`。
-- **未做/保留**：`SampleScene.unity` **保留**（模板默认场景）；`NotoSansSC-UI-Subset-SDF.asset`（2.1MB）
-  删除被权限策略拦截，需用户在本会话直接确认（不影响交付）；`web/unity` 入库/部署/Release 等用户放行。
+- **资源**：`NotoSansSC-UI-Subset-SDF.asset`（2.1MB，无引用）已按用户确认删除（C-26）；
+  `SampleScene.unity` **保留**（模板默认场景）。`web/unity` 入库/部署/Release 等用户放行。
 
 ## 4. 未关闭项
 
