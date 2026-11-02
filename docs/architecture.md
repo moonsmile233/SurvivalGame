@@ -60,8 +60,8 @@ Paused/Result ──返回菜单──▶ Menu
 | 结算面板 | `UI/ResultPanel.cs` | Result 显示；胜负/本局得分/难度/存活/倍率 + 再来一局/返回菜单；始终显示（不再有嵌入抑制） | 不写分数算法、不显示昵称/明细 |
 | 文案 | `UI/UiStrings.cs` | 全部中文 UI 文案的 const + `AllCharacters` | 不写逻辑 |
 | 桥接 | `Bridge/WebGLBridge.cs` + `.jslib` | protocol 3：EnterGame/昵称、状态（menu/playing/paused/result）、难度偏好、结算转发；旧指令兼容 shim | 不写玩法逻辑，不改状态 |
-| H5 外壳（v1.1 旧） | `web/js/bridge.js` | 注册 `window.SurvivalGameBridge`、加载 Unity、转发事件 | 不渲染业务 UI；v1.2 薄壳下一阶段替换 |
-| H5 页面（v1.1 旧） | `web/js/app.js` | 旧页面状态机、按钮/昵称/结算渲染、可见性事件 | 与 v1.2 只保证过渡兼容 |
+| H5 外壳 | `web/js/bridge.js` | 注册 `window.SurvivalGameBridge`、加载 Unity、转发事件 | 不渲染业务 UI、不发局内指令 |
+| H5 页面 | `web/js/app.js` | v1.2 薄壳：`Loading/Shell/Entered/GameOver` 状态、昵称/进入/数据面板/全屏、可见性与滚轮 | 不提供难度/开局/暂停/结算控件 |
 | H5 存储 | `web/js/storage.js` | `survival.*` 读写封装、不可用回退内存 | 业务代码不得直接碰 `localStorage` |
 | 场景生成 | `Editor/SceneSetup.cs` | 一键生成 `Game.unity`（含整套 UI） | — |
 | 字体 | `Editor/FontAssetBuilder.cs` | 用脚本生成 TMP 字体图集 | 不写玩法 |
@@ -193,8 +193,9 @@ PlayerHealth.OnDied          // ()
 | 生成位置 | 玩家周围 1.15×相机半对角线、视野外 0.05 | `EnemySpawner`（常量） |
 | 速度扰动 / 速度上限 | ±12% / 2.2 | `GameConfig` |
 | 压力曲线 | 1.0 → 1.15（按局内时间，作用于已存在敌人） | `GameConfig` |
-| 敌人间距 / 位置修正轮数 | 0.95 / 2（Spawner 两两修正） | `GameConfig` |
-| 停距 / 站位槽位 | 0.7 / 12（+ 抖动） | `EnemyAI` |
+| 敌人间距 | 软墙 0.70 / 分离半径 0.90（只扣逼近分量，不外推） | `GameConfig` |
+| 邻居刷新 | 30Hz，均匀网格 cell 0.90，每只最近 ≤8 个 | `EnemySpawner` |
+| 停距 / 位置写入 | 0.70 / 唯一写入 `pos += v*dt`（无站位槽、无两两位置修正） | `EnemySpawner` / `EnemyAI` |
 | 回收 | 离开相机视野（±0.05）持续 3s | `GameConfig` |
 | 胜利时间 | 60s | `GameConfig` |
 | 存活分 / 击杀分 / 胜利奖励 | 10/s / 20/个 / 200 | `GameConfig` |
@@ -211,8 +212,8 @@ M4 已实现：
    （分离半径由碰撞半径派生）。资产 `Assets/Configs/def_Enemy_Chaser.asset` 由 `SceneSetup` 自动创建，
    构建时重指一次精灵。`GameConfig` 继续管全局：生成间隔、上限、速度扰动、分离权重、回收阈值。
 2. **Spawner 按定义组装 + 可注销**：`EnemyDefinition[] _enemyDefinitions`（当前 1 个，随机选取但只有一个）；
-   暴露只读 `ActiveEnemies` 给分离力使用；`Recycle(EnemyAI)` 从列表移除并销毁，释放 20 上限名额。
-3. **追踪增强在 `EnemyAI` 内**：软分离（O(n²)、无分配）、速度扰动、包围站位、远距离回收。
+   暴露只读 `ActiveEnemies` 给邻居网格与压测探针；`Unregister` 从列表移除并销毁，释放同屏上限名额。
+3. **追踪增强在 `EnemyAI` 内**：软墙 + 切向让位（邻居由 Spawner 30Hz 网格填充）、速度扰动、压力曲线、远距离回收。
    接触伤害仍在 `EnemyAI.OnTriggerStay2D`（伤害值来自定义）。
 
 尚未拆分的部分（M5/P2 再做，不阻塞当前验收）：

@@ -7,8 +7,9 @@ namespace Survival.UI
     /// <summary>
     /// Unity 主菜单（v1.2 游戏优先）：三档难度 + 开始。
     /// 只改选择并发 StartGame；状态与难度权威在 GameManager/GameConfig。
-    /// 难度记忆只在本次运行内（策划裁决 2026-11-01：不用 PlayerPrefs），刷新重置为普通。
-    /// 菜单不显示最高分/昵称/全屏（用户口径）；最高分与昵称只属于 H5 外壳。
+    /// 难度记忆在会话内（策划裁决 2026-11-01：不用 PlayerPrefs）：standalone 刷新回普通；
+    /// H5 会用 EnterGame.lastDifficulty 回填，返回菜单沿用上次选择。菜单不显示最高分/昵称/全屏（用户口径）。
+    /// 最高分与昵称只属于 H5 外壳。
     /// </summary>
     public class MenuPanel : MonoBehaviour
     {

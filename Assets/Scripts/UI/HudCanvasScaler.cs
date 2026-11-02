@@ -10,8 +10,9 @@ namespace Survival.UI
     ///
     /// 为什么用 Screen.width 而不是 RectTransform.rect.width：
     /// ScreenSpaceOverlay 的 Canvas rect 是「参考单位」，在 16:9 下恒等于参考宽（1280/640），
-    /// 拿它判窄屏永远得不出结论；必须用设备像素宽度。DPR 已由 H5 传到 createUnityInstance
-    /// （min(devicePixelRatio, 2)），所以 390 CSS 宽的手机在这里约是 780。
+    /// 拿它判窄屏永远得不出结论；必须用屏幕宽度。DPR 由 H5 传给 createUnityInstance（上限 2），
+    /// 本阈值按“设备像素宽 < 1000”估算窄屏；DPR&gt;1 且画布 CSS 宽在 500～1000 附近的边界尚未实测
+    /// （见 `docs/代码审视-2026-11-02.md` P1-8）。
     ///
     /// 为什么在 Update 里判：等比例缩放时 OnRectTransformDimensionsChange 不会触发。
     /// 只在 Screen.width 变化时写一次，避免每帧改 CanvasScaler。

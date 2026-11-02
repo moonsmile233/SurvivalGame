@@ -123,9 +123,9 @@ async function runCore(browser, baseUrl) {
   assert(!(await page.$eval('#nickname', (el) => el.disabled)), 'nickname must be editable in Shell');
   await saveScreenshot(page, 'h5-shell-shell-1280.png');
 
-  // 2) Nickname + enter.
+  // 2) Nickname + enter. The input is the only nickname display (no data-panel duplicate).
   await page.fill('#nickname', '阿宝');
-  assert((await text(page, '#data-nickname')) === '阿宝', 'data panel must show nickname preview');
+  assert((await page.locator('#data-nickname').count()) === 0, 'nickname must not be duplicated in the data panel');
   await page.click('#btn-start');
   await page.waitForTimeout(500);
 
@@ -194,6 +194,8 @@ async function runCore(browser, baseUrl) {
   assert(migrated === '1', 'migration marker must be set');
   assert((await text(page, '#data-last')) === '困难 232', 'last round must be 困难 232');
   assert((await page.getAttribute('#data-last', 'title') || '').includes('胜利'), 'title must keep win info');
+  // 快照必须在下面的注入/刷新之前抓：刷新会清空最近一局，JSON 里才不会被写成「—」。
+  const lastRoundAfterRound = await text(page, '#data-last');
   await saveScreenshot(page, 'h5-shell-gameover-1280.png');
 
   // 6) Low score must not overwrite best (inject a lower result through the same handler).
@@ -230,7 +232,8 @@ async function runCore(browser, baseUrl) {
     enterGames,
     best,
     migrated,
-    lastRound: await text(page, '#data-last'),
+    lastRound: lastRoundAfterRound,
+    lastRoundAfterRefresh: await text(page, '#data-last'),
     sentMethods: sent.map((m) => m.method),
     consoleLines,
   });

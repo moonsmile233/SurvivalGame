@@ -29,7 +29,6 @@
   var fsToast = document.getElementById('fs-toast');
   var nicknameInput = document.getElementById('nickname');
   var statusHint = document.getElementById('status-hint');
-  var dataNickname = document.getElementById('data-nickname');
   var dataBest = document.getElementById('data-best');
   var dataLast = document.getElementById('data-last');
   var versionEl = document.getElementById('version');
@@ -150,7 +149,6 @@
 
   function setPage(page) {
     state.page = page;
-    document.body.dataset.page = page;
     render();
   }
 
@@ -196,13 +194,6 @@
   }
 
   function renderData() {
-    if (dataNickname) {
-      dataNickname.textContent =
-        state.page === 'Shell' && nicknameInput
-          ? normalizeNickname(nicknameInput.value)
-          : state.nickname;
-    }
-
     if (dataBest) {
       dataBest.textContent = String(state.best);
     }
@@ -275,9 +266,18 @@
   }
 
   function onStateChange(json) {
+    if (state.page === 'Error') {
+      return;
+    }
+
     var message = parseJson(json);
     if (!message || typeof message.state !== 'string') {
       console.warn('[App] onStateChange 载荷无效，已忽略', json);
+      return;
+    }
+
+    if (message.protocol !== PROTOCOL_VERSION) {
+      console.warn('[App] onStateChange 协议不匹配（' + message.protocol + '），已丢弃');
       return;
     }
 
@@ -307,9 +307,17 @@
   }
 
   function onDifficultyChanged(json) {
+    if (state.page === 'Error') {
+      return;
+    }
+
     var message = parseJson(json);
     if (!message || typeof message.difficulty !== 'string') {
       console.warn('[App] onDifficultyChanged 载荷无效，已忽略', json);
+      return;
+    }
+    if (message.protocol !== PROTOCOL_VERSION) {
+      console.warn('[App] onDifficultyChanged 协议不匹配（' + message.protocol + '），已丢弃');
       return;
     }
     saveDifficulty(normalizeDifficulty(message.difficulty));
@@ -317,7 +325,17 @@
   }
 
   function onGameOver(json) {
+    if (state.page === 'Error') {
+      return;
+    }
+
     var message = parseJson(json);
+    if (message && message.protocol !== PROTOCOL_VERSION) {
+      // 版本不匹配的结算不能写最高分（只丢弃并 warn，不改变页面状态）。
+      console.warn('[App] onGameOver 协议不匹配（' + message.protocol + '），已丢弃');
+      return;
+    }
+
     var payload = message && message.payload;
     if (!payload || typeof payload !== 'object') {
       console.warn('[App] onGameOver 载荷无效，已忽略', json);
@@ -380,6 +398,12 @@
 
   function beginEnter() {
     if (!state.ready || state.entered || state.enterSent) {
+      return;
+    }
+
+    if (!state.instance) {
+      // onReady 理论上晚于 createUnityInstance 完成；这里兜住极端时序，避免静默失败。
+      setHint('游戏尚未就绪，请稍后重试');
       return;
     }
 
@@ -584,13 +608,7 @@
     });
   }
 
-  if (nicknameInput) {
-    nicknameInput.addEventListener('input', function () {
-      if (state.page === 'Shell') {
-        renderData();
-      }
-    });
-  }
+  // 昵称只由输入框展示（Shell 可编辑、进入后只读）；数据栏不再重复一行。
 
   document.addEventListener('fullscreenchange', updateFullscreenUi);
   document.addEventListener('webkitfullscreenchange', updateFullscreenUi);
@@ -611,7 +629,6 @@
     syncVisibility(document.hidden);
   });
 
-  document.body.dataset.page = state.page;
   render();
 
   window.SurvivalApp = {

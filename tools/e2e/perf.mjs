@@ -128,6 +128,8 @@ async function readBuildInfo(baseUrl) {
 async function runCap(browser, baseUrl, cap, buildInfo) {
   const query = new URLSearchParams({
     perf: '1',
+    // v1.2 薄壳的 H5「开始游戏」只进入 Unity 菜单；压测需要 PerfProbe 直接开局。
+    autostart: '1',
     enemyLimit: String(cap),
     roundDuration: String(ROUND_SECONDS),
     invincible: '1',
@@ -173,12 +175,12 @@ async function runCap(browser, baseUrl, cap, buildInfo) {
   await page.waitForSelector('#btn-start:not([disabled])', { timeout: READY_TIMEOUT });
   await page.bringToFront();
 
-  await page.fill('#nickname', `perf${cap}`);
-  await page.click('#btn-start');
+  // ?autostart=1：PerfProbe 在 Menu 直接 StartGameImmediate，不经过 H5 EnterGame/Unity 菜单；
+  // H5 仍会收到 onStateChange(playing)，所以状态文案可作就绪信号。
   await page.waitForFunction(
     () => (document.getElementById('status-hint')?.textContent || '').includes('游戏中'),
     null,
-    { timeout: 20000 },
+    { timeout: 60000 },
   );
 
   const startedAt = new Date();

@@ -1,10 +1,10 @@
 // Transitional check: old H5 shell (v1.1) + new Unity package (protocol 3).
 //
-// Expected (documented in docs/bridge-protocol.md §6.3):
-//   - onReady warns about protocol 3 but does not block;
-//   - H5 StartGame is treated as EnterGame: the canvas shows the Unity menu;
-//   - the player can start and finish a round from the Unity menu;
-//   - onGameOver still updates the old H5 best score.
+// Expected (v1.1 过渡口径，见 docs/bridge-protocol.md §2 兼容矩阵；已被 v1.2 薄壳取代):
+//   - onReady 协议不一致时旧页只 warning；
+//   - 旧 H5 StartGame 被当作 EnterGame：画布显示 Unity 菜单；
+//   - 玩家在 Unity 菜单开局并完成一局；
+//   - onGameOver 仍更新旧页最高分。
 // This is NOT the v1.2 shell acceptance; it only proves the transitional compatibility path.
 import { chromium } from 'playwright';
 import {

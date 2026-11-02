@@ -1,55 +1,58 @@
-# E2E smoke（M4）
+# E2E / 压测脚本（v1.2）
 
-不进入 `web/`，不参与线上发布。独立 `package.json`，只依赖 Playwright。
+独立 `package.json`，只依赖 Playwright；不进入 `web/`，不参与发布。
+
+> **前置**：H5 与 standalone 脚本都需要 `web/unity` 里是可运行的对应构建。
+> v1.2 薄壳要求 `protocol 3`（`productVersion=1.2.0`）；仓库内目前可能是旧的 1.0.0，
+> 测试前把 1.2.0 构建临时复制进 `web/unity`，跑完 `jj restore web/unity`（见 `docs/遗留问题.md` §2）。
+
+## 有效脚本（v1.2）
+
+| 脚本 | 作用 | 关键环境变量 |
+|---|---|---|
+| `smoke.mjs` | 薄壳主流程：加载 → 昵称 → 进入 → 画布菜单开局 → 暂停/继续 → 短局结算 → 再来一局/返回菜单 → 刷新保留 | `BASE_URL`、`E2E_PROXY`、`BROWSER`、`MOBILE`、`HEADED`、`READY_TIMEOUT`、`ROUND_SECONDS` |
+| `h5-shell.mjs` | H5 薄壳验收：`MODE=core`（协议/昵称/进入/难度偏好/结算/最高分/迁移/全屏）、`MODE=viewports`（6 视口） | `MODE`、`PORT`、`HEADED`、`READY_TIMEOUT`、`GAME_TIMEOUT` |
+| `standalone-menu.mjs` | 无 H5 直开 Unity 构建：菜单/难度/3-2-1/暂停/继续/重开/结算/再来一局/返回菜单 | `MODE=flow\|mobile\|viewports`、`PORT`、`HEADED`、`EVIDENCE_TAG` |
+| `standalone-focus.mjs` | 失焦暂停 + 切回保持暂停（原生 blur / visibilitychange） | `PORT`、`HEADED`、`READY_TIMEOUT` |
+| `standalone-perf.mjs` | standalone 40 只压测（headed、离屏窗口） | `CAP`、`PERF_SECONDS`、`PERF_TIMEOUT` |
+| `perf.mjs` | 交付页 40 只压测（`?perf=1&autostart=1`，不再依赖 H5 开始按钮） | `BASE_URL`、`CAPS`、`PERF_SECONDS`、`BROWSER`、`EXTRA_QUERY` |
+| `check-version.mjs` | 校验 `web/index.html` 的 `?v=` 与 `web/unity/build-info.json.productVersion` 一致；不一致非 0 退出 | — |
+| `legacy/` | v1.1 旧 H5 的脚本存档，**不可运行**（依赖已删除的 DOM/状态机）；只供追溯 | — |
 
 ## 跑一次
 
 ```bash
 cd tools/e2e
-npm install            # 首次（Playwright 会复用本机 Chrome/Edge，不下载 Chromium）
-node smoke.mjs         # 默认：本地起静态服务 + 系统 Chrome（无头，不弹窗）
-HEADED=1 node smoke.mjs  # 需要看真实窗口时：窗口移到屏幕外，仍然不打断使用
+npm install                 # 首次（Playwright 复用本机 Chrome/Edge，不下载 Chromium）
+
+# H5 薄壳（默认 core 含迁移/协议不匹配/全屏）
+node h5-shell.mjs
+MODE=viewports node h5-shell.mjs
+
+# 薄壳主流程（本地静态服务默认 8123）
+node smoke.mjs
+
+# 无 H5：直接打开 Unity 构建模板
+node standalone-menu.mjs
+MODE=mobile node standalone-menu.mjs
+
+# 版本一致性（在仓库根或 tools/e2e 下都可跑）
+node tools/check-version.mjs
 ```
 
-可用环境变量：
+- 默认无头，`HEADED=1` 才开真实窗口；无头 Chrome 走 SwiftShader，**帧率结论必须用 headed/真机**。
+- 线上跑必须给代理：`E2E_PROXY=http://127.0.0.1:7897`（国内直连 Netlify 大文件会被掐断）。
+- `BASE_URL=https://...` 时 `smoke.mjs` 不再起本地服务；H5 的 `?testhook=1` 由脚本附加。
 
-| 变量 | 默认 | 说明 |
-|---|---|---|
-| `BASE_URL` | 空 | 给了就打这个地址（如 `https://survivalgame-demo.netlify.app`），不再起本地服务 |
-| `E2E_PROXY` | 空 | 给测试浏览器挂代理（如 `http://127.0.0.1:7897`）。国内直连 Netlify 会在大文件上 `ERR_CONNECTION_CLOSED`，线上跑必须给 |
-| `READY_TIMEOUT` | `180000` | 等 `onReady` 的毫秒数；线上经代理建议 `300000` |
-| `BROWSER` | `chrome` | `chrome` / `edge` / `firefox`（firefox 用 Playwright 自带内核） |
-| `MOBILE` | `0` | `1` → 390×844 触屏上下文，并做一次 CDP 触摸拖动 |
-| `HEADED` | `0` | 默认无头（不弹窗，避免打扰使用者）；`1` → 开真实窗口并移到屏幕外。无头 Chrome 走 SwiftShader 软件渲染，只验证流程/布局，**帧率与性能结论必须用真机** |
-| `PORT` | `8123` | 本地静态服务端口 |
-| `RESULT_TIMEOUT` | `300000` | 等一局结束的毫秒数（不操作时约 20~40s 死亡，无头会更慢） |
-| `ROUNDS` | `3` | 总局数（第 1 局结束后点「重新开始」跑满） |
-| `AUTOMOVE` | `0` | `1` → 第 1 局用键盘方形走位（每边 2.6s），用来跑满 60 秒做自动化胜利回归；建议配合 `ROUNDS=1` |
-| `RUN_LABEL` | 空 | 额外写一份 `summary-<label>.json`（如 `10rounds`、`win`），避免后来的运行覆盖不同场景的摘要 |
-| `NICKNAME` | `E2E测试` | 测试昵称 |
+## 证据
 
-示例：
+- H5 / v1.2：`docs/evidence/m6-refactor/`（`h5-shell-*`、`standalone-*`、`perf-40.json`、`h5-transition-*`）。
+- 旧 H5：`docs/evidence/e2e-*`（1.0.0 时期，历史，不覆盖）。
+- 任何断言失败 → 退出码 1；不要把失败截图当通过证据。
 
-```bash
-# 线上（国内必须走代理，否则大文件会被掐断）
-E2E_PROXY=http://127.0.0.1:7897 READY_TIMEOUT=300000 \
-  BASE_URL=https://survivalgame-demo.netlify.app node smoke.mjs
-MOBILE=1 node smoke.mjs
-BROWSER=edge node smoke.mjs
-```
+## 已知限制
 
-## 断言
-
-- 能加载到 `onReady`（开始按钮可用）
-- 昵称 → 开始 → H5 进入「游戏中」
-- 桌面按 `Esc` 暂停、按 `P` 恢复（M4 §1.7；手机用例跳过）
-- 真实窗口失焦（另开一个浏览器窗口并聚焦）→ H5「已暂停」
-- 切回**仍保持「已暂停」** → 点「继续」/按 P → 3-2-1 → 恢复「游戏中」（M4.6）
-- 结算后「重新开始」按钮在首屏可见（`block:'start'` 滚动）
-- 结算卡片出现：标题、本次得分、最高分、昵称、存活秒数
-- 连续重开 2 次（共 3 局）：每局都能重新进入 Playing，分数不累加
-- 刷新后昵称与最高分仍在
-- 页面 console 无 error（忽略 WebGL INVALID_ENUM 噪声）
-
-截图与日志写到 `docs/evidence/e2e-{online|local}-{chrome|edge|firefox}-{desktop|mobile}-*.png` / `.log`；
-结果摘要在同目录的 `e2e-*-summary*.json`。任何断言失败 → 退出码 1。
+- `ui-layout.mjs` 的点击坐标由 `SceneSetup` 锚点推导，改菜单/面板布局必须同步；
+  它目前按 canvas CSS 宽判断 640/1280 参考分辨率，DPR>1 的窄平板边界尚未实测（`docs/代码审视-2026-11-02.md` P1-8）。
+- 无头/软件渲染下 Unity 帧率很低（`Time.maximumDeltaTime=0.1` 让游戏时间约慢 10 倍），流程测试要留足超时。
+- 旧 H5 过渡脚本 `legacy/h5-transition.mjs` 需要 v1.1 页面，v1.2 页面替换后无法复跑。

@@ -55,7 +55,7 @@ namespace Survival.Player
                 return;
             }
 
-            // Ready / Paused / Won / Lost 一律不许移动；只有 Playing 才接受输入（M3 第 1.2 节）。
+            // Menu / Starting / Paused / Result 一律不许移动；只有 Playing 才接受输入（M3 第 1.2 节）。
             bool canMove = _gameManager != null && _gameManager.State == GameState.Playing;
             Vector2 move = canMove && _input != null ? _input.Move : Vector2.zero;
             _rb.linearVelocity = move * _config.PlayerSpeed;

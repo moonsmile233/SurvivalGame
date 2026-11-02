@@ -20,7 +20,7 @@
 | 方法 | 参数 | 状态迁移 | 说明 |
 |---|---|---|---|
 | `EnterGame` | JSON `{"nickname":"...","lastDifficulty":"easy\|normal\|hard"}`（字段均可空） | 无（Unity 默认在 Menu） | 进入游戏；昵称只保存不渲染；`lastDifficulty` 只作菜单初始选中，**不自动开局**；非法/缺省 → `normal`；`Menu` 下幂等 |
-| `SetPausedByVisibility` | `"true"` / `"false"` | `Playing → Paused`；`Starting → 来源态` | 失焦兜底（环境信号，不是局内操作）。`true` 暂停/取消倒计时；`false` **只清标记**，保持 Paused、不自动恢复（M4.6）。与 Unity 原生失焦幂等 |
+| `SetPausedByVisibility` | `"true"` / `"false"` | `Playing → Paused`；`Starting → 来源态` | 失焦兜底（环境信号，不是局内操作）。`true` 暂停/取消倒计时；`false` **直接忽略**（Unity 没有标记；H5 自己按最后发送值去重），保持 Paused、不自动恢复（M4.6）。与 Unity 原生失焦幂等 |
 | `StartGame`（v2 旧） | v2 JSON / 纯昵称 | 无 | **按 `EnterGame` 处理**，不自动开局；打一次 warning。旧 H5 只算过渡 |
 | `PauseGame` / `ResumeGame` / `RestartGame` / `ReturnToMenu`（v2 旧） | `""` | 无 | **no-op**，一次性 warning；v1.2 起局内操作全部在 Unity UI |
 
@@ -51,7 +51,7 @@
 | `onReady` | `{"protocol":3,"capabilities":["enterGame","stateChange","gameOver","difficultyChanged"]}` | 首帧渲染完成后一次 |
 | `onStateChange` | `{"protocol":3,"state":"menu\|playing\|paused\|result"}` | 每次**业务态**变化；`Starting` 是内部过渡态，不发 |
 | `onDifficultyChanged` | `{"protocol":3,"difficulty":"easy\|normal\|hard"}` | 菜单选择变化时一次（EnterGame 回填不回发） |
-| `onGameOver` | 见下方 schema | Won/Lost，每局仅一次（`_reported` 守卫） |
+| `onGameOver` | 见下方 schema | `Result`（胜利/失败），每局仅一次（`_reported` 守卫） |
 
 `onGameOver` 载荷（只升 `protocol`，字段形状与 v2 相同）：
 
@@ -113,7 +113,7 @@ Paused/Result ──返回菜单──▶ Menu（不结算、不发 onGameOver�
   └─ 注册 window.SurvivalGameBridge（onReady/onStateChange/onGameOver/onDifficultyChanged）
   └─ fetch build-info.json → 加载 loader → createUnityInstance
 Unity 首帧
-  └─ onReady({"protocol":3,"capabilities":[...]}) → H5 隐藏加载遮罩
+  └─ onReady({"protocol":3,"capabilities":[...]}) → H5 进 Shell（遮罩改为「游戏已就绪」并继续挡住画布）
 点击 H5「开始游戏」
   └─ SendMessage EnterGame({"nickname","lastDifficulty"}) → 画布内 Unity 菜单
      └─ 玩家在画布内选难度 → onDifficultyChanged → H5 存 survival.difficulty
@@ -143,7 +143,8 @@ HP ≤ 0 / 60s
    超过 16 个码点截断（Unity 侧再截 64）。
 4. **幂等**：Unity 侧 `_reported` 保证每局一次 `onGameOver`；每次进 `Playing` 清零。
 5. **编辑器兼容**：`#if UNITY_WEBGL && !UNITY_EDITOR` 之外用 `Debug.Log` 模拟，Editor 可完整跑状态机。
-6. **协议版本**：`protocol: 3`。H5 收到非 3 只 `console.warn`，不阻塞；新增字段兼容。
+6. **协议版本**：`protocol: 3`。H5 收到非 3 **禁用开始并显示错误卡「版本不匹配，请刷新重试」**，不进入 Shell/Entered
+   （新 H5 配旧 Unity 会进入一个没有菜单的壳，因此必须显式中止）；新增字段兼容。
 7. **缓存**：`build-info.json` 与 `/unity/Build/*` 必须 no-cache（`netlify.toml` 已配置）；
    H5 的 js/css 同样 no-cache，并带 `?v=` 版本串（v1.2 起统一 `1.2.0`）。
 
