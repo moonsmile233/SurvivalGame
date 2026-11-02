@@ -180,7 +180,8 @@
       if (state.page === 'Loading') {
         overlayText.textContent = '加载中…';
       } else if (state.page === 'Shell') {
-        overlayText.textContent = '游戏已就绪';
+        // 明确告诉玩家还要点网页按钮；只写「游戏已就绪」会被误认为已经进游戏。
+        overlayText.textContent = '游戏已就绪 · 点击下方「开始游戏」进入';
       } else if (state.page === 'Error') {
         overlayText.textContent = '加载失败';
       }

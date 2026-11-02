@@ -4,15 +4,16 @@
 **Unity 是完整游戏**：主菜单、三档难度、开局 3-2-1、暂停/重开/返回、结算都在画布内；H5 只做昵称、
 进入游戏、数据面板（共享最高分/最近一局）、localStorage 与全屏入口。
 线上/Release 版本 **1.0.0**（旧版 H5 与旧 UI）；仓库当前是 **v1.2 薄壳**（`web/unity` 已入库
-`productVersion 1.2.0`，`builtAt 2026-11-02T12:10:44Z`），**尚未部署、未发 Release**；版本以
+`productVersion 1.2.1`，`builtAt 2026-11-02T13:05:32Z`），已部署 Netlify、**未发 Release**；版本以
 `web/unity/build-info.json` 为准。
 
 ## 试玩 / 下载
 
 - **国内在线试玩：待定（未上线）**。国内托管（腾讯云 CloudBase）尚未执行，手机 4G 直连能进游戏的链接**还不存在**。
 - **海外备份**：<https://survivalgame-demo.netlify.app>（Netlify；国内网络可能打不开或很慢。
-  线上已是 **1.0.0** 构建 `2026-10-31T14:53:47Z`，deploy `6ae6d3d1…`）。
-- **离线包**：<https://github.com/moonsmile233/SurvivalGame/releases/tag/v1.0.0> 的
+  线上已是 **1.2.1** 构建 `2026-11-02T13:05:32Z`，deploy `6ae88c99…`；
+  完整线上 smoke 9/9 PASS，回滚用上一部署 `6ae88855…` 或 Release v1.0.0）。
+- **离线包（仍为 v1.0.0，作回滚/备份）**：<https://github.com/moonsmile233/SurvivalGame/releases/tag/v1.0.0> 的
   `SurvivalGame-web-1.0.0.zip`（9,433,571 字节，sha256 `dccc7bf650f9e54508fbe03f93c90bebbf1398a0b61d0680bbe3635149a2e799`）。
   解压后双击 `start-local.bat`（Windows）或运行 `sh start-local.sh`，打开 <http://localhost:8000>。
   **不要双击 `index.html`**：WebGL 不能通过 `file://` 加载。
@@ -61,8 +62,9 @@ python serve.py 8000
 需要 Python 3 或 Node；**直接双击 `index.html` 会失败**（`file://` 无法加载 Unity WebGL）。
 首次加载约 9 MB，页面有进度条。
 
-> **v1.2 版本**：仓库内 `web/unity` 已是 1.2.0（protocol 3），本地按上面的方式启动即可直接玩；
-> `node tools/check-version.mjs` 校验 H5 `?v=` 与构建版本一致。线上仍是 1.0.0，部署/Release 待放行。
+> **v1.2 版本**：仓库内 `web/unity` 已是 1.2.1（protocol 3），本地按上面的方式启动即可直接玩；
+> `node tools/check-version.mjs` 校验 H5 `?v=` 与构建版本一致。线上 v1.0.0 已被 1.2.1 覆盖（Netlify），
+> Release 仍是 v1.0.0（回滚用）。
 
 > **改了 H5 看不到变化？** 浏览器可能缓存了旧的 `app.js`/`style.css`。
 > 用无痕窗口或 `Ctrl+F5` 硬刷新；开发时请用 `serve.py`（`start-local` 默认）——它发 `no-store`。
@@ -98,8 +100,8 @@ docs/              文档地图、规范、ticket、执行记录、验收、evid
 ## 需求对照（17 条）
 
 状态：已实现 = 功能可用且有自测；已验收 = 有日期/设备/证据；未测 = 还没做。
-下表证据属于**线上 1.0.0**；v1.2（Unity 菜单/状态机 + H5 薄壳，`web/unity` 1.2.0）证据见
-`docs/evidence/m6-refactor/`，**尚未部署/发 Release**。
+下表证据属于**线上 1.0.0 时期**；v1.2（Unity 菜单/状态机 + H5 薄壳，`web/unity` 1.2.1）证据见
+`docs/evidence/m6-refactor/`，已部署 Netlify、**未发 Release**。
 
 | # | 需求 | 状态 | 日期 / 设备 | 证据 |
 |---|---|---|---|---|

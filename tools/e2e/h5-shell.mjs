@@ -121,6 +121,7 @@ async function runCore(browser, baseUrl) {
   const shell = await appState(page);
   assert(shell.page === 'Shell', 'expected Shell after ready, got ' + shell.page);
   assert((await text(page, '#overlay-text')).includes('游戏已就绪'), 'overlay must say 游戏已就绪');
+  assert((await text(page, '#overlay-text')).includes('开始游戏'), 'overlay must tell the player to click 开始游戏');
   assert(await page.$eval('#btn-fullscreen', (el) => el.hidden), 'fullscreen button must be hidden in Shell');
   assert(!(await page.$eval('#nickname', (el) => el.disabled)), 'nickname must be editable in Shell');
   await saveScreenshot(page, 'h5-shell-shell-1280.png');

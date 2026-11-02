@@ -21,7 +21,7 @@
           "difficultyChanged"
         ]
       },
-      "at": 1793621796930
+      "at": 1793625094472
     },
     {
       "type": "stateChange",
@@ -29,7 +29,7 @@
         "protocol": 3,
         "state": "playing"
       },
-      "at": 1793621800472
+      "at": 1793625097993
     },
     {
       "type": "stateChange",
@@ -37,7 +37,7 @@
         "protocol": 3,
         "state": "paused"
       },
-      "at": 1793621800496
+      "at": 1793625098021
     },
     {
       "type": "stateChange",
@@ -45,7 +45,7 @@
         "protocol": 3,
         "state": "playing"
       },
-      "at": 1793621805062
+      "at": 1793625102591
     },
     {
       "type": "stateChange",
@@ -53,7 +53,7 @@
         "protocol": 3,
         "state": "paused"
       },
-      "at": 1793621805083
+      "at": 1793625102613
     }
   ],
   "consoleLines": [
@@ -61,8 +61,8 @@
     "You can reduce startup time if you configure your web server to add \"Content-Encoding: br\" response header when serving \"Build/unity.framework.js.unityweb\" file.",
     "[UnityCache] Response is served without Content-Length header. Please reconfigure server to include valid Content-Length for better download performance.",
     "[UnityCache] Response is served without Content-Length header. Please reconfigure server to include valid Content-Length for better download performance.",
-    "You can reduce startup time if you configure your web server to add \"Content-Encoding: br\" response header when serving \"Build/unity.data.unityweb\" file.",
     "You can reduce startup time if you configure your web server to add \"Content-Encoding: br\" response header when serving \"Build/unity.wasm.unityweb\" file.",
+    "You can reduce startup time if you configure your web server to add \"Content-Encoding: br\" response header when serving \"Build/unity.data.unityweb\" file.",
     "[UnityCache] 'http://127.0.0.1:8125/unity/Build/unity.data.unityweb' successfully downloaded and stored in the browser cache",
     "[UnityMemory] Configuration Parameters - Can be set up in boot.config\n",
     "    \"memorysetup-allocator-temp-initial-block-size-main=262144\"\n",
@@ -111,7 +111,7 @@
     "Input Manager initialize...\n",
     "Input System initialize...\n",
     "UnloadTime: 1.500000 ms\n",
-    "Audio context resumed after 0.186 seconds.",
+    "Audio context resumed after 0.175 seconds.",
     "[Bridge] subscribed to GameManager (state=Menu, protocol=3)\n",
     "[GameManager] state=Starting return=Menu reset=True\n",
     "[EnemySpawner] begin difficulty=Normal interval=1.500s limit=20\n",

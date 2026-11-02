@@ -1,6 +1,6 @@
 # 验收记录（living document）
 
-> 最后更新：2026-11-02（v1.2 D 收尾：最终证据重跑 + 1.2.0 入库，见 §3.7；v1.2 第一阶段：Unity 菜单/状态机 + 协议 v3 骨架，见 §3.5；
+> 最后更新：2026-11-02（v1.2 D 收尾：1.2.1 证据与 Netlify 部署，见 §3.7；v1.2 第一阶段：Unity 菜单/状态机 + 协议 v3 骨架，见 §3.5；
 > 2026-11-01：L1.1 全屏口径见 §3.4；M6 第 2 步三档难度 + H5 主界面 + `ReturnToMenu` 见 §3.3；
 > 此前 M5-3：无水印 1.0.0 构建 `2026-10-31T14:53:47Z`、M4.7 摇杆/响应式/全屏验收、无头 E2E、build 入库 `f19fcb79`、
 > Release `v1.0.0`、干净克隆通过；人工/真机仍待测）
@@ -220,15 +220,18 @@
 - **资源**：`NotoSansSC-UI-Subset-SDF.asset`（2.1MB，无引用）已按用户确认删除（C-26）；
   `SampleScene.unity` **保留**（模板默认场景）。`web/unity` 入库/部署/Release 等用户放行。
 
-## 3.7 v1.2 D 收尾（2026-11-02：UI 调整 + 最终证据 + 1.2.0 入库）
+## 3.7 v1.2 D 收尾（2026-11-02：UI 调整 + 1.2.1 部署）
 
-> 构建 `productVersion 1.2.0`，`builtAt 2026-11-02T12:10:44Z`（本地 20:10；H5 布局 + 暂停竖排后重建）；
-> 已入库 `web/unity`，`node tools/check-version.mjs` PASS。最终 build 提交见 `jj log`。
+> 构建 `productVersion 1.2.1`，`builtAt 2026-11-02T13:05:32Z`（本地 21:05；H5 提示文案补丁后重建）；
+> 已入库 `web/unity`，`node tools/check-version.mjs` PASS。线上 Netlify 已部署 1.2.1
+> （deploy `6ae88c99dbecd388da02630a`）；1.2.0 的短暂部署已被覆盖。最终提交见 `jj log`。
 
 - **H5 布局（D 调整）**：桌面与手机统一为**画布在上、昵称/成绩卡在下**；删除“网页只负责…”等职责说明，
-  页脚只保留小号 `v1.2.0`；Shell 遮罩仍挡画布，开始=进入，不自动进游戏；全屏入口只在 Entered 后出现。
+  页脚只保留小号版本号；Shell 遮罩仍挡画布，不自动进游戏；全屏入口只在 Entered 后出现。
+- **Shell 提示（1.2.1 补丁）**：遮罩文案改为「游戏已就绪 · 点击下方「开始游戏」进入」，
+  避免玩家误以为已经进游戏。
 - **暂停菜单（D 调整）**：继续 / 重新开始 / 返回菜单改为**竖排居中**；结算面板仍横排。
-- **H5 薄壳**（`h5-shell` core + viewports，20:30–20:31）：协议 3 / 昵称 / 进入 / 难度偏好 / 结算 / 最高分 / 迁移 / 全屏 PASS；
+- **H5 薄壳**（`h5-shell` core + viewports，21:06–21:07）：协议 3 / 昵称 / 进入 / 难度偏好 / 结算 / 最高分 / 迁移 / 全屏 PASS；
   6 视口 320×568 / 390×844 / 844×390 / 768×1024 / 1280×720 / 1920×1080 全 ok（新布局截图已覆盖）。
   - 移动视口（width < 900）加 `hasTouch: true`，操作提示显示「拖动屏幕移动 · 点画面内暂停」的手机文案；
     1280/1920 仍是键盘文案。
@@ -236,19 +239,29 @@
     证据 `h5-shell-390x844-gameover-real.png`；其余视口的 GameOver 是注入态，文件名带
     `-gameover-layout-only.png`，不代表真实结算（1280 真实结算见 `h5-shell-gameover-1280.png`）。
   - 桌面 1280×720 下方卡片底边 702px（视口 720），一屏可见，无需滚动。
-- **薄壳主流程**（`smoke`，20:12，9/9 PASS）：Shell 遮罩 / 只发一次 EnterGame / 画布菜单开局 / Esc 暂停→继续 /
+- **薄壳主流程**（`smoke`，21:07，9/9 PASS）：Shell 遮罩 / 只发一次 EnterGame / 画布菜单开局 / Esc 暂停→继续 /
   短局结算「普通 265」/ 再来一局 / 暂停返回菜单 / 刷新保留最高分与昵称、最近一局清空；console 0 未预期 error。
-- **交付页 40 只**（`perf.mjs`，20:12–20:14）：capAt 49.44s，稳态 **165 FPS / p95 7ms / p99 7ms / alloc 29.4KB/s**；
+- **交付页 40 只**（`perf.mjs`，21:07–21:09）：capAt 49.45s，稳态 **165 FPS / p95 7ms / alloc 29.4KB/s**；
   证据 `docs/evidence/perf-local-chrome-desktop-cap40.json`。
-- **Standalone**（`web/unity/index.html`，20:14–20:18）：
+- **Standalone**（`web/unity/index.html`，21:09–21:12）：
   - flow 1280×720：16 事件，hard 短局 232（`standalone-flow-events.json`、`standalone-flow-v1.2-*.png`）；
   - mobile 390×844：走 640×360 参考分支（scale 0.609375），16 事件，hard 232；
   - viewports：6 视口 menu / countdown / **paused（竖排）** / result 截图重拍；移动视口带触摸文案；
   - focus：原生 blur 与 visibilitychange 都保持 Paused；Starting 中失焦回 Menu，Paused 继续倒计时中失焦回 Paused；
-  - perf 40：**165 FPS / p95 7ms / alloc 29.9KB/s / capAt 49.44s**（`perf-40.json`）。
-- **版本一致性**：`web/index.html` 5 处 `?v=1.2.0` == `web/unity/build-info.json.productVersion`；`check-version` PASS。
-- **最终产物**（总 **9,653,885 B**）：wasm 7,002,319 / data 2,438,114 / framework 75,669 / loader 117,894。
-- **仍未做**：部署、GitHub Release、1.2.0 干净克隆复验；真机 / DPR / 全屏语义见 §4。
+  - perf 40：**165 FPS / p95 7ms / alloc 30.0KB/s / capAt 49.49s**（`perf-40.json`）。
+- **版本一致性**：`web/index.html` 5 处 `?v=1.2.1` == `web/unity/build-info.json.productVersion`；`check-version` PASS。
+- **最终产物**（总 **9,651,481 B**）：wasm 7,002,319 / data 2,435,710 / framework 75,669 / loader 117,894。
+- **线上核对（Netlify deploy `6ae88c99…`）**：
+  - `build-info.json` = **1.2.1** / `2026-11-02T13:05:32Z`；`?v=1.2.1`（5 处）。
+  - **完整 smoke（headed 真 GPU，无痕上下文）9/9 PASS**：加载 → 昵称 → 进入 → 菜单开局 → Esc 暂停/继续 →
+    短局结算「普通 265」→ 再来一局 → 返回菜单 → 刷新保留；console **0 未预期 error**
+    （`smoke-online-chrome-desktop-summary.json`）。
+  - 单次加载探针：桌面 34s、手机 390×844 86s 到 ready 并进 Entered；手机 coarse pointer、手机操作文案、
+    `v1.2.1`；0 console error；手机证据 `online-1.2.1-mobile-390x844-*.png`。
+  - 说明：无头 SwiftShader 在代理下多次遇到 wasm `ERR_CONNECTION_CLOSED`，headed 真 GPU 通过；
+    wasm 代理校验 HTTP 200 / 7,002,319 B / sha256 与本地一致。
+  - 回滚：Netlify 上一部署 `6ae88855…`（1.2.0）或 Release v1.0.0。
+- **仍未做**：GitHub Release（保留 v1.0.0 作回滚）、1.2.1 干净克隆复验、国内托管；真机 / DPR / 全屏语义见 §4。
 
 ## 4. 未关闭项
 
@@ -267,16 +280,17 @@
    游戏中（Playing/Paused）全屏不显示网页控件（L1.1）。这些不影响功能链路，但人工验收时要按此口径检查。
 9. **L1 全屏边界**：无头 Chrome 的 `Esc` 不退出全屏却会传给 Unity 触发暂停；有头浏览器/真机尚未确认
    `Esc` 是否由浏览器消费。若真机上出现「按 Esc 退出全屏后游戏被暂停」，记录后另行决定是否在 H5 捕获阶段拦截。
-10. **v1.2 交付未完成**：1.2.0 已入 `web/unity`（wip），但**未部署、未发 Release、未做 1.2.0 干净克隆复验**；
-    线上仍是 1.0.0。真机/DPR/全屏语义仍待用户设备验证（见 §2、§4.3、`docs/遗留问题.md`）。
+10. **v1.2 交付未完成**：1.2.1 已入 `web/unity` 并部署 Netlify（deploy `6ae88c99…`），但
+    **未发 GitHub Release、未做 1.2.1 干净克隆复验**；`main` 未前移。真机/DPR/全屏语义仍待用户设备验证
+    （见 §2、§4.3、`docs/遗留问题.md`）。
 
 ## 5. 结论
 
 - 17 条中 1–4、6–15、17 已验收；第 5 条功能已实现但**人工 60 秒未测**；第 16 条视口级已验收、**真机未测**。
-- 线上 / Release 仍是 **1.0.0**（`2026-10-31T14:53:47Z`，无水印）：已入 `main`（build `f19fcb79`）、
-  发布 Release `v1.0.0`、部署到 Netlify（deploy `6ae6d3d1…`，Chrome 无头 smoke PASS）；干净克隆可运行。
-- **v1.2 1.2.0**（`2026-11-02T11:02:31Z`）已入 `web/unity`（wip 的 `build:` 提交），`check-version` PASS；
-  **未部署、未发 Release、未做 1.2.0 干净克隆复验**，`main` 未前移。
+- **线上已更新为 v1.2.1**（Netlify deploy `6ae88c99…`，`2026-11-02T13:05:32Z`）；
+  `main` 仍停在 1.0.0 检查点（`b788de03`），v1.2.1 只在 `wip`。
+- **Release 仍是 v1.0.0**（`2026-10-31T14:53:47Z`，无水印，build `f19fcb79`）：保留作回滚/离线包；
+  **1.2.1 未发 Release、未做干净克隆复验**。
 - **国内托管未做**，国内在线链接只能标「待定」；Netlify 国内访问慢/不稳定，仅作海外备份。
 - **不能宣称 M4/M5 收口**：人工 60 秒、5 局基线、Honor 90 Pro / iPhone 真机仍未做。
 - M5-5 人工门禁在最终构建上执行后，把日期/设备/结果补进本文件。

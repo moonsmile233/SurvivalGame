@@ -1,16 +1,17 @@
 # SurvivalGame — 2D 生存挑战（Unity WebGL + H5）
 
-> 文档版本：2026-10-31T21:30+08 · 作者：策划 · 改前必须从磁盘重读；上下文旧副本作废。
+> 文档版本：2026-11-02T20:50+08 · 作者：策划 · 改前必须从磁盘重读；上下文旧副本作废。
 > 协作与存档规则见 `docs/协作协议.md`（单一写者、写前重读、每步 checkpoint）。
 
 ## 一句话
-玩家在 2D 场景中移动、躲避追踪敌人，存活 60 秒获胜。Unity 构建 WebGL，由 H5 页面承载，H5 显示并保存最高分。
+玩家在 2D 场景中移动、躲避追踪敌人，存活 60 秒获胜。Unity 构建 WebGL，是完整游戏（菜单/难度/暂停/结算）；H5 是薄壳（昵称/进入/最高分）。
 
 ## 文档索引
 - **文档地图（先看这页）：`docs/文档地图.md`** — 权威顺序、各文档 owner/状态
 - **实现总览（当前事实）：`docs/实现总览.md`** — 规则/状态/输入/敌人/UI/构建/验收一页式说明
 - 完整设计规范：`docs/项目规范.md`（原始设计 + 背景；部分内容已被实现总览取代）
-- 当前任务：**M5 交付（`docs/tickets/M5.md`）**；M0~M4 主体已完成，M4 执行记录见 `docs/M4-执行记录.md`
+- 当前状态：**v1.2 已收口（1.2.1 构建入库 `web/unity`，已部署 Netlify）**；M0~M6 主体已完成，M5 ticket 为历史。
+  优化记录 `docs/优化记录-2026-11-02.md`；交接 `docs/交接提示词-2026-11-02-H5薄壳.md`
 - 通信协议：`docs/bridge-protocol.md`（实现契约，改代码必须同步）
 - **执行前先看：`docs/遗留问题.md`**（输入后端、构建产物、字体与测试环境注意事项）
 - **玩法增强（M4 P1/P2）：`docs/玩法增强.md`**
@@ -43,33 +44,23 @@
   新站点默认「需登录访问」，必须在后台 **Project configuration → General → Visitor access → Visibility** 改成 **Public**
 - npm 默认缓存 `D:\nodejs\node_cache` 当前用户不可写，`npx` 需带 `npm_config_cache="D:/agent使用学习/浏览器相关/.npm-cache"`
 
-## 当前里程碑：M5 交付（2026-10-31 用户决策：M5 交付优先）
+## 当前状态：v1.2 游戏优先已收口（2026-11-02）
 
-M0（打通链路）、M1（核心玩法）、M2（表现层）、M3（H5 闭环）、M4 主体（移动端/大地图/相机/敌人手感/键盘暂停）
-均已完成。M4 已落地：
+M0~M6 主体、v1.2 重构（Unity 菜单/状态机/协议 v3 + H5 薄壳）已完成；最终构建 **1.2.1** 已入库 `web/unity`
+（`builtAt 2026-11-02T13:05:32Z`，9,651,481 B），`?v=1.2.1`，`tools/check-version.mjs` PASS；
+已部署 Netlify production（deploy `6ae88c99…`）。v1.0.0 Release 保留回滚。
 
-- 移动端 P0：锚点相对触控、HUD 参考分辨率切换、结算只保留 H5 一套、失焦暂停 + 3-2-1、DPR 上限 2。
-- **B0：大地图 36×20 + CameraFollow + 玩家边界改为地图 + 视野外生成/回收**。
-- **B1：拥挤修复（站位环 + 两两位置修正）、速度扰动/压力曲线、离屏 3 秒回收、桌面 `Esc`/`P` 暂停**；
-  B1 构建已部署并线上 smoke 通过；§1.7 键盘暂停构建本地 E2E 通过、尚未部署。
-- `tools/e2e` Playwright smoke 已有（线上 Chrome/Edge/Firefox PASS）。
-
-**当前主线 = `docs/tickets/M5.md`**：⓪ **M4.6 P0**（失焦保持暂停、玩家继续后 3-2-1 再恢复、结算卡片完整可见，
-见 `docs/tickets/M4.6-暂停恢复与结算呈现.md`）+ **M4.7**（浮动摇杆可视化，只加视觉不改逻辑）+
-**M4.5 §1 H5 全屏（必做）**（M4.7 后、最终构建前，时间盒半天）→
-① 推齐 origin + 部署（已做 §1.7 保险版本）；
-② 国内托管（CloudBase 先试，用户决定放到最后）+ 手机真机；③ 最终构建入库 + Release zip + 干净克隆验证；
-④ README/验收/交付记录；⑤ 人工 60 秒胜利 + 5 局基线。
-
-- 真机、人工 60 秒、5 局基线、国内托管仍未完成；**不要宣称 M4 收口**，以 M5 出口为准。
-- M4.5 决策（2026-10-31）：§2 暂停菜单、§3 主菜单+难度**不阻塞交付**；§1 H5 全屏仅在 M5-1 通过后可选（2 小时盒）。
-- 交付报告与 Release zip 属 M5-3/M5-4，按 `M5.md` 做，不要提前。
+- Unity 拥有主菜单/难度/开局/暂停/重开/返回/结算与统一 3-2-1；H5 只做昵称/进入/数据面板/localStorage/响应式/全屏入口。
+- 有效测试：`tools/e2e/standalone-menu|focus|perf.mjs` + `h5-shell.mjs` + `smoke.mjs`；旧 v1.1 脚本在 `tools/e2e/legacy/`。
+- 优化记录：`docs/优化记录-2026-11-02.md`；交接：`docs/交接提示词-2026-11-02-H5薄壳.md`。
+- **仍未完成**：人工 60 秒胜利、5 局基线、Honor 90 Pro / iPhone 真机、DPR>1 实测、全屏真机语义、国内托管；
+  **不要宣称完全收口**。
 
 ## 硬约束
 1. **一个状态一个作者**：静态结构（相机、Canvas、玩家、生成器）放在场景里；动态物体（敌人、特效、飘字）运行时生成。禁止两边各生成一份。
 2. **场景可重建**：`Assets/Editor/SceneSetup.cs` 必须能一键生成 `Assets/Scenes/Game.unity`；禁止只靠手工拖拽。
 3. **跨边界只传 JSON 字符串**；`SendMessage` 一次只能传一个 string 参数。
-4. **游戏内 UI 用中文 + 数字**，必须走 TMP + 项目内置 CJK 子集字体（`Assets/Fonts/NotoSansSC-UI-Subset.otf` → TMP Font Asset）；禁止用 `LegacyRuntime.ttf` / `UnityEngine.UI.Text` 画中文。昵称仍只在 H5 渲染。
+4. **游戏内 UI 用中文 + 数字**，必须走 TMP + 项目内置 CJK 子集字体（`Assets/Fonts/NotoSansSC-UI-Subset.otf` → TMP Font Asset，71 码位）；改文案必须从 `UiStrings.AllCharacters` 重生成 `ui-chars.txt` 并重烤；禁止用 `LegacyRuntime.ttf` / `UnityEngine.UI.Text` 画中文。昵称仍只在 H5 渲染。
 5. **不引入第三方包**，不用 URP，不改模板，不加新 Input System。
 6. 每完成一个可运行节点就构建一次 WebGL，不要攒到最后。
 7. 环境事实与本文件冲突时，以本文件为准。
@@ -125,10 +116,10 @@ MCP 连不上时优先走文件 + batchmode；仍不行就停，不要猜着改 
 预览：
 
 ```bash
-cd "D:/unityFile/SurvivalGame/web" && python -m http.server 8000
+cd "D:/unityFile/SurvivalGame/web" && python serve.py 8000
 ```
 
-打开 http://localhost:8000
+打开 http://localhost:8000（`serve.py` 带 `Cache-Control: no-store`，避免 H5 改了仍看旧缓存；监听 0.0.0.0，手机可用局域网 IP）
 
 ## M0 完成后的目录形态
 
@@ -173,7 +164,7 @@ origin：`https://github.com/moonsmile233/SurvivalGame.git`（已确认）。
 4. 失败/半成品用 `jj undo` / `jj restore` 回退；不要 force push。
 5. 推送前 `jj git fetch`；远端分叉就停，报告，禁止 `--force`。
 6. 首次 push 会弹 Git Credential Manager 授权；之后凭据由系统记住，不需要重复登录。
-7. M5 之前 `web/unity/` 保持 ignore；M5 最终构建单独一个 `build:` 提交，并同步 GitHub Release。
+7. v1.2 起 `web/unity/` 已入库；每次 Unity 重建在同一个 `build:` 提交里更新产物 + `build-info.json`；H5 静态改动不需要重建，改完跑 `node tools/check-version.mjs`；发布时同步 GitHub Release。
 
 ## 汇报格式（每个 checkpoint；里程碑另附完整验收清单）
 

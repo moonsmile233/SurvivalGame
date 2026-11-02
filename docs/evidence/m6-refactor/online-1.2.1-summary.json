@@ -1,0 +1,52 @@
+{
+  "url": "https://survivalgame-demo.netlify.app",
+  "provider": "Netlify",
+  "deployId": "6ae88c99dbecd388da02630a",
+  "deployIdPrevious_1_2_0": "6ae8885541dfb88e2612ea70",
+  "buildInfo": {
+    "productVersion": "1.2.1",
+    "builtAt": "2026-11-02T13:05:32Z"
+  },
+  "h5VersionQuery": "?v=1.2.1 (5 places)",
+  "smokeDesktop": {
+    "mode": "headed (real GPU), fresh browser context",
+    "finishedAt": "2026-11-02T13:35:49.748Z",
+    "stepsPassed": 9,
+    "best": 265,
+    "lastRound": "普通 265",
+    "consoleErrors": []
+  },
+  "probe": {
+    "desktop1280x720": {
+      "ready": true,
+      "readySeconds": 34,
+      "pageAfterStart": "Entered",
+      "overlay": "游戏已就绪 · 点击下方「开始游戏」进入",
+      "version": "v1.2.1",
+      "consoleErrors": 0
+    },
+    "mobile390x844": {
+      "ready": true,
+      "readySeconds": 86,
+      "pageAfterStart": "Entered",
+      "overlay": "游戏已就绪 · 点击下方「开始游戏」进入",
+      "version": "v1.2.1",
+      "coarsePointer": true,
+      "consoleErrors": 0,
+      "screenshots": [
+        "online-1.2.1-mobile-390x844-shell.png",
+        "online-1.2.1-mobile-390x844-entered.png"
+      ]
+    }
+  },
+  "notes": [
+    "无头 SwiftShader 在代理下多次遇到 wasm ERR_CONNECTION_CLOSED；headed 真实 GPU 的完整 smoke 9/9 通过。",
+    "wasm 直连代理校验：HTTP 200 / 7,002,319 B / sha256 b6507dff… 与本地一致。",
+    "线上页面右下角有 Netlify 免费版徽标，不是本项目 UI。"
+  ],
+  "rollback": [
+    "Netlify: Deploys → 选中 6ae8885541dfb88e2612ea70（1.2.0）或更早的 1.0.0 deploy → Publish deploy",
+    "或从 Release v1.0.0 / build f19fcb79 的 web/ 重新部署"
+  ],
+  "domesticHosting": "待定（CloudBase 未做）"
+}
