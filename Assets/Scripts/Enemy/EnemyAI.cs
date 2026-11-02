@@ -83,8 +83,6 @@ namespace Survival.Enemy
         /// <summary>后面有人顶着我的强度（0..1）。</summary>
         public float BehindBlock { get; private set; }
 
-        public float DistanceToPlayer { get; private set; }
-
         public void Initialize(
             GameConfig config,
             EnemyDefinition definition,
@@ -166,7 +164,6 @@ namespace Survival.Enemy
                 direction = _lastDirection;
             }
 
-            DistanceToPlayer = distance;
             _excessDistance = Mathf.Max(0f, distance - _stopRadius);
             _isAtFront = distance - _stopRadius <= FrontTolerance;
 

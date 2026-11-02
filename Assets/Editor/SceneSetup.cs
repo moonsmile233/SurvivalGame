@@ -355,6 +355,7 @@ public static class SceneSetup
             TextAlignmentOptions.Center, true);
         SetAnchored(pauseTitle.rectTransform, new Vector2(0.5f, 0.68f), Center, Vector2.zero,
             new Vector2(700f, 90f));
+        // 标题是静态文案；PausePanel 不持有引用（不需要运行时改字）。
 
         // 三按钮同一水平带，宽度按百分比切分：640×360 参考下约 187 单位，仍可点（≥44 CSS px）。
         Button resumeButton = CreateButtonBand("ResumeButton", pausePanel, 0.055f, 0.348f, 0.30f, 84f,
@@ -436,7 +437,6 @@ public static class SceneSetup
         SetObjectReference(pauseController, "_resumeButton", resumeButton);
         SetObjectReference(pauseController, "_restartButton", pauseRestartButton);
         SetObjectReference(pauseController, "_menuButton", pauseMenuButton);
-        SetObjectReference(pauseController, "_titleText", pauseTitle);
 
         var resultController = canvasGo.AddComponent<ResultPanel>();
         SetObjectReference(resultController, "_gameManager", manager);

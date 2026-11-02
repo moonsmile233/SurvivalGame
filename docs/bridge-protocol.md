@@ -19,9 +19,9 @@
 
 | 方法 | 参数 | 状态迁移 | 说明 |
 |---|---|---|---|
-| `EnterGame` | JSON `{"nickname":"...","lastDifficulty":"easy\|normal\|hard"}`（字段均可空） | 无（Unity 默认在 Menu） | 进入游戏；昵称只保存不渲染；`lastDifficulty` 只作菜单初始选中，**不自动开局**；非法/缺省 → `normal`；`Menu` 下幂等 |
+| `EnterGame` | JSON `{"nickname":"...","lastDifficulty":"easy\|normal\|hard"}`（字段均可空；旧页可发 `difficulty` 别名） | 无（Unity 默认在 Menu） | 进入游戏；昵称只保存不渲染；难度只作菜单初始选中，**不自动开局**；解析顺序 `lastDifficulty ?? difficulty ?? normal`，非法/缺省 → `normal`；`Menu` 下幂等 |
 | `SetPausedByVisibility` | `"true"` / `"false"` | `Playing → Paused`；`Starting → 来源态` | 失焦兜底（环境信号，不是局内操作）。`true` 暂停/取消倒计时；`false` **直接忽略**（Unity 没有标记；H5 自己按最后发送值去重），保持 Paused、不自动恢复（M4.6）。与 Unity 原生失焦幂等 |
-| `StartGame`（v2 旧） | v2 JSON / 纯昵称 | 无 | **按 `EnterGame` 处理**，不自动开局；打一次 warning。旧 H5 只算过渡 |
+| `StartGame`（v2 旧） | v2 JSON / 纯昵称 | 无 | **按 `EnterGame` 处理**，不自动开局；v2 的 `difficulty` 当 `lastDifficulty`（旧页选档仍生效）；打一次 warning。旧 H5 只算过渡 |
 | `PauseGame` / `ResumeGame` / `RestartGame` / `ReturnToMenu`（v2 旧） | `""` | 无 | **no-op**，一次性 warning；v1.2 起局内操作全部在 Unity UI |
 
 状态守卫（由 `GameManager` 保证，桥接层只转发）：

@@ -18,11 +18,6 @@ namespace Survival.UI
 
         public const string VictoryTitle = "胜利";
         public const string DefeatTitle = "失败";
-        public const string FinalScoreLabel = "得分";
-        // 结算明细里是分数不是秒数；H5 那句「存活 15.7 秒」是时长，避免两者混淆（M4 第 1.3 节）。
-        public const string SurvivalLabel = "存活分";
-        public const string KillsLabel = "击杀";
-        public const string WinBonusLabel = "胜利奖励";
         public const string RestartButton = "重新开始";
 
         // ---------- v1.2 游戏优先：Unity 主菜单 / 暂停菜单 / 结算（2026-11-01） ----------
@@ -56,8 +51,7 @@ namespace Survival.UI
         /// <summary>本项目用到的全部字符（供字体子集自检，必须都包含在 ui-chars.txt 中）。</summary>
         public const string AllCharacters =
             HealthLabel + TimeLabel + ScoreLabel + PauseButton + PausedTitle + ResumeButton +
-            VictoryTitle + DefeatTitle + FinalScoreLabel + SurvivalLabel + KillsLabel +
-            WinBonusLabel + RestartButton +
+            VictoryTitle + DefeatTitle + RestartButton +
             MenuTitle + MenuSubtitle + StartGameButton +
             DifficultyEasy + DifficultyNormal + DifficultyHard +
             TagEasy + TagNormal + TagHard +

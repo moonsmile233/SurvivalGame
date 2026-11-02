@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using Survival.Core;
 using UnityEngine;
@@ -26,7 +27,9 @@ public class WebGLBridge : MonoBehaviour
     private string _nickname = string.Empty;
     private bool _readySent;
     private bool _reported;
-    private bool _legacyWarned;
+
+    // 旧指令每个方法只告警一次（旧页可能反复发 StartGame/PauseGame；一个 bool 会漏报后面的方法）。
+    private readonly HashSet<string> _legacyWarned = new HashSet<string>(StringComparer.Ordinal);
 
     // EnterGame 回填 lastDifficulty 时会触发 GameManager.OnMenuDifficultyChanged；
     // 这次变化来自 H5 自己，不能再发 onDifficultyChanged 回去（避免循环）。
@@ -185,6 +188,7 @@ public class WebGLBridge : MonoBehaviour
     /// <summary>
     /// 进入游戏（H5「开始游戏」）。参数 JSON `{"nickname":"...","lastDifficulty":"easy|normal|hard"}`
     /// 或纯昵称字符串（v1 写法）。昵称只保存不渲染；lastDifficulty 只作菜单初始选中，不自动开局。
+    /// 旧页 v2 的 `difficulty` 作为 lastDifficulty 的别名兼容（解析顺序 lastDifficulty ?? difficulty ?? normal）。
     /// H5 回填难度时不发 onDifficultyChanged 回声（避免循环）。
     /// </summary>
     public void EnterGame(string payload)
@@ -240,7 +244,7 @@ public class WebGLBridge : MonoBehaviour
 
     /// <summary>
     /// 失焦/标签页隐藏（环境信号，不是局内操作）：Playing → Paused；Starting → 取消倒计时回来源态。
-    /// 切回 `"false"` 只清标记，保持 Paused、不自动恢复（M4.6）。
+    /// 切回 `"false"` 直接忽略（Unity 不存标记；H5 自己按最后发送值去重），保持 Paused、不自动恢复（M4.6）。
     /// 与 <see cref="ApplicationFocusPause"/> 幂等：重复 true 由 GameManager 状态守卫吸收。
     /// </summary>
     public void SetPausedByVisibility(string payload)
@@ -268,12 +272,11 @@ public class WebGLBridge : MonoBehaviour
 
     private void WarnLegacy(string method)
     {
-        if (_legacyWarned)
+        if (!_legacyWarned.Add(method))
         {
             return;
         }
 
-        _legacyWarned = true;
         Debug.LogWarning($"[Bridge] {method}：v2 旧指令已废弃，v1.2 由 Unity 内部处理；请刷新到 v1.2 H5");
     }
 
@@ -312,10 +315,16 @@ public class WebGLBridge : MonoBehaviour
                             nickname = message.nickname;
                         }
 
-                        if (!string.IsNullOrEmpty(message.lastDifficulty) &&
-                            !TryParseDifficulty(message.lastDifficulty, out difficulty))
+                        // v3 用 lastDifficulty；旧页 v2 发的是 difficulty。两者都缺省/为空时按 normal。
+                        string requested = message.lastDifficulty;
+                        if (string.IsNullOrEmpty(requested))
                         {
-                            Debug.LogWarning($"[Bridge] 未知 lastDifficulty '{message.lastDifficulty}'，按 normal 处理");
+                            requested = message.difficulty;
+                        }
+
+                        if (!string.IsNullOrEmpty(requested) && !TryParseDifficulty(requested, out difficulty))
+                        {
+                            Debug.LogWarning($"[Bridge] 未知难度 '{requested}'，按 normal 处理");
                             difficulty = Difficulty.Normal;
                         }
                     }
@@ -332,10 +341,31 @@ public class WebGLBridge : MonoBehaviour
         }
 
         nickname = nickname.Trim();
-        if (nickname.Length > MaxNicknameLength)
+        nickname = TruncateCodePoints(nickname, MaxNicknameLength);
+    }
+
+    /// <summary>
+    /// 按 Unicode 码点截断（不劈开代理对）。H5 已按 16 码点截过；这里兜住旧页/手工调用发来的长串。
+    /// </summary>
+    private static string TruncateCodePoints(string value, int maxCodePoints)
+    {
+        if (string.IsNullOrEmpty(value) || maxCodePoints <= 0)
         {
-            nickname = nickname.Substring(0, MaxNicknameLength);
+            return string.Empty;
         }
+
+        int index = 0;
+        int count = 0;
+        while (index < value.Length && count < maxCodePoints)
+        {
+            bool surrogatePair = char.IsHighSurrogate(value[index])
+                                 && index + 1 < value.Length
+                                 && char.IsLowSurrogate(value[index + 1]);
+            index += surrogatePair ? 2 : 1;
+            count++;
+        }
+
+        return index >= value.Length ? value : value.Substring(0, index);
     }
 
     /// <summary>线格式 → 枚举。只认小写三值；其它一律 false（调用方回落 normal）。</summary>
@@ -406,7 +436,8 @@ public class WebGLBridge : MonoBehaviour
     private sealed class EnterGameMessage
     {
         public string nickname;
-        public string lastDifficulty;
+        public string lastDifficulty; // v3
+        public string difficulty;     // v2 旧页别名（只读兼容）
     }
 
     [Serializable]

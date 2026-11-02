@@ -87,9 +87,11 @@ public static class FontAssetBuilder
             return false;
         }
 
-        if (!fontAsset.TryAddCharacters(characters, out string missing) && !string.IsNullOrEmpty(missing))
+        if (!fontAsset.TryAddCharacters(characters, out string missing))
         {
-            error = $"字体文件缺少字符，无法烘焙: {missing}";
+            error = string.IsNullOrEmpty(missing)
+                ? "TMP TryAddCharacters 失败（未返回缺字列表）"
+                : $"字体文件缺少字符，无法烘焙: {missing}";
             return false;
         }
 

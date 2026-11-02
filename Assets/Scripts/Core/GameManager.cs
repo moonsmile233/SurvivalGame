@@ -120,12 +120,6 @@ namespace Survival.Core
             }
         }
 
-        /// <summary>编辑器/自测入口：在 Play 之前调用即可恢复 M1 的自动开局行为。</summary>
-        public void SetAutoStart(bool enabled)
-        {
-            _autoStart = enabled;
-        }
-
         /// <summary>
         /// 设置菜单选中难度（H5 EnterGame 回填 / 菜单点卡）。只在值变化时触发
         /// <see cref="OnMenuDifficultyChanged"/>；Bridge 在回填时会抑制回声，避免与 H5 形成循环。
@@ -139,12 +133,6 @@ namespace Survival.Core
 
             MenuDifficulty = difficulty;
             OnMenuDifficultyChanged?.Invoke(difficulty);
-        }
-
-        /// <summary>编辑器/自动开局用：按普通档开局（走 3-2-1）。</summary>
-        public void StartGame()
-        {
-            StartGame(Difficulty.Normal);
         }
 
         /// <summary>
@@ -169,6 +157,7 @@ namespace Survival.Core
         /// 测试/压测专用：跳过 3-2-1 直接 ResetRound → Playing。
         /// 只给 PerfProbe 与编辑器自动化用；正常 UI 一律走 <see cref="StartGame(Difficulty)"/>，
         /// 否则会绕过“所有进 Playing 的路径都要 3-2-1”的验收口径（策划裁决 2026-11-01 B）。
+        /// **不修改 MenuDifficulty**：压测不经过菜单，不能把玩家代存的难度偏好写成 normal。
         /// </summary>
         public void StartGameImmediate(Difficulty difficulty)
         {
@@ -178,7 +167,6 @@ namespace Survival.Core
             }
 
             _config.SetActiveDifficulty(difficulty);
-            SetMenuDifficulty(difficulty);
             ValidateDifficultyProfile();
             LastRoundWon = false;
             ResetRound();
@@ -231,7 +219,7 @@ namespace Survival.Core
         /// <summary>
         /// 中止本局并回到 Menu。允许从 Playing / Paused / Result 进入；Starting 会先取消倒计时。
         /// **不结算、不发 onGameOver**——桥接层只在 Result 发结算，所以中止局不会写最高分。
-        /// 停在菜单时不能继续刷怪：ResetRound 内部的 BeginRound 会重新开跑，随后立刻 StopSpawning。
+        /// 停在菜单时不能继续刷怪：ResetRound(beginRound:false) 只清场，不调用 BeginRound。
         /// </summary>
         public void ReturnToMenu()
         {
@@ -245,10 +233,8 @@ namespace Survival.Core
                 return;
             }
 
-            Time.timeScale = 1f;
             _enemySpawner.StopSpawning();
-            ResetRound();
-            _enemySpawner.StopSpawning();
+            ResetRound(beginRound: false);
             LastRoundWon = false;
             SetState(GameState.Menu);
             Debug.Log("[GameManager] state=Menu (return to menu)");
@@ -335,7 +321,11 @@ namespace Survival.Core
             Debug.Log($"[GameManager] state=Playing difficulty={_config.ActiveDifficulty}");
         }
 
-        private void ResetRound()
+        /// <summary>
+        /// 清空本局数据并复位玩家。`beginRound: false` 只清场、不开始刷怪（返回菜单用），
+        /// 避免 BeginRound 的“begin difficulty”日志与瞬时刷怪窗口。
+        /// </summary>
+        private void ResetRound(bool beginRound = true)
         {
             Time.timeScale = 1f;
             _elapsed = 0f;
@@ -348,7 +338,15 @@ namespace Survival.Core
                 _playerController.ResetToStart();
             }
 
-            _enemySpawner.BeginRound();
+            if (beginRound)
+            {
+                _enemySpawner.BeginRound();
+            }
+            else
+            {
+                _enemySpawner.ClearEnemies();
+            }
+
             OnTimeChanged?.Invoke(RemainingTime);
         }
 

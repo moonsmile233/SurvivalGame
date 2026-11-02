@@ -143,7 +143,7 @@ PlayerHealth.OnDied          // ()
 ## 4. UI 层约定
 
 - **文案唯一出处** `UI/UiStrings.cs`；游戏内不允许出现散落的字符串字面量。
-- **字体**：TMP + `Assets/Fonts/NotoSansSC-UI-SDF.asset`（由 `ui-chars.txt` 裁的 75 字符，1024×1024 Static SDF，
+- **字体**：TMP + `Assets/Fonts/NotoSansSC-UI-SDF.asset`（由 `ui-chars.txt` 裁的 71 字符，1024×1024 Static SDF，
   Sampling 64 / Padding 8 / SDFAA）。v1.2 新增菜单/结算文案后，用 `tools/font-subset.py` 从完整 Noto Sans SC（OFL）
   重裁同名子集 OTF；完整字体不入库。
   - 禁止 legacy `Text` + `LegacyRuntime.ttf`（WebGL 下中文字体的坑）。

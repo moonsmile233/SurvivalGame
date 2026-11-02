@@ -21,7 +21,8 @@ Usage
 
 Source path used on 2026-11-01 (not committed):
   D:\\agent使用学习\\技术栈补充\\agent制作游戏相关\\assets\\fonts\\NotoSansSC-Regular.otf
-  fontTools 4.57.0; full font has 30,890 glyphs; output ~100 KB.
+  fontTools 4.57.0; full font has 30,890 glyphs; 71-character subset ≈ 18 KB
+  （2026-11-02 清理后按 UiStrings.AllCharacters 重新生成，实际字符数见构建日志）。
 
 Keep `Assets/Fonts/ui-chars.txt` in sync with `UiStrings.AllCharacters` -- the
 TMP builder unions both, but the subset OTF must contain every one of them.

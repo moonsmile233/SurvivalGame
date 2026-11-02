@@ -17,12 +17,11 @@ namespace Survival.UI
         [SerializeField] private Button _resumeButton;
         [SerializeField] private Button _restartButton;
         [SerializeField] private Button _menuButton;
-        [SerializeField] private TMP_Text _titleText;
 
         private void Start()
         {
             if (_gameManager == null || _panel == null || _resumeButton == null
-                || _restartButton == null || _menuButton == null || _titleText == null)
+                || _restartButton == null || _menuButton == null)
             {
                 Debug.LogError("[PausePanel] Missing serialized references, component disabled.");
                 enabled = false;

@@ -37,12 +37,10 @@ namespace Survival.Player
         public int FingerId => _fingerId;
         public Vector2 AnchorScreen => _anchor;
         public Vector2 CurrentScreen { get; private set; }
-        public float MaxRadiusPixels { get; private set; }
 
         private void Update()
         {
             float maxRadius = Mathf.Clamp(Screen.height * RadiusScreenRatio, MinRadiusPixels, MaxRadiusLimitPixels);
-            MaxRadiusPixels = maxRadius;
             TouchActive = false;
 
             if (Input.touchCount > 0)
