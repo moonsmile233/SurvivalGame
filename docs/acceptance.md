@@ -228,8 +228,14 @@
 - **H5 布局（D 调整）**：桌面与手机统一为**画布在上、昵称/成绩卡在下**；删除“网页只负责…”等职责说明，
   页脚只保留小号 `v1.2.0`；Shell 遮罩仍挡画布，开始=进入，不自动进游戏；全屏入口只在 Entered 后出现。
 - **暂停菜单（D 调整）**：继续 / 重新开始 / 返回菜单改为**竖排居中**；结算面板仍横排。
-- **H5 薄壳**（`h5-shell` core + viewports，20:11）：协议 3 / 昵称 / 进入 / 难度偏好 / 结算 / 最高分 / 迁移 / 全屏 PASS；
+- **H5 薄壳**（`h5-shell` core + viewports，20:30–20:31）：协议 3 / 昵称 / 进入 / 难度偏好 / 结算 / 最高分 / 迁移 / 全屏 PASS；
   6 视口 320×568 / 390×844 / 844×390 / 768×1024 / 1280×720 / 1920×1080 全 ok（新布局截图已覆盖）。
+  - 移动视口（width < 900）加 `hasTouch: true`，操作提示显示「拖动屏幕移动 · 点画面内暂停」的手机文案；
+    1280/1920 仍是键盘文案。
+  - **390×844 跑真实 2s 短局**：进入 → 画布菜单开局 → Unity 结算卡（胜利/226）+ H5 数据栏，
+    证据 `h5-shell-390x844-gameover-real.png`；其余视口的 GameOver 是注入态，文件名带
+    `-gameover-layout-only.png`，不代表真实结算（1280 真实结算见 `h5-shell-gameover-1280.png`）。
+  - 桌面 1280×720 下方卡片底边 702px（视口 720），一屏可见，无需滚动。
 - **薄壳主流程**（`smoke`，20:12，9/9 PASS）：Shell 遮罩 / 只发一次 EnterGame / 画布菜单开局 / Esc 暂停→继续 /
   短局结算「普通 265」/ 再来一局 / 暂停返回菜单 / 刷新保留最高分与昵称、最近一局清空；console 0 未预期 error。
 - **交付页 40 只**（`perf.mjs`，20:12–20:14）：capAt 49.44s，稳态 **165 FPS / p95 7ms / p99 7ms / alloc 29.4KB/s**；
@@ -237,7 +243,7 @@
 - **Standalone**（`web/unity/index.html`，20:14–20:18）：
   - flow 1280×720：16 事件，hard 短局 232（`standalone-flow-events.json`、`standalone-flow-v1.2-*.png`）；
   - mobile 390×844：走 640×360 参考分支（scale 0.609375），16 事件，hard 232；
-  - viewports：6 视口 menu / countdown / **paused（竖排）** / result 截图重拍；
+  - viewports：6 视口 menu / countdown / **paused（竖排）** / result 截图重拍；移动视口带触摸文案；
   - focus：原生 blur 与 visibilitychange 都保持 Paused；Starting 中失焦回 Menu，Paused 继续倒计时中失焦回 Paused；
   - perf 40：**165 FPS / p95 7ms / alloc 29.9KB/s / capAt 49.44s**（`perf-40.json`）。
 - **版本一致性**：`web/index.html` 5 处 `?v=1.2.0` == `web/unity/build-info.json.productVersion`；`check-version` PASS。
