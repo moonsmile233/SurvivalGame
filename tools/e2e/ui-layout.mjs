@@ -28,6 +28,11 @@ function band(xMin, xMax, yAnchor) {
   return { fx: (xMin + xMax) / 2, fy: 1 - yAnchor };
 }
 
+/** Vertically stacked pause button: x 0.32..0.68, centred at yAnchor. */
+function centeredBand(yAnchor) {
+  return { fx: 0.5, fy: 1 - yAnchor };
+}
+
 /** SetAnchored(top-right, pivot top-right, anchoredPosition (-16,-12), size 140x80). */
 function hudPauseButton(metrics) {
   const centerX = metrics.unitsW - 16 - 140 / 2;
@@ -54,9 +59,9 @@ export function getLayout(screenWidth, screenHeight) {
     menuStart: band(0.27, 0.73, 0.2),
     menuCards: cards,
     hudPause: hudPauseButton(metrics),
-    pauseResume: band(0.055, 0.348, 0.3),
-    pauseRestart: band(0.351, 0.649, 0.3),
-    pauseMenu: band(0.652, 0.945, 0.3),
+    pauseResume: centeredBand(0.44),
+    pauseRestart: centeredBand(0.30),
+    pauseMenu: centeredBand(0.16),
     resultAgain: band(0.16, 0.48, 0.23),
     resultMenu: band(0.52, 0.84, 0.23),
   };

@@ -357,12 +357,12 @@ public static class SceneSetup
             new Vector2(700f, 90f));
         // 标题是静态文案；PausePanel 不持有引用（不需要运行时改字）。
 
-        // 三按钮同一水平带，宽度按百分比切分：640×360 参考下约 187 单位，仍可点（≥44 CSS px）。
-        Button resumeButton = CreateButtonBand("ResumeButton", pausePanel, 0.055f, 0.348f, 0.30f, 84f,
+        // 竖排居中：继续 / 重新开始 / 返回菜单；640×360 参考下按钮仍约 230 单位宽、84 高。
+        Button resumeButton = CreateButtonBand("ResumeButton", pausePanel, 0.32f, 0.68f, 0.44f, 84f,
             UiStrings.ResumeButton, 22f);
-        Button pauseRestartButton = CreateButtonBand("RestartButton", pausePanel, 0.351f, 0.649f, 0.30f, 84f,
+        Button pauseRestartButton = CreateButtonBand("RestartButton", pausePanel, 0.32f, 0.68f, 0.30f, 84f,
             UiStrings.RestartButton, 22f);
-        Button pauseMenuButton = CreateButtonBand("MenuButton", pausePanel, 0.652f, 0.945f, 0.30f, 84f,
+        Button pauseMenuButton = CreateButtonBand("MenuButton", pausePanel, 0.32f, 0.68f, 0.16f, 84f,
             UiStrings.BackToMenuButton, 22f);
 
         // ---- 结算（默认隐藏；v1.2 起 WebGL 里也显示，结算归 Unity） ----

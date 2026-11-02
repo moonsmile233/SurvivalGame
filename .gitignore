@@ -51,6 +51,9 @@ sysinfo.txt
 /.netlify/
 node_modules/
 
+# ---- 人工评审截图（等待用户确认的截图只放这里，确认后再移入 docs/evidence 并单独提交）----
+/review/
+
 # ---- 证据视频（体积大，放本地供人工审阅，不入库；截图/JSON 仍入库）----
 docs/evidence/*.webm
 docs/evidence/.video-tmp/

@@ -220,27 +220,28 @@
 - **资源**：`NotoSansSC-UI-Subset-SDF.asset`（2.1MB，无引用）已按用户确认删除（C-26）；
   `SampleScene.unity` **保留**（模板默认场景）。`web/unity` 入库/部署/Release 等用户放行。
 
-## 3.7 v1.2 D 收尾（2026-11-02：最终证据 + 1.2.0 入库）
+## 3.7 v1.2 D 收尾（2026-11-02：UI 调整 + 最终证据 + 1.2.0 入库）
 
-> 构建 `productVersion 1.2.0`，`builtAt 2026-11-02T11:02:31Z`（clean 重建的仓库外副本）；
-> 已复制进 `web/unity` 作为最终交付产物，`node tools/check-version.mjs` PASS。
-> 本轮只重跑证据与文档，未改 `web/**`、`Assets/**`、`tools/**`；最终 build 提交见 `jj log`。
+> 构建 `productVersion 1.2.0`，`builtAt 2026-11-02T12:10:44Z`（本地 20:10；H5 布局 + 暂停竖排后重建）；
+> 已入库 `web/unity`，`node tools/check-version.mjs` PASS。最终 build 提交见 `jj log`。
 
-- **H5 薄壳**（`h5-shell` core + viewports，19:30）：协议 3 / 昵称 / 进入 / 难度偏好 / 结算 / 最高分 / 迁移 / 全屏 PASS；
-  6 视口 320×568 / 390×844 / 844×390 / 768×1024 / 1280×720 / 1920×1080 全 ok。
-- **薄壳主流程**（`smoke`，19:31，9/9 PASS）：Shell 遮罩 / 只发一次 EnterGame / 画布菜单开局 / Esc 暂停→继续 /
+- **H5 布局（D 调整）**：桌面与手机统一为**画布在上、昵称/成绩卡在下**；删除“网页只负责…”等职责说明，
+  页脚只保留小号 `v1.2.0`；Shell 遮罩仍挡画布，开始=进入，不自动进游戏；全屏入口只在 Entered 后出现。
+- **暂停菜单（D 调整）**：继续 / 重新开始 / 返回菜单改为**竖排居中**；结算面板仍横排。
+- **H5 薄壳**（`h5-shell` core + viewports，20:11）：协议 3 / 昵称 / 进入 / 难度偏好 / 结算 / 最高分 / 迁移 / 全屏 PASS；
+  6 视口 320×568 / 390×844 / 844×390 / 768×1024 / 1280×720 / 1920×1080 全 ok（新布局截图已覆盖）。
+- **薄壳主流程**（`smoke`，20:12，9/9 PASS）：Shell 遮罩 / 只发一次 EnterGame / 画布菜单开局 / Esc 暂停→继续 /
   短局结算「普通 265」/ 再来一局 / 暂停返回菜单 / 刷新保留最高分与昵称、最近一局清空；console 0 未预期 error。
-- **交付页 40 只**（`perf.mjs`，19:31–19:33）：capAt 49.44s，稳态 **165 FPS / p95 7ms / p99 7ms / alloc 29.2KB/s**；
+- **交付页 40 只**（`perf.mjs`，20:12–20:14）：capAt 49.44s，稳态 **165 FPS / p95 7ms / p99 7ms / alloc 29.4KB/s**；
   证据 `docs/evidence/perf-local-chrome-desktop-cap40.json`。
-- **Standalone**（`web/unity/index.html`，19:33–19:36）：
+- **Standalone**（`web/unity/index.html`，20:14–20:18）：
   - flow 1280×720：16 事件，hard 短局 232（`standalone-flow-events.json`、`standalone-flow-v1.2-*.png`）；
   - mobile 390×844：走 640×360 参考分支（scale 0.609375），16 事件，hard 232；
-  - viewports：6 视口 menu / countdown / paused / result 截图重拍；
+  - viewports：6 视口 menu / countdown / **paused（竖排）** / result 截图重拍；
   - focus：原生 blur 与 visibilitychange 都保持 Paused；Starting 中失焦回 Menu，Paused 继续倒计时中失焦回 Paused；
-  - perf 40：**165 FPS / p95 7ms / alloc 30.6KB/s / capAt 49.42s**（`perf-40.json`）。
-- **版本一致性**：`web/index.html` 5 处 `?v=1.2.0` == `web/unity/build-info.json.productVersion`；
-  `check-version` PASS（此前 1.0.0 中间态 FAIL 属预期）。
-- **最终产物**（总 **9,650,984 B**）：wasm 7,002,319 / data 2,435,213 / framework 75,669 / loader 117,894。
+  - perf 40：**165 FPS / p95 7ms / alloc 29.9KB/s / capAt 49.44s**（`perf-40.json`）。
+- **版本一致性**：`web/index.html` 5 处 `?v=1.2.0` == `web/unity/build-info.json.productVersion`；`check-version` PASS。
+- **最终产物**（总 **9,653,885 B**）：wasm 7,002,319 / data 2,438,114 / framework 75,669 / loader 117,894。
 - **仍未做**：部署、GitHub Release、1.2.0 干净克隆复验；真机 / DPR / 全屏语义见 §4。
 
 ## 4. 未关闭项

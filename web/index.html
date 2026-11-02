@@ -10,52 +10,10 @@
   <link rel="stylesheet" href="css/style.css?v=1.2.0">
 </head>
 <body>
-  <!-- v1.2 薄壳：H5 只负责昵称、进入、数据展示、全屏入口。
+  <!-- v1.2 薄壳：画布在上，昵称/进入/成绩卡在下（桌面与手机一致）。
        难度/开局/暂停/重开/结算都在 Unity 画布内（菜单入口由 EnterGame 打开）。 -->
   <main class="app">
-    <aside class="panel">
-      <header class="brand">
-        <h1 class="title">SurvivalGame</h1>
-        <p class="tagline">2D 生存挑战 · 存活 60 秒</p>
-      </header>
-
-      <div class="field">
-        <label class="field-label" for="nickname">昵称</label>
-        <input id="nickname" class="nickname-input" type="text" maxlength="16" autocomplete="nickname"
-               placeholder="玩家" spellcheck="false" disabled>
-      </div>
-
-      <div class="actions">
-        <button id="btn-start" class="btn btn-primary" type="button" disabled>开始游戏</button>
-        <button id="btn-fullscreen" class="btn btn-secondary" type="button" hidden>全屏</button>
-      </div>
-
-      <section class="data" aria-label="成绩数据">
-        <h2 class="data-title">数据</h2>
-        <div class="data-row">
-          <span>最高分</span>
-          <b id="data-best">0</b>
-        </div>
-        <div class="data-row data-row-last">
-          <span>最近一局</span>
-          <b id="data-last">—</b>
-        </div>
-      </section>
-
-      <p id="status-hint" class="status-hint" aria-live="polite"></p>
-      <p id="fullscreen-hint" class="status-hint" role="status" hidden></p>
-      <p class="hint">进入后在游戏内选择难度、开始/暂停/重开；网页只负责昵称、成绩和最高分。</p>
-
-      <footer class="footer">
-        <span id="version">v-</span>
-        <span class="dot" aria-hidden="true">·</span>
-        <span id="build-time">-</span>
-      </footer>
-    </aside>
-
     <div class="stage-wrap">
-      <p class="rotate-hint">横屏体验更佳</p>
-
       <!-- 全屏元素只包含画布：全屏内没有任何网页按钮，退出靠 Esc / 系统手势。 -->
       <div id="game-frame" class="game-frame" aria-label="游戏画面">
         <canvas id="unity-canvas" tabindex="0"></canvas>
@@ -72,12 +30,52 @@
         <!-- 全屏内 2~3 秒自动消失的提示；不是按钮，不拦截操作。 -->
         <p id="fs-toast" class="fs-toast" role="status" hidden></p>
       </div>
-
-      <p class="op-hint">
-        <span class="op-desktop">操作：WASD / 方向键移动 · Esc / P 暂停 · 躲开敌人 · 存活 60 秒</span>
-        <span class="op-touch">操作：拖动屏幕移动 · 点画面内「暂停」 · 躲开敌人 · 存活 60 秒</span>
-      </p>
     </div>
+
+    <section class="panel">
+      <div class="panel-main">
+        <header class="brand">
+          <h1 class="title">SurvivalGame</h1>
+          <p class="tagline">2D 生存挑战 · 存活 60 秒</p>
+        </header>
+
+        <div class="field">
+          <label class="field-label" for="nickname">昵称</label>
+          <input id="nickname" class="nickname-input" type="text" maxlength="16" autocomplete="nickname"
+                 placeholder="玩家" spellcheck="false" disabled>
+        </div>
+
+        <div class="actions">
+          <button id="btn-start" class="btn btn-primary" type="button" disabled>开始游戏</button>
+          <button id="btn-fullscreen" class="btn btn-secondary" type="button" hidden>全屏</button>
+        </div>
+      </div>
+
+      <div class="panel-side">
+        <section class="data" aria-label="成绩数据">
+          <div class="data-row">
+            <span>最高分</span>
+            <b id="data-best">0</b>
+          </div>
+          <div class="data-row data-row-last">
+            <span>最近一局</span>
+            <b id="data-last">—</b>
+          </div>
+        </section>
+
+        <p id="status-hint" class="status-hint" aria-live="polite"></p>
+        <p id="fullscreen-hint" class="status-hint" role="status" hidden></p>
+        <p class="rotate-hint">横屏体验更佳</p>
+        <p class="op-hint">
+          <span class="op-desktop">操作：WASD / 方向键移动 · Esc / P 暂停 · 躲开敌人 · 存活 60 秒</span>
+          <span class="op-touch">操作：拖动屏幕移动 · 点画面内「暂停」 · 躲开敌人 · 存活 60 秒</span>
+        </p>
+      </div>
+
+      <footer class="footer">
+        <span id="version">v-</span>
+      </footer>
+    </section>
   </main>
 
   <script src="js/storage.js?v=1.2.0"></script>

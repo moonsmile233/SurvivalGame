@@ -32,7 +32,6 @@
   var dataBest = document.getElementById('data-best');
   var dataLast = document.getElementById('data-last');
   var versionEl = document.getElementById('version');
-  var buildTimeEl = document.getElementById('build-time');
 
   var state = {
     page: 'Loading', // Loading | Shell | Entered | GameOver | Error
@@ -587,24 +586,9 @@
 
   // ---------- 构建信息 ----------
 
-  function formatBuildTime(iso) {
-    var date = new Date(iso);
-    if (isNaN(date.getTime())) {
-      return iso || '-';
-    }
-    var pad = function (value) {
-      return value < 10 ? '0' + value : String(value);
-    };
-    return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) +
-      ' ' + pad(date.getHours()) + ':' + pad(date.getMinutes());
-  }
-
   function setBuildInfo(info) {
     if (versionEl) {
       versionEl.textContent = 'v' + ((info && info.productVersion) || '-');
-    }
-    if (buildTimeEl) {
-      buildTimeEl.textContent = info && info.builtAt ? formatBuildTime(info.builtAt) : '构建时间未知';
     }
   }
 

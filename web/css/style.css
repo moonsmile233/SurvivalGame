@@ -36,45 +36,48 @@ input {
 /* ---------- 布局 ---------- */
 
 .app {
-  display: grid;
-  grid-template-columns: 320px minmax(0, 1fr);
-  gap: 18px;
-  align-items: start;
-  max-width: 1460px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 1120px;
   margin: 0 auto;
-  padding: 18px;
+  padding: 14px;
+}
+
+/* 画布与下方卡片同宽：桌面用 62vh 限制画布高度，保证 1280×720 一屏能看到卡片。 */
+.stage-wrap,
+.panel {
+  width: min(100%, calc(62vh * 16 / 9));
+  margin: 0 auto;
 }
 
 .panel {
-  position: sticky;
-  top: 18px;
-  min-width: 0;
-  padding: 18px;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 6px 24px;
+  align-items: start;
+  padding: 14px 16px;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: 14px;
 }
 
-.stage-wrap {
-  min-width: 0;
-}
-
-/* ---------- 左侧栏 ---------- */
+/* ---------- 下方卡片 ---------- */
 
 .title {
   margin: 0;
-  font-size: 22px;
+  font-size: 20px;
   letter-spacing: 0.3px;
 }
 
 .tagline {
-  margin: 5px 0 0;
+  margin: 3px 0 0;
   font-size: 12px;
   color: var(--muted);
 }
 
 .field {
-  margin-top: 16px;
+  margin-top: 10px;
 }
 
 .field-label {
@@ -86,7 +89,7 @@ input {
 
 .nickname-input {
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px 11px;
   color: var(--text);
   background: #0f0f1a;
   border: 1px solid var(--line);
@@ -107,11 +110,11 @@ input {
 .actions {
   display: flex;
   gap: 8px;
-  margin-top: 14px;
+  margin-top: 10px;
 }
 
 .btn {
-  min-height: 44px;
+  min-height: 40px;
   padding: 0 16px;
   color: var(--text);
   font-weight: 700;
@@ -146,26 +149,17 @@ input {
   outline-offset: 2px;
 }
 
-/* ---------- 数据面板 ---------- */
+/* ---------- 成绩 ---------- */
 
 .data {
-  margin-top: 18px;
-  padding-top: 14px;
-  border-top: 1px solid var(--line);
-}
-
-.data-title {
-  margin: 0 0 8px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--muted);
+  padding-top: 2px;
 }
 
 .data-row {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  padding: 4px 0;
+  padding: 3px 0;
   font-size: 13px;
   color: var(--muted);
 }
@@ -176,34 +170,26 @@ input {
 }
 
 .data-row-last {
-  margin-top: 6px;
-  padding-top: 8px;
+  margin-top: 4px;
+  padding-top: 6px;
   border-top: 1px dashed var(--line);
 }
 
 .status-hint {
-  min-height: 18px;
-  margin: 12px 0 0;
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--muted);
-}
-
-.hint {
-  margin: 12px 0 0;
+  min-height: 16px;
+  margin: 8px 0 0;
   font-size: 12px;
   line-height: 1.5;
   color: var(--muted);
 }
 
 .footer {
-  margin-top: 14px;
+  grid-column: 1 / -1;
+  margin-top: 4px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
   font-size: 11px;
   color: #6b6b82;
-}
-
-.dot {
-  margin: 0 4px;
 }
 
 /* ---------- 画布区 ---------- */
@@ -293,13 +279,13 @@ input {
 
 .rotate-hint {
   display: none;
-  margin: 0 0 8px;
+  margin: 6px 0 0;
   font-size: 12px;
   color: var(--muted);
 }
 
 .op-hint {
-  margin: 10px 2px 0;
+  margin: 6px 0 0;
   font-size: 12px;
   line-height: 1.5;
   color: var(--muted);
@@ -344,14 +330,14 @@ input {
 
 @media (max-width: 899px) {
   .app {
-    grid-template-columns: 1fr;
-    gap: 12px;
-    padding: 12px;
+    gap: 10px;
+    padding: 10px;
   }
 
   .panel {
-    position: static;
-    padding: 14px;
+    grid-template-columns: 1fr;
+    gap: 0;
+    padding: 12px 14px;
   }
 
   .title {
@@ -359,20 +345,17 @@ input {
   }
 
   .field {
-    margin-top: 10px;
+    margin-top: 9px;
   }
 
   .actions {
-    margin-top: 10px;
+    margin-top: 9px;
   }
 
   .data {
-    margin-top: 12px;
-    padding-top: 10px;
-  }
-
-  .hint {
-    display: none;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--line);
   }
 
   .game-frame {
