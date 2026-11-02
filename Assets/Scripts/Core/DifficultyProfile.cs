@@ -5,7 +5,7 @@ namespace Survival.Core
     /// <summary>
     /// 单档难度的乘区与上限（M6 §4）。只放数据，不写逻辑。
     /// 资产由 <c>SceneSetup</c> 生成：**已存在时不覆盖**，否则每次重建场景都会把 Inspector 里调好的平衡改回默认。
-    /// 这里只放「本步真正被消费」的字段；冲锋/绕行的解锁时间在第 4/5 步引入对应敌人时再加，避免死字段。
+    /// 冲锋/绕行的解锁时间与权重是 M6 内容扩展的数据；C1 先落字段，C5 才由 Spawner 消费。
     /// </summary>
     [CreateAssetMenu(fileName = "dif_Difficulty", menuName = "Survival/Difficulty Profile")]
     public class DifficultyProfile : ScriptableObject
@@ -32,6 +32,27 @@ namespace Survival.Core
         [Tooltip("存活分乘区；胜利奖励不乘（M6 §5）。")]
         [SerializeField] private float _scoreMultiplier = 1f;
 
+        [Header("敌人解锁与权重（M6 内容扩展）")]
+        // 新字段用 -1 哨兵：旧 dif_*.asset 没有这些字段时，SceneSetup 会一次性写入默认值；
+        // 已经迁移过的资产不再被覆盖，Inspector 里调过的权重会保留。
+        [Tooltip("冲锋者解锁秒数；<0 表示未迁移。")]
+        [SerializeField] private float _chargerUnlockSeconds = -1f;
+
+        [Tooltip("绕行者解锁秒数；<0 表示未迁移。")]
+        [SerializeField] private float _flankerUnlockSeconds = -1f;
+
+        [Tooltip("早期（只有追击）权重。")]
+        [SerializeField] private float _earlyChaserWeight = -1f;
+
+        [Tooltip("中期（追击 + 冲锋）权重。")]
+        [SerializeField] private float _midChaserWeight = -1f;
+        [SerializeField] private float _midChargerWeight = -1f;
+
+        [Tooltip("晚期（追击 + 冲锋 + 绕行）权重。")]
+        [SerializeField] private float _lateChaserWeight = -1f;
+        [SerializeField] private float _lateChargerWeight = -1f;
+        [SerializeField] private float _lateFlankerWeight = -1f;
+
         public Difficulty Id => _id;
         public float EnemySpeedMultiplier => _enemySpeedMultiplier;
         public float SpawnIntervalMultiplier => _spawnIntervalMultiplier;
@@ -39,5 +60,17 @@ namespace Survival.Core
         public int EnemyLimit => _enemyLimit;
         public float PressureMaxMultiplier => _pressureMaxMultiplier;
         public float ScoreMultiplier => _scoreMultiplier;
+
+        public float ChargerUnlockSeconds => _chargerUnlockSeconds;
+        public float FlankerUnlockSeconds => _flankerUnlockSeconds;
+        public float EarlyChaserWeight => _earlyChaserWeight;
+        public float MidChaserWeight => _midChaserWeight;
+        public float MidChargerWeight => _midChargerWeight;
+        public float LateChaserWeight => _lateChaserWeight;
+        public float LateChargerWeight => _lateChargerWeight;
+        public float LateFlankerWeight => _lateFlankerWeight;
+
+        /// <summary>旧资产是否还没写过解锁/权重字段（SceneSetup 一次性迁移用）。</summary>
+        public bool NeedsSpawnWeightMigration => _chargerUnlockSeconds < 0f || _earlyChaserWeight < 0f;
     }
 }

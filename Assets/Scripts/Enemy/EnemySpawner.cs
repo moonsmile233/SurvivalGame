@@ -369,7 +369,10 @@ namespace Survival.Enemy
             Register(ai);
         }
 
-        /// <summary>M4 只有 1 个定义；变体阶段的加权选择在这里扩展。</summary>
+        /// <summary>
+        /// C1：三份定义已挂上，但**只生成 Chaser**，保持 v1.2 行为不变。
+        /// C3/C4 接入 PerfProbe 的强制类型，C5 换成 DifficultyProfile 的解锁/权重加权选择。
+        /// </summary>
         private EnemyDefinition PickDefinition()
         {
             if (_enemyDefinitions == null || _enemyDefinitions.Length == 0)
@@ -377,7 +380,16 @@ namespace Survival.Enemy
                 return null;
             }
 
-            return _enemyDefinitions[Random.Range(0, _enemyDefinitions.Length)];
+            for (int i = 0; i < _enemyDefinitions.Length; i++)
+            {
+                EnemyDefinition definition = _enemyDefinitions[i];
+                if (definition != null && definition.Kind == EnemyKind.Chaser)
+                {
+                    return definition;
+                }
+            }
+
+            return _enemyDefinitions[0];
         }
 
         /// <summary>

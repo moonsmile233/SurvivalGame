@@ -19,3 +19,11 @@ MonoBehaviour:
   _enemyLimit: 14
   _pressureMaxMultiplier: 1.1
   _scoreMultiplier: 1
+  _chargerUnlockSeconds: 25
+  _flankerUnlockSeconds: 45
+  _earlyChaserWeight: 1
+  _midChaserWeight: 0.85
+  _midChargerWeight: 0.15
+  _lateChaserWeight: 0.7
+  _lateChargerWeight: 0.2
+  _lateFlankerWeight: 0.1

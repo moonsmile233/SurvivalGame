@@ -23,7 +23,9 @@ public static class SceneSetup
     private const string SceneFolder = "Assets/Scenes";
     private const string ConfigFolder = "Assets/Configs";
     private const string ConfigPath = "Assets/Configs/cfg_GameConfig.asset";
-    private const string EnemyDefinitionPath = "Assets/Configs/def_Enemy_Chaser.asset";
+    private const string EnemyChaserPath = "Assets/Configs/def_Enemy_Chaser.asset";
+    private const string EnemyChargerPath = "Assets/Configs/def_Enemy_Charger.asset";
+    private const string EnemyFlankerPath = "Assets/Configs/def_Enemy_Flanker.asset";
     private const string DifficultyEasyPath = "Assets/Configs/dif_Easy.asset";
     private const string DifficultyNormalPath = "Assets/Configs/dif_Normal.asset";
     private const string DifficultyHardPath = "Assets/Configs/dif_Hard.asset";
@@ -79,7 +81,7 @@ public static class SceneSetup
         Sprite playerSprite = EnsureSprite(PlayerSpritePath, CreatePlayerTexture(), false);
         Sprite enemySprite = EnsureSprite(EnemySpritePath, CreateEnemyTexture(), false);
         EnsureSprite(UiSpritePath, CreateWhiteTexture(), false);
-        EnsureEnemyDefinition(enemySprite);
+        EnsureEnemyDefinitions(enemySprite);
 
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -90,7 +92,13 @@ public static class SceneSetup
         enemySprite = AssetDatabase.LoadAssetAtPath<Sprite>(EnemySpritePath);
         s_uiSprite = AssetDatabase.LoadAssetAtPath<Sprite>(UiSpritePath);
         s_uiFont = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FontAssetPath);
-        EnemyDefinition enemyDefinition = AssetDatabase.LoadAssetAtPath<EnemyDefinition>(EnemyDefinitionPath);
+        // NewScene 会卸载未被场景引用的资源，三份敌人定义必须重新取一次。
+        EnemyDefinition[] enemyDefinitions =
+        {
+            AssetDatabase.LoadAssetAtPath<EnemyDefinition>(EnemyChaserPath),
+            AssetDatabase.LoadAssetAtPath<EnemyDefinition>(EnemyChargerPath),
+            AssetDatabase.LoadAssetAtPath<EnemyDefinition>(EnemyFlankerPath),
+        };
 
         Camera cam = CreateMainCamera();
         CreateBackground(config, backgroundSprite);
@@ -106,7 +114,7 @@ public static class SceneSetup
         SetObjectReference(cameraFollow, "_target", player.transform);
         SetObjectReference(cameraFollow, "_camera", cam);
 
-        EnemySpawner spawner = CreateEnemySpawner(config, player.transform, playerHealth, cam, enemyDefinition);
+        EnemySpawner spawner = CreateEnemySpawner(config, player.transform, playerHealth, cam, enemyDefinitions);
         GameManager manager = CreateGameManager(config, playerController, playerHealth, spawner);
 
         // Ready 状态禁止移动：PlayerController 需要读 GameManager.State（M3 第 1.2 节）。
@@ -198,7 +206,7 @@ public static class SceneSetup
         Transform playerTarget,
         PlayerHealth playerHealth,
         Camera camera,
-        EnemyDefinition definition)
+        EnemyDefinition[] definitions)
     {
         var go = new GameObject("EnemySpawner");
         var spawner = go.AddComponent<EnemySpawner>();
@@ -207,7 +215,7 @@ public static class SceneSetup
         SetObjectReference(spawner, "_playerTarget", playerTarget);
         SetObjectReference(spawner, "_playerHealth", playerHealth);
         SetObjectReference(spawner, "_camera", camera);
-        SetObjectReferenceArray(spawner, "_enemyDefinitions", new Object[] { definition });
+        SetObjectReferenceArray(spawner, "_enemyDefinitions", definitions);
 
         return spawner;
     }
@@ -673,11 +681,20 @@ public static class SceneSetup
 
         var profiles = new DifficultyProfile[3];
         profiles[(int)Difficulty.Easy] = EnsureDifficultyProfile(
-            DifficultyEasyPath, Difficulty.Easy, speed: 0.90f, spawn: 1.20f, damage: 0.80f, limit: 14, pressure: 1.10f, score: 1.0f);
+            DifficultyEasyPath, Difficulty.Easy, speed: 0.90f, spawn: 1.20f, damage: 0.80f, limit: 14, pressure: 1.10f, score: 1.0f,
+            chargerUnlock: 25f, flankerUnlock: 45f,
+            earlyChaser: 1.00f, midChaser: 0.85f, midCharger: 0.15f,
+            lateChaser: 0.70f, lateCharger: 0.20f, lateFlanker: 0.10f);
         profiles[(int)Difficulty.Normal] = EnsureDifficultyProfile(
-            DifficultyNormalPath, Difficulty.Normal, speed: 1.00f, spawn: 1.00f, damage: 1.00f, limit: 20, pressure: 1.15f, score: 1.3f);
+            DifficultyNormalPath, Difficulty.Normal, speed: 1.00f, spawn: 1.00f, damage: 1.00f, limit: 20, pressure: 1.15f, score: 1.3f,
+            chargerUnlock: 15f, flankerUnlock: 35f,
+            earlyChaser: 1.00f, midChaser: 0.75f, midCharger: 0.25f,
+            lateChaser: 0.55f, lateCharger: 0.30f, lateFlanker: 0.15f);
         profiles[(int)Difficulty.Hard] = EnsureDifficultyProfile(
-            DifficultyHardPath, Difficulty.Hard, speed: 1.10f, spawn: 0.85f, damage: 1.15f, limit: 20, pressure: 1.20f, score: 1.6f);
+            DifficultyHardPath, Difficulty.Hard, speed: 1.10f, spawn: 0.85f, damage: 1.15f, limit: 20, pressure: 1.20f, score: 1.6f,
+            chargerUnlock: 10f, flankerUnlock: 25f,
+            earlyChaser: 1.00f, midChaser: 0.65f, midCharger: 0.35f,
+            lateChaser: 0.45f, lateCharger: 0.35f, lateFlanker: 0.20f);
 
         SetObjectReferenceArray(config, "_difficulties", profiles);
         EditorUtility.SetDirty(config);
@@ -692,11 +709,31 @@ public static class SceneSetup
         float damage,
         int limit,
         float pressure,
-        float score)
+        float score,
+        float chargerUnlock,
+        float flankerUnlock,
+        float earlyChaser,
+        float midChaser,
+        float midCharger,
+        float lateChaser,
+        float lateCharger,
+        float lateFlanker)
     {
         var profile = AssetDatabase.LoadAssetAtPath<DifficultyProfile>(path);
+
         if (profile != null)
         {
+            // 旧资产缺 M6 解锁/权重字段时一次性补写；已迁移的资产保留 Inspector 调参。
+            if (profile.NeedsSpawnWeightMigration)
+            {
+                var existing = new SerializedObject(profile);
+                WriteSpawnWeights(existing, chargerUnlock, flankerUnlock, earlyChaser, midChaser, midCharger,
+                    lateChaser, lateCharger, lateFlanker);
+                existing.ApplyModifiedPropertiesWithoutUndo();
+                EditorUtility.SetDirty(profile);
+                Debug.Log($"[SceneSetup] Migrated spawn weights: {path}");
+            }
+
             return profile;
         }
 
@@ -712,32 +749,114 @@ public static class SceneSetup
         serialized.FindProperty("_enemyLimit").intValue = limit;
         serialized.FindProperty("_pressureMaxMultiplier").floatValue = pressure;
         serialized.FindProperty("_scoreMultiplier").floatValue = score;
+        WriteSpawnWeights(serialized, chargerUnlock, flankerUnlock, earlyChaser, midChaser, midCharger,
+            lateChaser, lateCharger, lateFlanker);
         serialized.ApplyModifiedPropertiesWithoutUndo();
 
         Debug.Log($"[SceneSetup] Created difficulty profile: {path}");
         return profile;
     }
 
+    /// <summary>只写 M6 新增的解锁/权重字段；不动已存在的速度/上限/计分等调参。</summary>
+    private static void WriteSpawnWeights(
+        SerializedObject serialized,
+        float chargerUnlock,
+        float flankerUnlock,
+        float earlyChaser,
+        float midChaser,
+        float midCharger,
+        float lateChaser,
+        float lateCharger,
+        float lateFlanker)
+    {
+        serialized.FindProperty("_chargerUnlockSeconds").floatValue = chargerUnlock;
+        serialized.FindProperty("_flankerUnlockSeconds").floatValue = flankerUnlock;
+        serialized.FindProperty("_earlyChaserWeight").floatValue = earlyChaser;
+        serialized.FindProperty("_midChaserWeight").floatValue = midChaser;
+        serialized.FindProperty("_midChargerWeight").floatValue = midCharger;
+        serialized.FindProperty("_lateChaserWeight").floatValue = lateChaser;
+        serialized.FindProperty("_lateChargerWeight").floatValue = lateCharger;
+        serialized.FindProperty("_lateFlankerWeight").floatValue = lateFlanker;
+    }
+
     /// <summary>
-    /// 敌人定义资产（玩法增强 4.1 的接缝）。M4 只有一个基础追击定义，不存在时用占位精灵创建；
-    /// 速度/伤害/碰撞半径用资产字段默认值，换素材只需替换 _sprite。
+    /// 三种敌人定义资产（M6 内容扩展）。不存在时创建并写入该类默认值；
+    /// 已存在时只重指精灵、修正 _kind/_displayName（结构字段），不覆盖 Inspector 里调过的
+    /// 速度/伤害/tint/scale 与冲锋/绕行参数。
     /// </summary>
-    private static void EnsureEnemyDefinition(Sprite enemySprite)
+    private static void EnsureEnemyDefinitions(Sprite enemySprite)
     {
         EnsureFolder(ConfigFolder);
 
-        var definition = AssetDatabase.LoadAssetAtPath<EnemyDefinition>(EnemyDefinitionPath);
+        EnsureEnemyDefinition(EnemyChaserPath, EnemyKind.Chaser, "追击者", enemySprite);
+        EnsureEnemyDefinition(EnemyChargerPath, EnemyKind.Charger, "冲锋者", enemySprite);
+        EnsureEnemyDefinition(EnemyFlankerPath, EnemyKind.Flanker, "绕行者", enemySprite);
+        AssetDatabase.SaveAssets();
+    }
+
+    private static void EnsureEnemyDefinition(string path, EnemyKind kind, string displayName, Sprite sprite)
+    {
+        var definition = AssetDatabase.LoadAssetAtPath<EnemyDefinition>(path);
+        bool created = false;
         if (definition == null)
         {
             definition = ScriptableObject.CreateInstance<EnemyDefinition>();
-            AssetDatabase.CreateAsset(definition, EnemyDefinitionPath);
-            Debug.Log($"[SceneSetup] Created enemy definition: {EnemyDefinitionPath}");
+            AssetDatabase.CreateAsset(definition, path);
+            created = true;
+            Debug.Log($"[SceneSetup] Created enemy definition: {path}");
         }
 
-        // 每次重建都重指一次精灵：换素材时不用手工改资产。
-        SetObjectReference(definition, "_sprite", enemySprite);
+        var serialized = new SerializedObject(definition);
+        serialized.FindProperty("_kind").intValue = (int)kind;
+        serialized.FindProperty("_displayName").stringValue = displayName;
+        serialized.FindProperty("_sprite").objectReferenceValue = sprite;
+
+        if (created)
+        {
+            WriteEnemyDefaults(serialized, kind);
+        }
+
+        serialized.ApplyModifiedPropertiesWithoutUndo();
         EditorUtility.SetDirty(definition);
-        AssetDatabase.SaveAssets();
+    }
+
+    /// <summary>新资产一次性写入该类默认值；已存在的资产不走这里，避免覆盖调参。</summary>
+    private static void WriteEnemyDefaults(SerializedObject serialized, EnemyKind kind)
+    {
+        serialized.FindProperty("_colliderRadius").floatValue = 0.38f;
+        serialized.FindProperty("_contactDamage").intValue = 12;
+
+        switch (kind)
+        {
+            case EnemyKind.Charger:
+                serialized.FindProperty("_moveSpeed").floatValue = 1.5f;
+                serialized.FindProperty("_tint").colorValue = new Color(1f, 0.55f, 0.2f, 1f);
+                serialized.FindProperty("_visualScale").floatValue = 1.05f;
+                serialized.FindProperty("_chargeTriggerDistance").floatValue = 4.5f;
+                serialized.FindProperty("_chargeWindupSeconds").floatValue = 0.45f;
+                serialized.FindProperty("_chargeDurationSeconds").floatValue = 0.45f;
+                serialized.FindProperty("_chargeSpeed").floatValue = 5f;
+                serialized.FindProperty("_chargeRecoverSeconds").floatValue = 0.8f;
+                serialized.FindProperty("_chargeCooldownSeconds").floatValue = 1.5f;
+                serialized.FindProperty("_chargeDamage").intValue = 15;
+                break;
+
+            case EnemyKind.Flanker:
+                serialized.FindProperty("_moveSpeed").floatValue = 1.9f;
+                serialized.FindProperty("_tint").colorValue = new Color(0.45f, 0.8f, 1f, 1f);
+                serialized.FindProperty("_visualScale").floatValue = 0.95f;
+                serialized.FindProperty("_flankRadius").floatValue = 2.4f;
+                serialized.FindProperty("_flankAngleDegrees").floatValue = 135f;
+                serialized.FindProperty("_flankPounceDistance").floatValue = 1.2f;
+                serialized.FindProperty("_flankTimeoutSeconds").floatValue = 6f;
+                break;
+
+            default:
+                serialized.FindProperty("_moveSpeed").floatValue = 1.8f;
+                serialized.FindProperty("_tint").colorValue = new Color(1f, 1f, 1f, 1f);
+                serialized.FindProperty("_visualScale").floatValue = 1f;
+                break;
+        }
     }
 
     /// <summary>文件不存在时写入 PNG 并配置为 Sprite；返回 Sprite 资源。</summary>

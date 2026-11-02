@@ -1,0 +1,97 @@
+# Enemy definitions (2026-11-02 C1)
+## Assets/Configs/def_Enemy_Chaser.asset
+  _kind: 0
+  _displayName: "\u8FFD\u51FB\u8005"
+  _tint: {r: 1, g: 1, b: 1, a: 1}
+  _visualScale: 1
+  _moveSpeed: 1.8
+  _contactDamage: 12
+  _colliderRadius: 0.38
+  _chargeTriggerDistance: 4.5
+  _chargeWindupSeconds: 0.45
+  _chargeDurationSeconds: 0.45
+  _chargeSpeed: 5
+  _chargeRecoverSeconds: 0.8
+  _chargeCooldownSeconds: 1.5
+  _chargeDamage: 15
+  _flankRadius: 2.4
+  _flankAngleDegrees: 135
+  _flankPounceDistance: 1.2
+  _flankTimeoutSeconds: 6
+## Assets/Configs/def_Enemy_Charger.asset
+  _kind: 1
+  _displayName: "\u51B2\u950B\u8005"
+  _tint: {r: 1, g: 0.55, b: 0.2, a: 1}
+  _visualScale: 1.05
+  _moveSpeed: 1.5
+  _contactDamage: 12
+  _colliderRadius: 0.38
+  _chargeTriggerDistance: 4.5
+  _chargeWindupSeconds: 0.45
+  _chargeDurationSeconds: 0.45
+  _chargeSpeed: 5
+  _chargeRecoverSeconds: 0.8
+  _chargeCooldownSeconds: 1.5
+  _chargeDamage: 15
+  _flankRadius: 2.4
+  _flankAngleDegrees: 135
+  _flankPounceDistance: 1.2
+  _flankTimeoutSeconds: 6
+## Assets/Configs/def_Enemy_Flanker.asset
+  _kind: 2
+  _displayName: "\u7ED5\u884C\u8005"
+  _tint: {r: 0.45, g: 0.8, b: 1, a: 1}
+  _visualScale: 0.95
+  _moveSpeed: 1.9
+  _contactDamage: 12
+  _colliderRadius: 0.38
+  _chargeTriggerDistance: 4.5
+  _chargeWindupSeconds: 0.45
+  _chargeDurationSeconds: 0.45
+  _chargeSpeed: 5
+  _chargeRecoverSeconds: 0.8
+  _chargeCooldownSeconds: 1.5
+  _chargeDamage: 15
+  _flankRadius: 2.4
+  _flankAngleDegrees: 135
+  _flankPounceDistance: 1.2
+  _flankTimeoutSeconds: 6
+
+# Difficulty spawn weights / limits
+## Assets/Configs/dif_Easy.asset
+  _enemyLimit: 14
+  _chargerUnlockSeconds: 25
+  _flankerUnlockSeconds: 45
+  _earlyChaserWeight: 1
+  _midChaserWeight: 0.85
+  _midChargerWeight: 0.15
+  _lateChaserWeight: 0.7
+  _lateChargerWeight: 0.2
+  _lateFlankerWeight: 0.1
+## Assets/Configs/dif_Normal.asset
+  _enemyLimit: 20
+  _chargerUnlockSeconds: 15
+  _flankerUnlockSeconds: 35
+  _earlyChaserWeight: 1
+  _midChaserWeight: 0.75
+  _midChargerWeight: 0.25
+  _lateChaserWeight: 0.55
+  _lateChargerWeight: 0.3
+  _lateFlankerWeight: 0.15
+## Assets/Configs/dif_Hard.asset
+  _enemyLimit: 20
+  _chargerUnlockSeconds: 10
+  _flankerUnlockSeconds: 25
+  _earlyChaserWeight: 1
+  _midChaserWeight: 0.65
+  _midChargerWeight: 0.35
+  _lateChaserWeight: 0.45
+  _lateChargerWeight: 0.35
+  _lateFlankerWeight: 0.2
+
+# Scene spawner definitions
+3484:  _enemyDefinitions:
+3485-  - {fileID: 11400000, guid: 42dec5d48380582479bd0bd5bf35ecf4, type: 2}
+3486-  - {fileID: 11400000, guid: 597d59fc7f5819e448e343ae34e67038, type: 2}
+3487-  - {fileID: 11400000, guid: 5f6286e923c17904a953f038e63d6498, type: 2}
+3488---- !u!4 &1210889128
