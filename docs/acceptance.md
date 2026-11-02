@@ -206,8 +206,9 @@
 > 总大小 9,650,984 B（wasm 7,002,319 / data 2,435,213 / framework 75,669 / loader 117,894）。
 > 产物副本在仓库外 `D:/unityFile/_builds/SurvivalGame-1.2.0-clean-2026-11-02/`；测试后 `web/unity` 已恢复 1.0.0。
 
-- **字体**：按 `UiStrings.AllCharacters` 重生成 71 字符子集（18KB），构建重烤 71 字符图集；
-  菜单/结算截图逐字检查无 tofu（`standalone-flow-v1.2-menu.png`、`-result.png`）。§3.5 的 75 字符是清理前构建。
+- **字体**：按 `UiStrings.AllCharacters` 重生成 **71 码位（含 1 个空格；可见 70）**子集（18KB），
+  构建重烤 71 码位图集；菜单/结算截图逐字检查无 tofu（`standalone-flow-v1.2-menu.png`、`-result.png`，
+  19:19 clean 构建）。§3.5 的 75 字符是清理前构建。
 - **C# 清理**：死代码、`ReturnToMenu` 不再 `BeginRound`、D1 旧页 `difficulty` 别名、D5 autostart 不改难度偏好、
   昵称按码点截断；编译 0 error。
 - **回归**：`standalone-menu` flow（16 事件 / hard 232）、`standalone-focus`（原生 blur/visibility + Starting 取消）、
@@ -216,8 +217,8 @@
   （`docs/evidence/perf-local-chrome-desktop-cap40.json`、`m6-refactor/perf-40.json`）。
 - **D1/D5**：Editor Play 旧载荷 `{"nickname","difficulty":"hard"}` → `MenuDifficulty Normal→Hard`；
   perf 40 记录 `difficultyAfterStart=hard`。
-- **未做**：死资源删除（`NotoSansSC-UI-Subset-SDF.asset`、`SampleScene.unity`）因权限策略待用户确认；
-  `web/unity` 入库/部署/Release 等用户放行。
+- **未做/保留**：`SampleScene.unity` **保留**（模板默认场景）；`NotoSansSC-UI-Subset-SDF.asset`（2.1MB）
+  删除被权限策略拦截，需用户在本会话直接确认（不影响交付）；`web/unity` 入库/部署/Release 等用户放行。
 
 ## 4. 未关闭项
 
