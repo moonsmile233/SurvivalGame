@@ -44,6 +44,9 @@ namespace Survival.Enemy
         [SerializeField] private Camera _camera;
         [SerializeField] private EnemyDefinition[] _enemyDefinitions;
 
+        // 只给 PerfProbe 的 ?enemyKind= 测试用；正常游玩为 null（C3/C4 仍只生成 Chaser，C5 才加权）。
+        private EnemyKind? _perfForcedKind;
+
         private readonly List<EnemyAI> _enemies = new List<EnemyAI>(24);
 
         private Transform _root;
@@ -75,6 +78,9 @@ namespace Survival.Enemy
 
         /// <summary>只读列表，供压测探针读取；调用方不得增删。</summary>
         public IReadOnlyList<EnemyAI> ActiveEnemies => _enemies;
+
+        /// <summary>只给 PerfProbe 用：强制生成某种敌人（C3/C4 单类型探针）；正常游玩不调用。</summary>
+        public void SetPerfForcedKind(EnemyKind kind) => _perfForcedKind = kind;
 
         private void Awake()
         {
@@ -350,6 +356,8 @@ namespace Survival.Enemy
             var renderer = go.AddComponent<SpriteRenderer>();
             renderer.sprite = definition.Sprite;
             renderer.sortingOrder = 1;
+            renderer.color = definition.Tint;
+            go.transform.localScale = Vector3.one * definition.VisualScale;
 
             var body = go.AddComponent<Rigidbody2D>();
             body.bodyType = RigidbodyType2D.Kinematic;
@@ -364,19 +372,34 @@ namespace Survival.Enemy
             float stopRadius = _playerRadius + enemyRadius - StopDistancePadding;
 
             var ai = go.AddComponent<EnemyAI>();
-            ai.Initialize(_config, definition, _playerTarget, _playerHealth, this, _camera, stopRadius);
+            ai.Initialize(_config, definition, _playerTarget, _playerHealth, this, _camera, stopRadius, renderer);
 
             Register(ai);
         }
 
         /// <summary>
-        /// C1：三份定义已挂上，但**只生成 Chaser**，保持 v1.2 行为不变。
-        /// C3/C4 接入 PerfProbe 的强制类型，C5 换成 DifficultyProfile 的解锁/权重加权选择。
+        /// C3/C4：默认仍只生成 Chaser（保持 v1.2 行为）；PerfProbe 的 enemyKind 参数可强制单类型做探针。
+        /// C5 换成 DifficultyProfile 的解锁/权重加权选择。
         /// </summary>
         private EnemyDefinition PickDefinition()
         {
             if (_enemyDefinitions == null || _enemyDefinitions.Length == 0)
             {
+                return null;
+            }
+
+            if (_perfForcedKind.HasValue)
+            {
+                for (int i = 0; i < _enemyDefinitions.Length; i++)
+                {
+                    EnemyDefinition forced = _enemyDefinitions[i];
+                    if (forced != null && forced.Kind == _perfForcedKind.Value)
+                    {
+                        return forced;
+                    }
+                }
+
+                Debug.LogError($"[EnemySpawner] 找不到强制类型 {_perfForcedKind.Value} 的 EnemyDefinition。");
                 return null;
             }
 

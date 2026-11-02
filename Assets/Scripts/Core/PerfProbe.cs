@@ -19,6 +19,7 @@ namespace Survival.Core
     /// - <c>perfSeconds=秒</c>：开始后多久打一行 [PERF-SUMMARY]（默认 90）
     /// - <c>hud=1</c>：在屏幕上画调试条（真机看不到 console 时用；桌面压测不要开，避免 IMGUI 扰动采样）
     /// - <c>autostart=1</c>：跳过 H5 点击，直接进 Playing（真机一键跑）
+    /// - <c>enemyKind=chaser|charger|flanker</c>：强制只生成该类型（C3/C4 单类型探针；正常游玩不生效）
     ///
     /// 输出：每 2 秒一行 <c>[PERF] {json}</c>，结束时一行 <c>[PERF-SUMMARY] {json}</c>，都进浏览器 console，
     /// 由 tools/e2e/perf.mjs 收集；真机看屏幕上的 hud。
@@ -90,6 +91,7 @@ namespace Survival.Core
 
         private int _limitOverride;
         private float _roundOverride;
+        private EnemyKind? _forcedKind;
         private bool _invincible;
         private bool _drawHud;
         private bool _autoStart;
@@ -136,6 +138,7 @@ namespace Survival.Core
             _invincible = ParseInt(query, "invincible") == 1;
             _drawHud = ParseInt(query, "hud") == 1;
             _autoStart = ParseInt(query, "autostart") == 1;
+            _forcedKind = ParseEnemyKind(query);
             float seconds = ParseFloat(query, "perfSeconds");
             if (seconds > 0f)
             {
@@ -170,6 +173,18 @@ namespace Survival.Core
             if (_health != null)
             {
                 _health.SetPerfInvincible(_invincible);
+            }
+
+            if (_spawner != null && _forcedKind.HasValue)
+            {
+                _spawner.SetPerfForcedKind(_forcedKind.Value);
+                // 单类型视觉探针（enemyLimit=1）才打状态日志；40 只压测不打，避免日志分配污染采样。
+                if (_forcedKind.Value == EnemyKind.Charger && _limitOverride > 0 && _limitOverride <= 2)
+                {
+                    EnemyAI.SetLogChargerStates(true);
+                }
+
+                Debug.Log($"[PERF] forced enemy kind = {_forcedKind.Value}");
             }
 
             _activeLimit = config.EnemyLimit;
@@ -897,6 +912,28 @@ namespace Survival.Core
                 CultureInfo.InvariantCulture, out float parsed)
                 ? parsed
                 : 0f;
+        }
+
+        /// <summary>?enemyKind=chaser|charger|flanker；非法值忽略并告警（不静默选错类型）。</summary>
+        private static EnemyKind? ParseEnemyKind(Dictionary<string, string> query)
+        {
+            if (!query.TryGetValue("enemyKind", out string value) || string.IsNullOrEmpty(value))
+            {
+                return null;
+            }
+
+            switch (value.ToLowerInvariant())
+            {
+                case "chaser":
+                    return EnemyKind.Chaser;
+                case "charger":
+                    return EnemyKind.Charger;
+                case "flanker":
+                    return EnemyKind.Flanker;
+                default:
+                    Debug.LogWarning($"[PERF] 未知 enemyKind={value}，忽略。");
+                    return null;
+            }
         }
 
         private static string F(float value, int decimals)

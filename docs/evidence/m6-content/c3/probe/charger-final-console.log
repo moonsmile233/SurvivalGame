@@ -1,0 +1,483 @@
+[PERF] forced enemy kind = Charger
+
+[PERF] probe start {,"screen":"1280x720","dpi":96,"gpu":"ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)","cpu":"n/a","device":"Chrome 156.0.0.0","os":"Windows 10","invincible":true,"roundDuration":150,"perfSeconds":120,"autostart":true}
+
+[PERF] autostart -> Playing (immediate)
+
+[PERF] cap reached limit=1 at=3.76s
+
+[PERF] {"t":4.00,"alive":1,"avgAlive":0.2,"settled":0.0,"motionUps":0.420,"unsettledMax":11.03,"minPairDist":0.900,"playerUps":0.00,"fps":57.2,"p95ms":11.00,"p99ms":45.00,"maxms":2144.00,"allocKBps":41.0,"heapKB":2200,"wasmMB":55.4,"gc":2}
+
+[PERF] {"t":6.00,"alive":1,"avgAlive":1.0,"settled":0.0,"motionUps":1.532,"unsettledMax":10.76,"minPairDist":0.900,"playerUps":0.00,"fps":151.4,"p95ms":8.00,"p99ms":9.00,"maxms":9.00,"allocKBps":40.0,"heapKB":2280,"wasmMB":55.4,"gc":2}
+
+[PERF] {"t":8.00,"alive":1,"avgAlive":1.0,"settled":0.0,"motionUps":1.535,"unsettledMax":7.70,"minPairDist":0.900,"playerUps":0.00,"fps":149.3,"p95ms":9.00,"p99ms":14.00,"maxms":14.00,"allocKBps":47.9,"heapKB":2376,"wasmMB":55.4,"gc":2}
+
+[Charger] state=Windup t=7.39 pos=-0.75,2.69
+
+[PERF] {"t":10.00,"alive":1,"avgAlive":1.0,"settled":0.0,"motionUps":1.271,"unsettledMax":4.62,"minPairDist":0.900,"playerUps":0.00,"fps":149.8,"p95ms":8.00,"p99ms":10.00,"maxms":13.00,"allocKBps":47.9,"heapKB":2472,"wasmMB":55.4,"gc":2}
+
+[Charger] state=Dash t=7.84 pos=-0.75,2.69
+
+[Charger] state=Recover t=8.29 pos=-0.14,0.52
+
+[Charger] state=Cooldown t=9.09 pos=-0.14,0.52
+
+[PERF] {"t":12.01,"alive":1,"avgAlive":1.0,"settled":0.5,"motionUps":1.577,"unsettledMax":2.09,"minPairDist":0.900,"playerUps":0.00,"fps":138.6,"p95ms":9.00,"p99ms":14.00,"maxms":18.00,"allocKBps":41.9,"heapKB":2188,"wasmMB":55.4,"gc":3}
+
+[Charger] state=Approach t=10.60 pos=-0.73,2.65
+
+[Charger] state=Windup t=10.60 pos=-0.73,2.65
+
+[Charger] state=Dash t=11.05 pos=-0.73,2.65
+
+[Charger] state=Recover t=11.51 pos=-0.12,0.45
+
+[PERF] {"t":14.01,"alive":1,"avgAlive":1.0,"settled":0.1,"motionUps":1.785,"unsettledMax":2.05,"minPairDist":0.900,"playerUps":0.00,"fps":137.1,"p95ms":10.00,"p99ms":13.00,"maxms":15.00,"allocKBps":33.9,"heapKB":2256,"wasmMB":55.4,"gc":3}
+
+[Charger] state=Cooldown t=12.32 pos=-0.12,0.45
+
+[PERF] {"t":16.00,"alive":1,"avgAlive":1.0,"settled":0.4,"motionUps":1.056,"unsettledMax":1.88,"minPairDist":0.900,"playerUps":0.00,"fps":137.5,"p95ms":9.00,"p99ms":11.00,"maxms":16.00,"allocKBps":35.9,"heapKB":2324,"wasmMB":55.4,"gc":3}
+
+[Charger] state=Approach t=13.82 pos=-0.72,2.60
+
+[Charger] state=Windup t=13.82 pos=-0.72,2.60
+
+[Charger] state=Dash t=14.27 pos=-0.72,2.60
+
+[Charger] state=Recover t=14.72 pos=-0.12,0.42
+
+[Charger] state=Cooldown t=15.53 pos=-0.12,0.42
+
+[PERF] {"t":18.01,"alive":1,"avgAlive":1.0,"settled":0.6,"motionUps":1.309,"unsettledMax":1.99,"minPairDist":0.900,"playerUps":0.00,"fps":140.4,"p95ms":9.00,"p99ms":12.00,"maxms":16.00,"allocKBps":36.0,"heapKB":2396,"wasmMB":55.4,"gc":3}
+
+[Charger] state=Approach t=17.03 pos=-0.71,2.58
+
+[Charger] state=Windup t=17.03 pos=-0.71,2.58
+
+[Charger] state=Dash t=17.49 pos=-0.71,2.58
+
+[PERF] {"t":20.01,"alive":1,"avgAlive":1.0,"settled":0.1,"motionUps":1.626,"unsettledMax":1.98,"minPairDist":0.900,"playerUps":0.00,"fps":142.1,"p95ms":9.00,"p99ms":12.00,"maxms":15.00,"allocKBps":39.9,"heapKB":2476,"wasmMB":55.4,"gc":3}
+
+[Charger] state=Recover t=17.94 pos=-0.10,0.38
+
+[Charger] state=Cooldown t=18.74 pos=-0.10,0.38
+
+[PERF] {"t":22.00,"alive":1,"avgAlive":1.0,"settled":0.6,"motionUps":1.254,"unsettledMax":1.13,"minPairDist":0.900,"playerUps":0.00,"fps":135.7,"p95ms":10.00,"p99ms":12.00,"maxms":18.00,"allocKBps":43.9,"heapKB":2192,"wasmMB":55.4,"gc":4}
+
+[Charger] state=Approach t=20.25 pos=-0.70,2.54
+
+[Charger] state=Windup t=20.25 pos=-0.70,2.54
+
+[Charger] state=Dash t=20.70 pos=-0.70,2.54
+
+[Charger] state=Recover t=21.15 pos=-0.10,0.36
+
+[PERF] {"t":24.00,"alive":1,"avgAlive":1.0,"settled":0.3,"motionUps":1.520,"unsettledMax":1.93,"minPairDist":0.900,"playerUps":0.00,"fps":123.4,"p95ms":12.00,"p99ms":16.00,"maxms":18.00,"allocKBps":30.0,"heapKB":2252,"wasmMB":55.4,"gc":4}
+
+[Charger] state=Cooldown t=21.95 pos=-0.10,0.36
+
+[Charger] state=Approach t=23.45 pos=-0.70,2.54
+
+[Charger] state=Windup t=23.45 pos=-0.70,2.54
+
+[PERF] {"t":26.01,"alive":1,"avgAlive":1.0,"settled":0.2,"motionUps":1.126,"unsettledMax":1.93,"minPairDist":0.900,"playerUps":0.00,"fps":118.9,"p95ms":13.00,"p99ms":19.00,"maxms":24.00,"allocKBps":30.0,"heapKB":2312,"wasmMB":55.4,"gc":4}
+
+[Charger] state=Dash t=23.91 pos=-0.70,2.54
+
+[Charger] state=Recover t=24.36 pos=-0.09,0.33
+
+[Charger] state=Cooldown t=25.17 pos=-0.09,0.33
+
+[PERF] {"t":28.01,"alive":1,"avgAlive":1.0,"settled":0.7,"motionUps":1.545,"unsettledMax":1.93,"minPairDist":0.900,"playerUps":0.00,"fps":134.4,"p95ms":11.00,"p99ms":16.00,"maxms":26.00,"allocKBps":36.0,"heapKB":2384,"wasmMB":55.4,"gc":4}
+
+[Charger] state=Approach t=26.68 pos=-0.70,2.51
+
+[Charger] state=Windup t=26.68 pos=-0.70,2.51
+
+[Charger] state=Dash t=27.13 pos=-0.70,2.51
+
+[Charger] state=Recover t=27.59 pos=-0.08,0.30
+
+[PERF] {"t":30.01,"alive":1,"avgAlive":1.0,"settled":0.1,"motionUps":1.890,"unsettledMax":1.91,"minPairDist":0.900,"playerUps":0.00,"fps":113.5,"p95ms":15.00,"p99ms":23.00,"maxms":30.00,"allocKBps":27.9,"heapKB":2440,"wasmMB":55.4,"gc":4}
+
+[Charger] state=Cooldown t=28.39 pos=-0.08,0.30
+
+[PERF] {"t":32.00,"alive":1,"avgAlive":1.0,"settled":0.5,"motionUps":1.013,"unsettledMax":1.63,"minPairDist":0.900,"playerUps":0.00,"fps":108.0,"p95ms":17.00,"p99ms":23.00,"maxms":28.00,"allocKBps":37.8,"heapKB":2516,"wasmMB":55.4,"gc":4}
+
+[Charger] state=Approach t=29.89 pos=-0.69,2.49
+
+[Charger] state=Windup t=29.89 pos=-0.69,2.49
+
+[Charger] state=Dash t=30.35 pos=-0.69,2.49
+
+[Charger] state=Recover t=30.80 pos=-0.08,0.31
+
+[Charger] state=Cooldown t=31.61 pos=-0.08,0.31
+
+[PERF] {"t":34.01,"alive":1,"avgAlive":1.0,"settled":0.6,"motionUps":1.317,"unsettledMax":1.88,"minPairDist":0.900,"playerUps":0.00,"fps":123.4,"p95ms":13.00,"p99ms":21.00,"maxms":23.00,"allocKBps":34.0,"heapKB":2216,"wasmMB":55.4,"gc":5}
+
+[Charger] state=Approach t=33.12 pos=-0.69,2.51
+
+[Charger] state=Windup t=33.12 pos=-0.69,2.51
+
+[Charger] state=Dash t=33.57 pos=-0.69,2.51
+
+[PERF] {"t":36.00,"alive":1,"avgAlive":1.0,"settled":0.1,"motionUps":1.499,"unsettledMax":1.90,"minPairDist":0.900,"playerUps":0.00,"fps":135.3,"p95ms":10.00,"p99ms":14.00,"maxms":15.00,"allocKBps":33.9,"heapKB":2284,"wasmMB":55.4,"gc":5}
+
+[Charger] state=Recover t=34.02 pos=-0.09,0.32
+
+[Charger] state=Cooldown t=34.82 pos=-0.09,0.32
+
+[PERF] {"t":38.01,"alive":1,"avgAlive":1.0,"settled":0.6,"motionUps":1.389,"unsettledMax":1.06,"minPairDist":0.900,"playerUps":0.00,"fps":140.6,"p95ms":9.00,"p99ms":11.00,"maxms":15.00,"allocKBps":33.9,"heapKB":2352,"wasmMB":55.4,"gc":5}
+
+[Charger] state=Approach t=36.33 pos=-0.70,2.52
+
+[Charger] state=Windup t=36.33 pos=-0.70,2.52
+
+[Charger] state=Dash t=36.79 pos=-0.70,2.52
+
+[Charger] state=Recover t=37.24 pos=-0.09,0.33
+
+[PERF] {"t":40.00,"alive":1,"avgAlive":1.0,"settled":0.3,"motionUps":1.596,"unsettledMax":1.92,"minPairDist":0.900,"playerUps":0.00,"fps":135.1,"p95ms":10.00,"p99ms":14.00,"maxms":19.00,"allocKBps":35.9,"heapKB":2424,"wasmMB":55.4,"gc":5}
+
+[Charger] state=Cooldown t=38.04 pos=-0.09,0.33
+
+[Charger] state=Approach t=39.55 pos=-0.70,2.54
+
+[Charger] state=Windup t=39.55 pos=-0.70,2.54
+
+[PERF] {"t":42.00,"alive":1,"avgAlive":1.0,"settled":0.3,"motionUps":1.143,"unsettledMax":1.94,"minPairDist":0.900,"playerUps":0.00,"fps":119.7,"p95ms":13.00,"p99ms":16.00,"maxms":25.00,"allocKBps":35.9,"heapKB":2496,"wasmMB":55.4,"gc":5}
+
+[Charger] state=Dash t=40.00 pos=-0.70,2.54
+
+[Charger] state=Recover t=40.46 pos=-0.09,0.33
+
+[Charger] state=Cooldown t=41.26 pos=-0.09,0.33
+
+[PERF] {"t":44.00,"alive":1,"avgAlive":1.0,"settled":0.6,"motionUps":1.482,"unsettledMax":1.94,"minPairDist":0.900,"playerUps":0.00,"fps":125.8,"p95ms":12.00,"p99ms":17.00,"maxms":20.00,"allocKBps":37.9,"heapKB":2200,"wasmMB":55.4,"gc":6}
+
+[Charger] state=Approach t=42.76 pos=-0.70,2.54
+
+[Charger] state=Windup t=42.76 pos=-0.70,2.54
+
+[Charger] state=Dash t=43.21 pos=-0.70,2.54
+
+[Charger] state=Recover t=43.67 pos=-0.10,0.36
+
+[PERF] {"t":46.00,"alive":1,"avgAlive":1.0,"settled":0.1,"motionUps":1.940,"unsettledMax":1.94,"minPairDist":0.900,"playerUps":0.00,"fps":126.1,"p95ms":13.00,"p99ms":19.00,"maxms":26.00,"allocKBps":31.9,"heapKB":2264,"wasmMB":55.4,"gc":6}
+
+[Charger] state=Cooldown t=44.47 pos=-0.10,0.36
+
+[PERF] {"t":48.00,"alive":1,"avgAlive":1.0,"settled":0.6,"motionUps":0.969,"unsettledMax":1.60,"minPairDist":0.900,"playerUps":0.00,"fps":132.4,"p95ms":10.00,"p99ms":23.00,"maxms":25.00,"allocKBps":34.0,"heapKB":2332,"wasmMB":55.4,"gc":6}
+
+[Charger] state=Approach t=46.00 pos=-0.72,2.58
+
+[Charger] state=Windup t=46.00 pos=-0.72,2.58
+
+[Charger] state=Dash t=46.46 pos=-0.72,2.58
+
+[Charger] state=Recover t=46.92 pos=-0.11,0.39
+
+[Charger] state=Cooldown t=47.72 pos=-0.11,0.39
+
+[PERF] {"t":50.01,"alive":1,"avgAlive":1.0,"settled":0.5,"motionUps":1.319,"unsettledMax":1.98,"minPairDist":0.900,"playerUps":0.00,"fps":126.4,"p95ms":13.00,"p99ms":22.00,"maxms":32.00,"allocKBps":34.0,"heapKB":2400,"wasmMB":55.4,"gc":6}
+
+[Charger] state=Approach t=49.22 pos=-0.72,2.61
+
+[Charger] state=Windup t=49.22 pos=-0.72,2.61
+
+[Charger] state=Dash t=49.67 pos=-0.72,2.61
+
+[PERF] {"t":52.01,"alive":1,"avgAlive":1.0,"settled":0.2,"motionUps":1.316,"unsettledMax":2.01,"minPairDist":0.900,"playerUps":0.00,"fps":127.9,"p95ms":12.00,"p99ms":19.00,"maxms":36.00,"allocKBps":36.0,"heapKB":2472,"wasmMB":55.4,"gc":6}
+
+[Charger] state=Recover t=50.13 pos=-0.12,0.42
+
+[Charger] state=Cooldown t=50.93 pos=-0.12,0.42
+
+[PERF] {"t":54.00,"alive":1,"avgAlive":1.0,"settled":0.6,"motionUps":1.590,"unsettledMax":1.68,"minPairDist":0.900,"playerUps":0.00,"fps":129.9,"p95ms":11.00,"p99ms":16.00,"maxms":17.00,"allocKBps":42.0,"heapKB":2188,"wasmMB":55.4,"gc":7}
+
+[Charger] state=Approach t=52.44 pos=-0.73,2.64
+
+[Charger] state=Windup t=52.44 pos=-0.73,2.64
+
+[Charger] state=Dash t=52.89 pos=-0.73,2.64
+
+[Charger] state=Recover t=53.35 pos=-0.12,0.45
+
+[PERF] {"t":56.00,"alive":1,"avgAlive":1.0,"settled":0.2,"motionUps":1.693,"unsettledMax":2.04,"minPairDist":0.900,"playerUps":0.00,"fps":134.9,"p95ms":10.00,"p99ms":14.00,"maxms":22.00,"allocKBps":32.0,"heapKB":2252,"wasmMB":55.4,"gc":7}
+
+[Charger] state=Cooldown t=54.16 pos=-0.12,0.45
+
+[Charger] state=Approach t=55.66 pos=-0.74,2.67
+
+[Charger] state=Windup t=55.66 pos=-0.74,2.67
+
+[PERF] {"t":58.00,"alive":1,"avgAlive":1.0,"settled":0.4,"motionUps":1.151,"unsettledMax":2.07,"minPairDist":0.900,"playerUps":0.00,"fps":129.8,"p95ms":11.00,"p99ms":16.00,"maxms":17.00,"allocKBps":32.0,"heapKB":2316,"wasmMB":55.4,"gc":7}
+
+[Charger] state=Dash t=56.12 pos=-0.74,2.67
+
+[Charger] state=Recover t=56.58 pos=-0.13,0.47
+
+[Charger] state=Cooldown t=57.38 pos=-0.13,0.47
+
+[PERF] {"t":60.00,"alive":1,"avgAlive":1.0,"settled":0.5,"motionUps":1.381,"unsettledMax":2.07,"minPairDist":0.900,"playerUps":0.00,"fps":122.8,"p95ms":12.00,"p99ms":18.00,"maxms":22.00,"allocKBps":31.9,"heapKB":2380,"wasmMB":55.4,"gc":7}
+
+[Charger] state=Approach t=58.89 pos=-0.74,2.67
+
+[Charger] state=Windup t=58.89 pos=-0.74,2.67
+
+[Charger] state=Dash t=59.34 pos=-0.74,2.67
+
+[PERF] {"t":62.00,"alive":1,"avgAlive":1.0,"settled":0.0,"motionUps":1.891,"unsettledMax":2.07,"minPairDist":0.900,"playerUps":0.00,"fps":129.9,"p95ms":11.00,"p99ms":13.00,"maxms":21.00,"allocKBps":36.0,"heapKB":2452,"wasmMB":55.4,"gc":7}
+
+[Charger] state=Recover t=59.80 pos=-0.13,0.47
+
+[Charger] state=Cooldown t=60.60 pos=-0.13,0.47
+
+[PERF] {"t":64.00,"alive":1,"avgAlive":1.0,"settled":0.6,"motionUps":1.048,"unsettledMax":1.53,"minPairDist":0.900,"playerUps":0.00,"fps":128.6,"p95ms":11.00,"p99ms":17.00,"maxms":18.00,"allocKBps":43.9,"heapKB":2540,"wasmMB":55.4,"gc":7}
+
+[Charger] state=Approach t=62.10 pos=-0.74,2.67
+
+[Charger] state=Windup t=62.10 pos=-0.74,2.67
+
+[Charger] state=Dash t=62.55 pos=-0.74,2.67
+
+[Charger] state=Recover t=63.01 pos=-0.14,0.49
+
+[PERF] {"t":66.01,"alive":1,"avgAlive":1.0,"settled":0.4,"motionUps":1.396,"unsettledMax":2.07,"minPairDist":0.900,"playerUps":0.00,"fps":133.2,"p95ms":10.00,"p99ms":14.00,"maxms":15.00,"allocKBps":31.9,"heapKB":2236,"wasmMB":55.4,"gc":8}
+
+[Charger] state=Cooldown t=63.81 pos=-0.14,0.49
+
+[Charger] state=Approach t=65.32 pos=-0.74,2.68
+
+[Charger] state=Windup t=65.32 pos=-0.74,2.68
+
+[PERF] {"t":68.00,"alive":1,"avgAlive":1.0,"settled":0.2,"motionUps":1.132,"unsettledMax":2.08,"minPairDist":0.900,"playerUps":0.00,"fps":137.0,"p95ms":9.00,"p99ms":10.00,"maxms":14.00,"allocKBps":33.9,"heapKB":2304,"wasmMB":55.4,"gc":8}
+
+[Charger] state=Dash t=65.77 pos=-0.74,2.68
+
+[Charger] state=Recover t=66.22 pos=-0.14,0.50
+
+[Charger] state=Cooldown t=67.02 pos=-0.14,0.50
+
+[PERF] {"t":70.01,"alive":1,"avgAlive":1.0,"settled":0.6,"motionUps":1.664,"unsettledMax":2.08,"minPairDist":0.900,"playerUps":0.00,"fps":138.1,"p95ms":10.00,"p99ms":14.00,"maxms":15.00,"allocKBps":35.9,"heapKB":2376,"wasmMB":55.4,"gc":8}
+
+[Charger] state=Approach t=68.53 pos=-0.74,2.68
+
+[Charger] state=Windup t=68.53 pos=-0.74,2.68
+
+[Charger] state=Dash t=68.98 pos=-0.74,2.68
+
+[Charger] state=Recover t=69.44 pos=-0.14,0.50
+
+[PERF] {"t":72.00,"alive":1,"avgAlive":1.0,"settled":0.2,"motionUps":1.726,"unsettledMax":2.08,"minPairDist":0.900,"playerUps":0.00,"fps":136.7,"p95ms":10.00,"p99ms":13.00,"maxms":21.00,"allocKBps":35.9,"heapKB":2448,"wasmMB":55.4,"gc":8}
+
+[Charger] state=Cooldown t=70.24 pos=-0.14,0.50
+
+[PERF] {"t":74.00,"alive":1,"avgAlive":1.0,"settled":0.4,"motionUps":1.130,"unsettledMax":2.08,"minPairDist":0.900,"playerUps":0.00,"fps":136.1,"p95ms":9.00,"p99ms":13.00,"maxms":15.00,"allocKBps":43.9,"heapKB":2536,"wasmMB":55.4,"gc":8}
+
+[Charger] state=Approach t=71.74 pos=-0.74,2.68
+
+[Charger] state=Windup t=71.74 pos=-0.74,2.68
+
+[Charger] state=Dash t=72.20 pos=-0.74,2.68
+
+[Charger] state=Recover t=72.65 pos=-0.14,0.51
+
+[Charger] state=Cooldown t=73.45 pos=-0.14,0.51
+
+[PERF] {"t":76.00,"alive":1,"avgAlive":1.0,"settled":0.6,"motionUps":1.316,"unsettledMax":2.09,"minPairDist":0.900,"playerUps":0.00,"fps":136.7,"p95ms":11.00,"p99ms":15.00,"maxms":17.00,"allocKBps":35.9,"heapKB":2236,"wasmMB":55.4,"gc":9}
+
+[Charger] state=Approach t=74.95 pos=-0.74,2.68
+
+[Charger] state=Windup t=74.95 pos=-0.74,2.68
+
+[Charger] state=Dash t=75.41 pos=-0.74,2.68
+
+[PERF] {"t":78.01,"alive":1,"avgAlive":1.0,"settled":0.0,"motionUps":1.762,"unsettledMax":2.08,"minPairDist":0.900,"playerUps":0.00,"fps":126.7,"p95ms":13.00,"p99ms":23.00,"maxms":25.00,"allocKBps":31.9,"heapKB":2300,"wasmMB":55.4,"gc":9}
+
+[Charger] state=Recover t=75.86 pos=-0.14,0.49
+
+[Charger] state=Cooldown t=76.71 pos=-0.14,0.49
+
+[PERF] {"t":80.00,"alive":1,"avgAlive":1.0,"settled":0.5,"motionUps":1.154,"unsettledMax":1.45,"minPairDist":0.900,"playerUps":0.00,"fps":126.9,"p95ms":11.00,"p99ms":25.00,"maxms":48.00,"allocKBps":32.0,"heapKB":2364,"wasmMB":55.4,"gc":9}
+
+[Charger] state=Approach t=78.21 pos=-0.74,2.69
+
+[Charger] state=Windup t=78.21 pos=-0.74,2.69
+
+[Charger] state=Dash t=78.66 pos=-0.74,2.69
+
+[Charger] state=Recover t=79.12 pos=-0.13,0.48
+
+[PERF] {"t":82.01,"alive":1,"avgAlive":1.0,"settled":0.3,"motionUps":1.452,"unsettledMax":2.09,"minPairDist":0.900,"playerUps":0.00,"fps":123.3,"p95ms":14.00,"p99ms":19.00,"maxms":25.00,"allocKBps":29.9,"heapKB":2424,"wasmMB":55.4,"gc":9}
+
+[Charger] state=Cooldown t=79.93 pos=-0.13,0.48
+
+[Charger] state=Approach t=81.46 pos=-0.74,2.68
+
+[Charger] state=Windup t=81.46 pos=-0.74,2.68
+
+[PERF] {"t":84.00,"alive":1,"avgAlive":1.0,"settled":0.2,"motionUps":1.137,"unsettledMax":2.08,"minPairDist":0.900,"playerUps":0.00,"fps":114.3,"p95ms":16.00,"p99ms":39.00,"maxms":67.00,"allocKBps":39.9,"heapKB":2504,"wasmMB":55.4,"gc":9}
+
+[Charger] state=Dash t=81.91 pos=-0.74,2.68
+
+[Charger] state=Recover t=82.41 pos=-0.10,0.35
+
+[Charger] state=Cooldown t=83.21 pos=-0.10,0.35
+
+[PERF] {"t":86.00,"alive":1,"avgAlive":1.0,"settled":0.6,"motionUps":1.594,"unsettledMax":2.08,"minPairDist":0.900,"playerUps":0.00,"fps":119.9,"p95ms":12.00,"p99ms":36.00,"maxms":63.00,"allocKBps":36.0,"heapKB":2204,"wasmMB":55.4,"gc":10}
+
+[Charger] state=Approach t=84.72 pos=-0.73,2.64
+
+[Charger] state=Windup t=84.72 pos=-0.73,2.64
+
+[Charger] state=Dash t=85.17 pos=-0.73,2.64
+
+[Charger] state=Recover t=85.62 pos=-0.12,0.44
+
+[PERF] {"t":88.00,"alive":1,"avgAlive":1.0,"settled":0.1,"motionUps":1.942,"unsettledMax":2.04,"minPairDist":0.900,"playerUps":0.00,"fps":128.4,"p95ms":12.00,"p99ms":17.00,"maxms":19.00,"allocKBps":33.8,"heapKB":2268,"wasmMB":55.4,"gc":10}
+
+[Charger] state=Cooldown t=86.43 pos=-0.12,0.44
+
+[PERF] {"t":90.00,"alive":1,"avgAlive":1.0,"settled":0.5,"motionUps":1.043,"unsettledMax":1.83,"minPairDist":0.900,"playerUps":0.00,"fps":127.4,"p95ms":13.00,"p99ms":20.00,"maxms":28.00,"allocKBps":32.0,"heapKB":2332,"wasmMB":55.4,"gc":10}
+
+[Charger] state=Approach t=87.94 pos=-0.74,2.68
+
+[Charger] state=Windup t=87.94 pos=-0.74,2.68
+
+[Charger] state=Dash t=88.39 pos=-0.74,2.68
+
+[Charger] state=Recover t=88.84 pos=-0.14,0.51
+
+[Charger] state=Cooldown t=89.64 pos=-0.14,0.51
+
+[PERF] {"t":92.01,"alive":1,"avgAlive":1.0,"settled":0.5,"motionUps":1.286,"unsettledMax":2.08,"minPairDist":0.900,"playerUps":0.00,"fps":118.0,"p95ms":13.00,"p99ms":21.00,"maxms":40.00,"allocKBps":28.0,"heapKB":2388,"wasmMB":55.4,"gc":10}
+
+[Charger] state=Approach t=91.15 pos=-0.75,2.69
+
+[Charger] state=Windup t=91.15 pos=-0.75,2.69
+
+[Charger] state=Dash t=91.60 pos=-0.75,2.69
+
+[PERF] {"t":94.02,"alive":1,"avgAlive":1.0,"settled":0.1,"motionUps":1.411,"unsettledMax":2.09,"minPairDist":0.900,"playerUps":0.00,"fps":123.1,"p95ms":11.00,"p99ms":16.00,"maxms":23.00,"allocKBps":35.9,"heapKB":2460,"wasmMB":55.4,"gc":10}
+
+[Charger] state=Recover t=92.06 pos=-0.13,0.48
+
+[Charger] state=Cooldown t=92.87 pos=-0.13,0.48
+
+[PERF] {"t":96.01,"alive":1,"avgAlive":1.0,"settled":0.6,"motionUps":1.511,"unsettledMax":1.42,"minPairDist":0.900,"playerUps":0.00,"fps":118.1,"p95ms":13.00,"p99ms":23.00,"maxms":27.00,"allocKBps":41.7,"heapKB":2544,"wasmMB":55.4,"gc":10}
+
+[Charger] state=Approach t=94.38 pos=-0.74,2.69
+
+[Charger] state=Windup t=94.38 pos=-0.74,2.69
+
+[Charger] state=Dash t=94.83 pos=-0.74,2.69
+
+[Charger] state=Recover t=95.28 pos=-0.14,0.51
+
+[PERF] {"t":98.00,"alive":1,"avgAlive":1.0,"settled":0.2,"motionUps":1.591,"unsettledMax":2.09,"minPairDist":0.900,"playerUps":0.00,"fps":110.2,"p95ms":18.00,"p99ms":21.00,"maxms":23.00,"allocKBps":25.9,"heapKB":2228,"wasmMB":55.4,"gc":11}
+
+[Charger] state=Cooldown t=96.09 pos=-0.14,0.51
+
+[Charger] state=Approach t=97.60 pos=-0.75,2.69
+
+[Charger] state=Windup t=97.60 pos=-0.75,2.69
+
+[PERF] {"t":100.00,"alive":1,"avgAlive":1.0,"settled":0.3,"motionUps":1.130,"unsettledMax":2.09,"minPairDist":0.900,"playerUps":0.00,"fps":118.0,"p95ms":17.00,"p99ms":22.00,"maxms":54.00,"allocKBps":28.0,"heapKB":2284,"wasmMB":55.4,"gc":11}
+
+[Charger] state=Dash t=98.05 pos=-0.75,2.69
+
+[Charger] state=Recover t=98.51 pos=-0.13,0.48
+
+[Charger] state=Cooldown t=99.32 pos=-0.13,0.48
+
+[PERF] {"t":102.01,"alive":1,"avgAlive":1.0,"settled":0.6,"motionUps":1.448,"unsettledMax":2.09,"minPairDist":0.900,"playerUps":0.00,"fps":112.2,"p95ms":15.00,"p99ms":29.00,"maxms":40.00,"allocKBps":27.9,"heapKB":2340,"wasmMB":55.4,"gc":11}
+
+[Charger] state=Approach t=100.82 pos=-0.74,2.69
+
+[Charger] state=Windup t=100.82 pos=-0.74,2.69
+
+[Charger] state=Dash t=101.28 pos=-0.74,2.69
+
+[Charger] state=Recover t=101.74 pos=-0.14,0.49
+
+[PERF] {"t":104.01,"alive":1,"avgAlive":1.0,"settled":0.0,"motionUps":1.972,"unsettledMax":2.09,"minPairDist":0.900,"playerUps":0.00,"fps":113.5,"p95ms":14.00,"p99ms":21.00,"maxms":57.00,"allocKBps":31.9,"heapKB":2404,"wasmMB":55.4,"gc":11}
+
+[Charger] state=Cooldown t=102.55 pos=-0.14,0.49
+
+[PERF] {"t":106.01,"alive":1,"avgAlive":1.0,"settled":0.5,"motionUps":0.955,"unsettledMax":1.71,"minPairDist":0.900,"playerUps":0.00,"fps":113.8,"p95ms":13.00,"p99ms":32.00,"maxms":59.00,"allocKBps":33.9,"heapKB":2472,"wasmMB":55.4,"gc":11}
+
+[Charger] state=Approach t=104.06 pos=-0.74,2.69
+
+[Charger] state=Windup t=104.06 pos=-0.74,2.69
+
+[Charger] state=Dash t=104.51 pos=-0.74,2.69
+
+[Charger] state=Recover t=104.97 pos=-0.13,0.48
+
+[PERF] {"t":108.00,"alive":1,"avgAlive":1.0,"settled":0.4,"motionUps":1.334,"unsettledMax":2.09,"minPairDist":0.900,"playerUps":0.00,"fps":111.8,"p95ms":17.00,"p99ms":29.00,"maxms":44.00,"allocKBps":37.9,"heapKB":2548,"wasmMB":55.4,"gc":11}
+
+[Charger] state=Cooldown t=105.77 pos=-0.13,0.48
+
+[Charger] state=Approach t=107.32 pos=-0.74,2.69
+
+[Charger] state=Windup t=107.32 pos=-0.74,2.69
+
+[PERF] {"t":110.00,"alive":1,"avgAlive":1.0,"settled":0.2,"motionUps":1.146,"unsettledMax":2.09,"minPairDist":0.900,"playerUps":0.00,"fps":113.9,"p95ms":16.00,"p99ms":35.00,"maxms":92.00,"allocKBps":28.0,"heapKB":2232,"wasmMB":55.4,"gc":12}
+
+[Charger] state=Dash t=107.77 pos=-0.74,2.69
+
+[Charger] state=Recover t=108.23 pos=-0.14,0.49
+
+[Charger] state=Cooldown t=109.04 pos=-0.14,0.49
+
+[PERF] {"t":112.00,"alive":1,"avgAlive":1.0,"settled":0.6,"motionUps":1.660,"unsettledMax":2.09,"minPairDist":0.900,"playerUps":0.00,"fps":120.6,"p95ms":13.00,"p99ms":31.00,"maxms":74.00,"allocKBps":29.9,"heapKB":2292,"wasmMB":55.4,"gc":12}
+
+[Charger] state=Approach t=110.57 pos=-0.75,2.70
+
+[Charger] state=Windup t=110.60 pos=-0.75,2.70
+
+[Charger] state=Dash t=111.05 pos=-0.75,2.70
+
+[Charger] state=Recover t=111.51 pos=-0.14,0.51
+
+[PERF] {"t":114.01,"alive":1,"avgAlive":1.0,"settled":0.1,"motionUps":1.751,"unsettledMax":2.10,"minPairDist":0.900,"playerUps":0.00,"fps":125.2,"p95ms":12.00,"p99ms":18.00,"maxms":25.00,"allocKBps":31.9,"heapKB":2356,"wasmMB":55.4,"gc":12}
+
+[Charger] state=Cooldown t=112.31 pos=-0.14,0.51
+
+[PERF] {"t":116.01,"alive":1,"avgAlive":1.0,"settled":0.4,"motionUps":1.128,"unsettledMax":2.08,"minPairDist":0.900,"playerUps":0.00,"fps":127.0,"p95ms":12.00,"p99ms":20.00,"maxms":22.00,"allocKBps":34.0,"heapKB":2424,"wasmMB":55.4,"gc":12}
+
+[Charger] state=Approach t=113.81 pos=-0.75,2.70
+
+[Charger] state=Windup t=113.81 pos=-0.75,2.70
+
+[Charger] state=Dash t=114.27 pos=-0.75,2.70
+
+[Charger] state=Recover t=114.72 pos=-0.15,0.53
+
+[Charger] state=Cooldown t=115.53 pos=-0.15,0.53
+
+[PERF] {"t":118.00,"alive":1,"avgAlive":1.0,"settled":0.5,"motionUps":1.268,"unsettledMax":2.10,"minPairDist":0.900,"playerUps":0.00,"fps":128.5,"p95ms":11.00,"p99ms":16.00,"maxms":27.00,"allocKBps":40.0,"heapKB":2504,"wasmMB":55.4,"gc":12}
+
+[Charger] state=Approach t=117.03 pos=-0.75,2.70
+
+[Charger] state=Windup t=117.06 pos=-0.75,2.70
+
+[Charger] state=Dash t=117.52 pos=-0.75,2.70
+
+[PERF] {"t":120.01,"alive":1,"avgAlive":1.0,"settled":0.0,"motionUps":1.544,"unsettledMax":2.11,"minPairDist":0.900,"playerUps":0.00,"fps":124.7,"p95ms":12.00,"p99ms":21.00,"maxms":25.00,"allocKBps":35.9,"heapKB":2204,"wasmMB":55.4,"gc":13}
+
+[Charger] state=Recover t=117.97 pos=-0.14,0.51
+
+[Charger] state=Cooldown t=118.78 pos=-0.14,0.51
+
+[PERF] {"t":122.01,"alive":1,"avgAlive":1.0,"settled":0.6,"motionUps":1.334,"unsettledMax":1.31,"minPairDist":0.900,"playerUps":0.00,"fps":125.5,"p95ms":11.00,"p99ms":20.00,"maxms":38.00,"allocKBps":34.0,"heapKB":2272,"wasmMB":55.4,"gc":13}
+
+[Charger] state=Approach t=120.28 pos=-0.75,2.70
+
+[Charger] state=Windup t=120.31 pos=-0.75,2.69
+
+[Charger] state=Dash t=120.76 pos=-0.75,2.69
+
+[Charger] state=Recover t=121.21 pos=-0.14,0.52

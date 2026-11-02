@@ -832,7 +832,7 @@ public static class SceneSetup
                 serialized.FindProperty("_moveSpeed").floatValue = 1.5f;
                 serialized.FindProperty("_tint").colorValue = new Color(1f, 0.55f, 0.2f, 1f);
                 serialized.FindProperty("_visualScale").floatValue = 1.05f;
-                serialized.FindProperty("_chargeTriggerDistance").floatValue = 4.5f;
+                serialized.FindProperty("_chargeTriggerDistance").floatValue = 2.8f;
                 serialized.FindProperty("_chargeWindupSeconds").floatValue = 0.45f;
                 serialized.FindProperty("_chargeDurationSeconds").floatValue = 0.45f;
                 serialized.FindProperty("_chargeSpeed").floatValue = 5f;

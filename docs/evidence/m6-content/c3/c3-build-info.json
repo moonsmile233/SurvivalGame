@@ -1,0 +1,12 @@
+{
+    "loaderUrl": "Build/unity.loader.js",
+    "dataUrl": "Build/unity.data.unityweb",
+    "frameworkUrl": "Build/unity.framework.js.unityweb",
+    "codeUrl": "Build/unity.wasm.unityweb",
+    "streamingAssetsUrl": "",
+    "companyName": "Demo",
+    "productName": "SurvivalGame",
+    "productVersion": "1.2.1",
+    "unityVersion": "6000.3.22f1",
+    "builtAt": "2026-11-03T12:15:40Z"
+}

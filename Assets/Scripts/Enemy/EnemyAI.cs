@@ -68,8 +68,54 @@ namespace Survival.Enemy
         private bool _isAtFront;
         private float _blockW;
 
+        private EnemyKind _kind;
+        private SpriteRenderer _spriteRenderer;
+        private Color _baseTint = Color.white;
+        private Vector3 _baseScale = Vector3.one;
+
+        private float _chargeTriggerDistance;
+        private float _chargeWindupSeconds;
+        private float _chargeDurationSeconds;
+        private float _chargeSpeed;
+        private float _chargeRecoverSeconds;
+        private float _chargeCooldownSeconds;
+        private int _chargeDamage;
+
+        private ChargerState _chargerState = ChargerState.Approach;
+        private float _chargerTimer;
+        private Vector2 _chargeDirection = Vector2.up;
+        private bool _chargeHitDone;
+        private bool _chargeStartedInsideMap;
+
+        // 只由 PerfProbe 的 ?enemyKind=charger 打开：状态切换打一行 console，供 E2E 抓 Windup/Dash 截图。
+        private static bool s_logChargerStates;
+
+        private static readonly Color ChargerWindupTint = new Color(1f, 0.85f, 0.2f, 1f);
+        private static readonly Color ChargerDashTint = new Color(1f, 0.1f, 0.05f, 1f);
+
+        private enum ChargerState
+        {
+            Approach = 0,
+            Windup = 1,
+            Dash = 2,
+            Recover = 3,
+            Cooldown = 4,
+        }
+
         /// <summary>已在前环（离停距 ≤0.15）。不是“钉住”——软墙/让位仍然生效。</summary>
         public bool IsAtFront => _isAtFront;
+
+        /// <summary>本敌类型；PerfProbe / Spawner 统计用。</summary>
+        public EnemyKind Kind => _kind;
+
+        /// <summary>Charger 是否处于冲刺帧（只读探针）。</summary>
+        public bool IsCharging => _kind == EnemyKind.Charger && _chargerState == ChargerState.Dash;
+
+        /// <summary>Charger 状态名；非 Charger 返回空串。只在探针/日志读，不进 Update 热路径。</summary>
+        public string ChargerStateName => _kind == EnemyKind.Charger ? _chargerState.ToString() : string.Empty;
+
+        /// <summary>只给 PerfProbe 用：强制类型测试时打开冲锋状态日志。</summary>
+        public static void SetLogChargerStates(bool value) => s_logChargerStates = value;
 
         /// <summary>离停距还差多少（&gt;0 表示还没到前环；压测探针用）。</summary>
         public float ExcessDistance => _excessDistance;
@@ -90,7 +136,8 @@ namespace Survival.Enemy
             PlayerHealth playerHealth,
             EnemySpawner spawner,
             Camera camera,
-            float stopRadius)
+            float stopRadius,
+            SpriteRenderer spriteRenderer = null)
         {
             _config = config;
             _definition = definition;
@@ -101,6 +148,15 @@ namespace Survival.Enemy
             _spawner = spawner;
             _camera = camera;
             _stopRadius = stopRadius;
+
+            _kind = definition != null ? definition.Kind : EnemyKind.Chaser;
+            _spriteRenderer = spriteRenderer != null ? spriteRenderer : GetComponent<SpriteRenderer>();
+            _baseTint = _spriteRenderer != null ? _spriteRenderer.color : Color.white;
+            _baseScale = transform.localScale;
+            if (_baseScale.sqrMagnitude <= 0.000001f)
+            {
+                _baseScale = Vector3.one;
+            }
 
             // 让位/侧闪的稳定侧：生成时随机，只在左右压力接近时使用（压力差大时按实际分布换边）。
             _sideSign = Random.value < 0.5f ? -1f : 1f;
@@ -115,6 +171,19 @@ namespace Survival.Enemy
             float jitter = 1f + Random.Range(-config.EnemySpeedJitter, config.EnemySpeedJitter);
             _baseSpeed = Mathf.Min(definition.MoveSpeed * config.EnemySpeedMultiplier * jitter, config.EnemySpeedMax);
             _contactDamage = Mathf.Max(1, Mathf.RoundToInt(definition.ContactDamage * config.DamageMultiplier));
+
+            if (_kind == EnemyKind.Charger)
+            {
+                // 冲刺速度不吃 jitter/压力曲线，只乘难度速度倍率（困难 5.0×1.1=5.5）；
+                // 也**不受 EnemySpeedMax（2.2）限制**——这是冲锋的固定路径速度。
+                _chargeTriggerDistance = definition.ChargeTriggerDistance;
+                _chargeWindupSeconds = Mathf.Max(0.05f, definition.ChargeWindupSeconds);
+                _chargeDurationSeconds = Mathf.Max(0.05f, definition.ChargeDurationSeconds);
+                _chargeSpeed = definition.ChargeSpeed * config.EnemySpeedMultiplier;
+                _chargeRecoverSeconds = Mathf.Max(0f, definition.ChargeRecoverSeconds);
+                _chargeCooldownSeconds = Mathf.Max(0f, definition.ChargeCooldownSeconds);
+                _chargeDamage = Mathf.Max(1, Mathf.RoundToInt(definition.ChargeDamage * config.DamageMultiplier));
+            }
         }
 
         /// <summary>Spawner 30Hz 调用：只更新“看得见谁”，位置在 Update 里读实时 transform。</summary>
@@ -168,11 +237,16 @@ namespace Survival.Enemy
             _isAtFront = distance - _stopRadius <= FrontTolerance;
 
             float speed = GetCurrentSpeed();
-            float excess = distance - _stopRadius;
+
+            // 冲锋者有自己的接近/前摇/冲刺/恢复状态；其余类型走原来的 seek + 人群管线。
+            if (_kind == EnemyKind.Charger)
+            {
+                UpdateCharger(position, direction, distance, speed, rawDelta, delta);
+                return;
+            }
 
             // 1) 径向：比例控制（到停距为 0；玩家压进来时最多以 backOutRatio 退开）。
-            float radialFactor = Mathf.Clamp(excess * _config.EnemySeekGain, -_config.EnemyBackOutRatio, 1f);
-            Vector2 seekVelocity = direction * (radialFactor * speed);
+            Vector2 seekVelocity = ComputeSeekVelocity(direction, distance, speed);
 
             // 2) 人群管线（软墙/让位/防重合/积分）统一走 ApplyCrowdMovement；
             //    C3/C4 只改 seekVelocity 的来源与状态，不复制这段。
@@ -191,7 +265,9 @@ namespace Survival.Enemy
             float distance,
             float speed,
             Vector2 seekVelocity,
-            float delta)
+            float delta,
+            bool allowPlayerDodge = true,
+            bool allowSidestep = true)
         {
             // 2) 两个“被压”来源：
             //    - 前面有人挡住径向追击（frontBlock）→ 外圈侧移找空位；
@@ -206,13 +282,20 @@ namespace Survival.Enemy
             Vector2 desired = seekVelocity;
 
             // 3) 玩家移动穿过人群：侧向闪避（只在玩家朝我靠近时；玩家静止时不生效）。
-            AddPlayerDodge(ref desired, direction, distance, speed);
+            //    Windup/Recover 传 false：冲锋者要站定读条，不被玩家穿过带着走。
+            if (allowPlayerDodge)
+            {
+                AddPlayerDodge(ref desired, direction, distance, speed);
+            }
 
             // 4) 切向让位：被挡住/被顶着时沿邻居较少的一侧滑移。
-            float sidestep = Mathf.Min(
-                _config.EnemySidestepSpeed * frontBlock + _config.EnemyYieldSpeed * behindBlock,
-                _config.EnemySidestepSpeed + _config.EnemyYieldSpeed);
-            AddSidestep(ref desired, direction, position, sidestep);
+            if (allowSidestep)
+            {
+                float sidestep = Mathf.Min(
+                    _config.EnemySidestepSpeed * frontBlock + _config.EnemyYieldSpeed * behindBlock,
+                    _config.EnemySidestepSpeed + _config.EnemyYieldSpeed);
+                AddSidestep(ref desired, direction, position, sidestep);
+            }
 
             // 5) 软墙：先合成、再投影（侧移不能把扣掉的逼近分量加回来）。
             desired = ApplySoftWall(desired, position);
@@ -235,6 +318,222 @@ namespace Survival.Enemy
             Vector2 newPosition = position + finalVelocity * delta;
             transform.position = newPosition;
             return newPosition;
+        }
+
+        /// <summary>径向 seek：到停距为 0；玩家压进来时最多以 backOutRatio 退开。</summary>
+        private Vector2 ComputeSeekVelocity(Vector2 direction, float distance, float speed)
+        {
+            float excess = distance - _stopRadius;
+            float radialFactor = Mathf.Clamp(excess * _config.EnemySeekGain, -_config.EnemyBackOutRatio, 1f);
+            return direction * (radialFactor * speed);
+        }
+
+        /// <summary>
+        /// 冲锋者状态机。Approach/Cooldown 走普通 seek + 人群管线；Windup/Recover 原地
+        /// （只保留软墙/防重合，不跟随玩家侧闪）；Dash 走锁定方向直线，跳过软墙/让位，
+        /// 只保留 &lt;0.5 的横向防重合。时间用 delta（已钳到 MaxDeltaTime）；暂停时 Update 提前返回。
+        /// </summary>
+        private void UpdateCharger(Vector2 position, Vector2 direction, float distance, float speed,
+            float rawDelta, float delta)
+        {
+            switch (_chargerState)
+            {
+                case ChargerState.Approach:
+                    if (distance <= _chargeTriggerDistance)
+                    {
+                        EnterChargerState(ChargerState.Windup);
+                        return;
+                    }
+
+                    MoveChargerWithCrowd(position, direction, distance, speed, rawDelta, delta,
+                        allowDodge: true, allowSidestep: true);
+                    return;
+
+                case ChargerState.Cooldown:
+                    _chargerTimer -= delta;
+                    if (_chargerTimer <= 0f)
+                    {
+                        EnterChargerState(ChargerState.Approach);
+                        if (distance <= _chargeTriggerDistance)
+                        {
+                            EnterChargerState(ChargerState.Windup);
+                            return;
+                        }
+                    }
+
+                    // 冷却期：太近就后退到触发距离（否则会在 0.7 处再次前摇，玩家来不及反应）；
+                    // 在触发距离附近原地等；太远才继续接近。
+                    float gap = distance - _chargeTriggerDistance;
+                    bool retreat = gap < -0.1f;
+                    bool hold = !retreat && gap <= 0.1f;
+                    MoveChargerWithCrowd(position, direction, distance, speed, rawDelta, delta,
+                        allowDodge: true, allowSidestep: true, hold: hold, retreat: retreat);
+                    return;
+
+                case ChargerState.Windup:
+                    _chargerTimer -= delta;
+                    if (_chargerTimer <= 0f)
+                    {
+                        // 方向只在 Dash 开始锁定；前摇中玩家仍可横向拉开。
+                        _chargeDirection = distance > DirectionEpsilon ? direction : _lastDirection;
+                        _chargeHitDone = false;
+                        _chargeStartedInsideMap = IsInsideMap(position);
+                        EnterChargerState(ChargerState.Dash);
+                        return;
+                    }
+
+                    MoveChargerWithCrowd(position, direction, distance, speed, rawDelta, delta,
+                        allowDodge: false, allowSidestep: false);
+                    return;
+
+                case ChargerState.Dash:
+                    UpdateChargerDash(position, rawDelta, delta);
+                    return;
+
+                case ChargerState.Recover:
+                    _chargerTimer -= delta;
+                    if (_chargerTimer <= 0f)
+                    {
+                        EnterChargerState(ChargerState.Cooldown);
+                    }
+
+                    MoveChargerWithCrowd(position, direction, distance, speed, rawDelta, delta,
+                        allowDodge: false, allowSidestep: false);
+                    return;
+            }
+        }
+
+        private void MoveChargerWithCrowd(Vector2 position, Vector2 direction, float distance, float speed,
+            float rawDelta, float delta, bool allowDodge, bool allowSidestep, bool hold = false, bool retreat = false)
+        {
+            // Windup/Recover 原地；Cooldown 太近后退、在触发距离附近原地、太远接近。
+            Vector2 seek;
+            if (retreat)
+            {
+                seek = -direction * speed;
+            }
+            else if (hold || _chargerState == ChargerState.Windup || _chargerState == ChargerState.Recover)
+            {
+                seek = Vector2.zero;
+            }
+            else
+            {
+                seek = ComputeSeekVelocity(direction, distance, speed);
+            }
+
+            Vector2 moved = ApplyCrowdMovement(position, direction, distance, speed, seek, delta,
+                allowPlayerDodge: allowDodge, allowSidestep: allowSidestep);
+            UpdateRecycle(moved, rawDelta);
+        }
+
+        private void EnterChargerState(ChargerState next)
+        {
+            _chargerState = next;
+            switch (next)
+            {
+                case ChargerState.Approach:
+                    _chargerTimer = 0f;
+                    SetChargerVisual(_baseTint, 1f);
+                    break;
+
+                case ChargerState.Windup:
+                    _chargerTimer = _chargeWindupSeconds;
+                    _velocity = Vector2.zero;
+                    _emergencyVelocity = Vector2.zero;
+                    SetChargerVisual(ChargerWindupTint, 1.2f);
+                    break;
+
+                case ChargerState.Dash:
+                    _chargerTimer = _chargeDurationSeconds;
+                    _velocity = _chargeDirection * _chargeSpeed;
+                    _emergencyVelocity = Vector2.zero;
+                    FrontBlock = 0f;
+                    BehindBlock = 0f;
+                    _blockW = 0f;
+                    SetChargerVisual(ChargerDashTint, 1.15f);
+                    break;
+
+                case ChargerState.Recover:
+                    _chargerTimer = _chargeRecoverSeconds;
+                    _velocity = Vector2.zero;
+                    _emergencyVelocity = Vector2.zero;
+                    SetChargerVisual(_baseTint, 1f);
+                    break;
+
+                case ChargerState.Cooldown:
+                    _chargerTimer = _chargeCooldownSeconds;
+                    SetChargerVisual(_baseTint, 1f);
+                    break;
+            }
+
+            if (s_logChargerStates)
+            {
+                float elapsed = _spawner != null ? _spawner.RoundElapsed : 0f;
+                Debug.Log($"[Charger] state={next} t={elapsed:F2} pos={transform.position.x:F2},{transform.position.y:F2}");
+            }
+        }
+
+        /// <summary>
+        /// 冲刺：方向/速度锁定，不转向；只保留横向防重合，绝不抵消前进分量。
+        /// 从地图内出发时撞到地图边界提前结束；从地图外生成的允许先走进来。
+        /// </summary>
+        private void UpdateChargerDash(Vector2 position, float rawDelta, float delta)
+        {
+            _chargerTimer -= delta;
+
+            Vector2 dashVelocity = _chargeDirection * _chargeSpeed;
+
+            Vector2 emergency = ComputeEmergency(position);
+            Vector2 lateral = emergency - Vector2.Dot(emergency, _chargeDirection) * _chargeDirection;
+            lateral = Vector2.ClampMagnitude(lateral, _config.EnemyEmergencyStrength);
+
+            Vector2 newPosition = position + (dashVelocity + lateral) * delta;
+
+            if (_chargeStartedInsideMap && !IsInsideMap(newPosition))
+            {
+                newPosition = ClampToMap(newPosition);
+                _chargerTimer = 0f;
+            }
+
+            transform.position = newPosition;
+            UpdateRecycle(newPosition, rawDelta);
+
+            if (!enabled)
+            {
+                return;
+            }
+
+            if (_chargerTimer <= 0f)
+            {
+                EnterChargerState(ChargerState.Recover);
+            }
+        }
+
+        private void SetChargerVisual(Color tint, float scaleMultiplier)
+        {
+            if (_spriteRenderer != null)
+            {
+                _spriteRenderer.color = tint;
+            }
+
+            transform.localScale = _baseScale * scaleMultiplier;
+        }
+
+        private bool IsInsideMap(Vector2 position)
+        {
+            float halfWidth = _config.MapWidth * 0.5f;
+            float halfHeight = _config.MapHeight * 0.5f;
+            return position.x >= -halfWidth && position.x <= halfWidth
+                   && position.y >= -halfHeight && position.y <= halfHeight;
+        }
+
+        private Vector2 ClampToMap(Vector2 position)
+        {
+            float halfWidth = _config.MapWidth * 0.5f;
+            float halfHeight = _config.MapHeight * 0.5f;
+            return new Vector2(
+                Mathf.Clamp(position.x, -halfWidth, halfWidth),
+                Mathf.Clamp(position.y, -halfHeight, halfHeight));
         }
 
         /// <summary>
@@ -600,7 +899,15 @@ namespace Survival.Enemy
                 return;
             }
 
-            // 伤害在 Initialize 里按难度算好（_contactDamage），这里是唯一伤害入口。
+            // 伤害在 Initialize 里按难度算好（_contactDamage / _chargeDamage），这里是唯一伤害入口。
+            // 冲锋一次最多结算一次：即使玩家处于无敌帧，本次冲刺也不再尝试第二次。
+            if (_kind == EnemyKind.Charger && _chargerState == ChargerState.Dash && !_chargeHitDone)
+            {
+                _chargeHitDone = true;
+                _playerHealth.TakeDamage(_chargeDamage);
+                return;
+            }
+
             _playerHealth.TakeDamage(_contactDamage);
         }
     }

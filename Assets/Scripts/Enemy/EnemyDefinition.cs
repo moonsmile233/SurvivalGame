@@ -28,8 +28,8 @@ namespace Survival.Enemy
         [SerializeField] private float _colliderRadius = 0.38f;
 
         [Header("冲锋 Charger（仅 _kind=Charger 使用）")]
-        [Tooltip("距离玩家 ≤ 该值进入前摇。")]
-        [SerializeField] private float _chargeTriggerDistance = 4.5f;
+        [Tooltip("距离玩家 ≤ 该值进入前摇；必须 ≤ 冲刺速度×冲刺时长，否则会停在射程外打空。")]
+        [SerializeField] private float _chargeTriggerDistance = 2.8f;
         [Tooltip("前摇秒数；≥0.4s 才能读。前摇中不锁方向。")]
         [SerializeField] private float _chargeWindupSeconds = 0.45f;
         [Tooltip("冲刺秒数；方向在冲刺开始时锁定。")]

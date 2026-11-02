@@ -20,7 +20,7 @@ MonoBehaviour:
   _moveSpeed: 1.5
   _contactDamage: 12
   _colliderRadius: 0.38
-  _chargeTriggerDistance: 4.5
+  _chargeTriggerDistance: 2.8
   _chargeWindupSeconds: 0.45
   _chargeDurationSeconds: 0.45
   _chargeSpeed: 5
