@@ -174,6 +174,25 @@ namespace Survival.Enemy
             float radialFactor = Mathf.Clamp(excess * _config.EnemySeekGain, -_config.EnemyBackOutRatio, 1f);
             Vector2 seekVelocity = direction * (radialFactor * speed);
 
+            // 2) 人群管线（软墙/让位/防重合/积分）统一走 ApplyCrowdMovement；
+            //    C3/C4 只改 seekVelocity 的来源与状态，不复制这段。
+            Vector2 newPosition = ApplyCrowdMovement(position, direction, distance, speed, seekVelocity, delta);
+            UpdateRecycle(newPosition, rawDelta);
+        }
+
+        /// <summary>
+        /// 公共人群管线：被挡/被顶测量 → 玩家侧闪 → 切向让位 → 软墙 → 速度平滑 → 防重合 → 积分。
+        /// Chaser 直接使用；Charger/Flanker 只改变传入的 seekVelocity 与速度，不复制这套修正。
+        /// 不变量：唯一位置写入仍是 pos += finalVelocity * dt；不做两两位置修正。
+        /// </summary>
+        private Vector2 ApplyCrowdMovement(
+            Vector2 position,
+            Vector2 direction,
+            float distance,
+            float speed,
+            Vector2 seekVelocity,
+            float delta)
+        {
             // 2) 两个“被压”来源：
             //    - 前面有人挡住径向追击（frontBlock）→ 外圈侧移找空位；
             //    - 后面有人顶着我（behindBlock）→ 前排给后面让开（≤0.2 u/s，自限：让开后就不再触发）。
@@ -215,8 +234,7 @@ namespace Survival.Enemy
 
             Vector2 newPosition = position + finalVelocity * delta;
             transform.position = newPosition;
-
-            UpdateRecycle(newPosition, rawDelta);
+            return newPosition;
         }
 
         /// <summary>

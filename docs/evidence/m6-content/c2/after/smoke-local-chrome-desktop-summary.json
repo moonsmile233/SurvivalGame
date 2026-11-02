@@ -1,0 +1,21 @@
+{
+  "browser": "chrome",
+  "mobile": false,
+  "baseUrl": "http://127.0.0.1:8123",
+  "roundSeconds": 5,
+  "finishedAt": "2026-11-02T14:21:21.084Z",
+  "best": 265,
+  "lastRound": "普通 265",
+  "steps": [
+    "Shell：开始可用 / 全屏隐藏 / 昵称可编辑 / 遮罩挡住画布",
+    "薄壳：无旧 H5 结算卡/重开/难度卡 DOM",
+    "Entered：遮罩隐藏 / 开始隐藏 / 全屏出现 / 昵称只读 / 只发一次 EnterGame",
+    "画布菜单「开始游戏」→ 3-2-1 → Playing",
+    "Esc 暂停 → 画布「继续」→ 3-2-1 → Playing",
+    "结算：最近一局「普通 265」/ 最高分 265",
+    "再来一局 → Playing → 暂停 → 返回菜单",
+    "刷新：最高分/昵称保留，最近一局清空",
+    "console 无未预期 error"
+  ],
+  "consoleErrors": []
+}
