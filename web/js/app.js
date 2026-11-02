@@ -1,99 +1,123 @@
 (function () {
   'use strict';
 
+  // v1.2 薄壳：H5 只负责昵称、进入游戏、数据面板、全屏入口。
+  // 难度/开局/暂停/重开/结算全部在 Unity 画布内；H5 不再发任何局内指令（协议 v3）。
+  var PROTOCOL_VERSION = 3;
   var DEFAULT_NICKNAME = '玩家';
   var MAX_NICKNAME = 16;
-  // 旧版（v1.0.0）单一最高分：只在迁移时读，迁完即删（见 loadBests）。
-  var LEGACY_BEST_KEY = 'bestScore';
-  var NICKNAME_KEY = 'nickname';
-  var DIFFICULTY_KEY = 'difficulty';
-  var PROTOCOL_VERSION = 2;
-
-  // 难度是 H5 的概念，Unity 只认 easy/normal/hard 三个字符串（协议 v2 §2.2）。
-  // 卡面倍率文案与 Unity 的 DifficultyProfile 是两处，改数值时必须同时改这里和资产。
-  var DIFFICULTIES = ['easy', 'normal', 'hard'];
-  var DIFFICULTY_META = {
-    easy: { name: '简单', bestKey: 'bestScore.easy' },
-    normal: { name: '普通', bestKey: 'bestScore.normal' },
-    hard: { name: '困难', bestKey: 'bestScore.hard' }
-  };
   var DEFAULT_DIFFICULTY = 'normal';
+  var DIFFICULTIES = ['easy', 'normal', 'hard'];
+  var DIFFICULTY_NAMES = { easy: '简单', normal: '普通', hard: '困难' };
 
-  // 开始/重新开始的 3-2-1（H5 自己倒数）：3 秒后才发指令，给手指离开屏幕/看清难度的机会。
-  var COUNTDOWN_SECONDS = 3;
-
-  // 点开始后的兜底时限。正常首帧响应 <100ms（SendMessage 同步）；9 秒只覆盖
-  // 「指令真的丢了 / Unity 卡住」的情况，不能短到把慢机器上的正常启动误判。
-  var START_RESPONSE_TIMEOUT_MS = 9000;
+  var NICKNAME_KEY = 'nickname';
+  var BEST_KEY = 'bestScore';
+  var BEST_MIGRATED_KEY = 'bestScoreMigrated';
+  var DIFFICULTY_KEY = 'difficulty';
 
   var storage = window.SurvivalStorage;
   var canvas = document.getElementById('unity-canvas');
+  var gameFrame = document.getElementById('game-frame');
   var overlay = document.getElementById('overlay');
   var overlayText = document.getElementById('overlay-text');
   var errorCard = document.getElementById('error-card');
   var errorText = document.getElementById('error-text');
   var btnRetry = document.getElementById('btn-retry');
   var btnStart = document.getElementById('btn-start');
-  var btnRestart = document.getElementById('btn-restart');
   var btnFullscreen = document.getElementById('btn-fullscreen');
   var fullscreenHint = document.getElementById('fullscreen-hint');
+  var fsToast = document.getElementById('fs-toast');
   var nicknameInput = document.getElementById('nickname');
   var statusHint = document.getElementById('status-hint');
-  var resultEl = document.getElementById('result');
-  var resultTitle = document.getElementById('result-title');
-  var resultScore = document.getElementById('result-score');
-  var resultBest = document.getElementById('result-best');
-  var resultNickname = document.getElementById('result-nickname');
-  var resultSurvived = document.getElementById('result-survived');
-  var resultRecord = document.getElementById('result-record');
-  var resultDifficulty = document.getElementById('result-difficulty');
+  var dataNickname = document.getElementById('data-nickname');
+  var dataBest = document.getElementById('data-best');
+  var dataLast = document.getElementById('data-last');
   var versionEl = document.getElementById('version');
   var buildTimeEl = document.getElementById('build-time');
-  var difficultySection = document.getElementById('difficulty');
-  var difficultyInputs = Array.prototype.slice.call(document.querySelectorAll('.difficulty-input'));
-  var bestLabel = document.getElementById('best-label');
-  var bestValue = document.getElementById('best-value');
-  var countdownEl = document.getElementById('countdown');
-  var countdownValueEl = document.getElementById('countdown-value');
 
   var state = {
-    page: 'Loading',
+    page: 'Loading', // Loading | Shell | Entered | GameOver | Error
     ready: false,
-    unityInstance: null,
+    entered: false,
+    enterSent: false,
+    instance: null,
+    nickname: loadStoredNickname(),
+    best: loadBest(),
     difficulty: loadStoredDifficulty(),
-    bests: loadBests(),
-    gameOverHandled: false,
-    startTimeout: null,
-    // ReturnToMenu 已发出、等待 Unity 回 Ready：期间忽略重复点击，防止连发中止。
-    returnPending: false
+    lastRound: null,
+    sentMessages: []
   };
 
-  // 开始/重新开始的 3-2-1。pending: 'start' | 'restart' | null；数值只用于显示。
-  var countdown = {
-    pending: null,
-    value: 0,
-    timer: null
-  };
+  // ---------- 存储 / 迁移 ----------
+
+  /**
+   * 单一最高分 + 显式迁移标记。
+   * v1.0 就用同名 survival.bestScore，v1.1 用 bestScore.{easy,normal,hard}；
+   * 只有“没有迁移标记”时才读旧键（把当前同名键也算进去），之后永不回读。
+   */
+  function loadBest() {
+    if (!storage) {
+      return 0;
+    }
+
+    if (storage.get(BEST_MIGRATED_KEY) === '1') {
+      return storage.getInt(BEST_KEY, 0);
+    }
+
+    var best = Math.max(
+      storage.getInt(BEST_KEY, 0),
+      storage.getInt('bestScore.easy', 0),
+      storage.getInt('bestScore.normal', 0),
+      storage.getInt('bestScore.hard', 0)
+    );
+
+    storage.set(BEST_KEY, best);
+    storage.set(BEST_MIGRATED_KEY, '1');
+    return best;
+  }
+
+  function loadStoredNickname() {
+    if (!storage) {
+      return DEFAULT_NICKNAME;
+    }
+    return normalizeNickname(storage.get(NICKNAME_KEY));
+  }
+
+  function loadStoredDifficulty() {
+    if (!storage) {
+      return DEFAULT_DIFFICULTY;
+    }
+    var value = storage.get(DIFFICULTY_KEY);
+    return DIFFICULTIES.indexOf(value) >= 0 ? value : DEFAULT_DIFFICULTY;
+  }
+
+  function saveNickname(value) {
+    state.nickname = value;
+    if (storage) {
+      storage.set(NICKNAME_KEY, value);
+    }
+  }
+
+  function saveDifficulty(value) {
+    state.difficulty = value;
+    if (storage) {
+      storage.set(DIFFICULTY_KEY, value);
+    }
+  }
 
   // ---------- 通用 ----------
 
-  function showOverlay(text) {
-    if (!overlay) return;
-    overlay.hidden = false;
-    if (overlayText) overlayText.textContent = text;
+  function normalizeNickname(value) {
+    var name = String(value === null || value === undefined ? '' : value).replace(/\s+/g, ' ').trim();
+    var chars = Array.from(name);
+    if (chars.length > MAX_NICKNAME) {
+      chars = chars.slice(0, MAX_NICKNAME);
+    }
+    return chars.length > 0 ? chars.join('') : DEFAULT_NICKNAME;
   }
 
-  function hideOverlay() {
-    if (overlay) overlay.hidden = true;
-  }
-
-  function setHint(text) {
-    if (statusHint) statusHint.textContent = text || '';
-  }
-
-  // 操作提示按输入设备区分（和 CSS 的 pointer: coarse 保持一致），不要在桌面提示里写「点暂停」。
-  function isCoarsePointer() {
-    return !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  function normalizeDifficulty(value) {
+    return DIFFICULTIES.indexOf(value) >= 0 ? value : DEFAULT_DIFFICULTY;
   }
 
   function parseJson(json) {
@@ -108,371 +132,146 @@
     }
   }
 
-  /** 昵称：去首尾空白、按码点截断到 16、空则「玩家」；渲染一律走 textContent。 */
-  function normalizeNickname(value) {
-    var name = String(value === null || value === undefined ? '' : value).replace(/\s+/g, ' ').trim();
-    var chars = Array.from(name);
-    if (chars.length > MAX_NICKNAME) {
-      chars = chars.slice(0, MAX_NICKNAME);
-    }
-    return chars.length > 0 ? chars.join('') : DEFAULT_NICKNAME;
-  }
-
-  function normalizeDifficulty(value) {
-    return DIFFICULTIES.indexOf(value) >= 0 ? value : null;
-  }
-
-  function loadStoredDifficulty() {
-    var saved = storage ? normalizeDifficulty(storage.get(DIFFICULTY_KEY)) : null;
-    return saved || DEFAULT_DIFFICULTY;
-  }
-
-  /**
-   * 分档最高分 + 旧键迁移（M6 §2/§4）。
-   * 迁移只在 bestScore.normal 不存在且旧值有效时跑一次；**写入成功才删旧键**，
-   * 写失败（隐私模式/配额）保留旧键，下次加载再试。不换算：v1.0.0 的分数没有难度倍率，
-   * 按原值迁到普通档，避免旧纪录凭空变高。
-   */
-  function loadBests() {
-    var bests = { easy: 0, normal: 0, hard: 0 };
-    if (!storage) {
-      return bests;
-    }
-
-    var legacy = storage.getInt(LEGACY_BEST_KEY, -1);
-    if (legacy >= 0 && storage.get(DIFFICULTY_META.normal.bestKey) === null) {
-      if (storage.set(DIFFICULTY_META.normal.bestKey, legacy)) {
-        storage.remove(LEGACY_BEST_KEY);
-        console.log('[App] 旧最高分已迁移到普通档：' + legacy);
-      }
-    }
-
-    for (var i = 0; i < DIFFICULTIES.length; i++) {
-      var id = DIFFICULTIES[i];
-      bests[id] = storage.getInt(DIFFICULTY_META[id].bestKey, 0);
-    }
-
-    return bests;
-  }
-
-  function renderDifficulty() {
-    for (var i = 0; i < difficultyInputs.length; i++) {
-      var input = difficultyInputs[i];
-      var selected = input.value === state.difficulty;
-      input.checked = selected;
-      if (input.parentElement) {
-        input.parentElement.classList.toggle('is-selected', selected);
-      }
-    }
-
-    var meta = DIFFICULTY_META[state.difficulty];
-    if (bestLabel) bestLabel.textContent = meta.name;
-    if (bestValue) bestValue.textContent = String(state.bests[state.difficulty]);
-  }
-
-  function applyDifficulty(id) {
-    if (!id) {
-      return;
-    }
-
-    state.difficulty = id;
-    if (storage) {
-      storage.set(DIFFICULTY_KEY, id);
-    }
-    renderDifficulty();
-  }
-
-  /**
-   * 点难度卡（常驻可点，规则见 M6 §2）：
-   * - Ready：只选择，不发指令；
-   * - Starting（H5 倒计时中）：取消倒计时、回 Ready、选中该档；
-   * - Playing/Paused/Result：中止本局（ReturnToMenu，不计分）→ 回 Ready 并选中该档。
-   *   点已选中的那张也执行（等同「回到该档的开始界面」），所以不能用 change 事件。
-   */
-  function onDifficultyPicked(value) {
-    var id = normalizeDifficulty(value);
-    if (!id || state.page === 'Loading' || state.page === 'Error') {
-      // 还没就绪：不允许改档，把 radio 的视觉状态回弹到当前选择。
-      renderDifficulty();
-      return;
-    }
-
-    // 倒计时中点卡：先取消，绝不后台开局。
-    if (countdown.pending) {
-      cancelCountdown();
-      if (state.page === 'Starting') {
-        setPage('Ready');
-      }
-    }
-
-    if (state.page === 'Ready') {
-      applyDifficulty(id);
-      return;
-    }
-
-    if (state.page === 'Playing' || state.page === 'Paused' || state.page === 'Result') {
-      if (state.returnPending) {
-        return;
-      }
-
-      // 先更新选择：最高分行立即切到新档，Unity 回 Ready 时菜单已是正确状态。
-      applyDifficulty(id);
-      state.returnPending = true;
-      setHint('正在返回主菜单…');
-
-      if (!sendMessage('ReturnToMenu', '')) {
-        state.returnPending = false;
-        setHint('返回指令发送失败，请刷新页面重试');
-      }
-      return;
+  function setHint(text) {
+    if (statusHint) {
+      statusHint.textContent = text || '';
     }
   }
 
-  function renderButtons(page) {
-    var showStart = page === 'Loading' || page === 'Ready' || page === 'Starting';
-    btnStart.hidden = !showStart;
-    btnStart.disabled = page !== 'Ready';
-
-    // 难度区常驻（用户要求“键常驻”）：所有状态可见、可点，点击行为由 onDifficultyPicked 决定。
-    if (difficultySection) {
-      difficultySection.hidden = false;
-    }
-    for (var i = 0; i < difficultyInputs.length; i++) {
-      difficultyInputs[i].disabled = false;
-    }
-
-    btnRestart.hidden = page !== 'Result';
-    btnRestart.disabled = page !== 'Result' || !!countdown.pending;
-
-    // 主界面也能进全屏（L1.1 用户口径）：Ready/Starting 全屏保留难度区 + 开始，否则进全屏没法开局。
-    // 「全屏无网页按钮」只作用于游戏中的 Playing/Paused；Result 不提供全屏（结算卡会卡在页面外）。
-    if (btnFullscreen) {
-      btnFullscreen.hidden = page !== 'Ready' && page !== 'Starting' &&
-        page !== 'Playing' && page !== 'Paused';
-    }
-
-    nicknameInput.disabled = page !== 'Ready';
+  function isCoarsePointer() {
+    return !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
   }
+
+  function isEnteredLayout() {
+    return state.page === 'Entered' || state.page === 'GameOver';
+  }
+
+  // ---------- 渲染 ----------
 
   function setPage(page) {
     state.page = page;
-    // CSS 用 body[data-page] 区分状态；全屏按钮只在 Playing/Paused 显示（L1 口径）。
     document.body.dataset.page = page;
-    // 回 Ready（返回主菜单）也要收起结算卡；否则难度区回去了、旧成绩卡还挂在下面。
-    if (page === 'Playing' || page === 'Ready') {
-      resultEl.hidden = true;
-    }
-    renderButtons(page);
+    render();
   }
 
-  function sendMessage(method, arg) {
-    var instance = state.unityInstance;
-    if (!instance || typeof instance.SendMessage !== 'function') {
-      console.warn('[App] unityInstance 未就绪，无法发送 ' + method);
-      return false;
+  function render() {
+    var entered = isEnteredLayout();
+
+    if (btnStart) {
+      btnStart.hidden = entered;
+      btnStart.disabled = state.page !== 'Shell';
     }
 
-    try {
-      instance.SendMessage('WebGLBridge', method, arg || '');
-      return true;
-    } catch (error) {
-      console.error('[App] SendMessage 失败：' + method, error);
-      return false;
-    }
-  }
-
-  function saveHintIfNeeded() {
-    if (storage && !storage.isAvailable()) {
-      setHint('当前浏览器无法保存成绩，刷新后会丢失');
-    }
-  }
-
-  // ---------- 开始/重开的 3-2-1 ----------
-
-  function renderCountdown() {
-    if (!countdownEl) {
-      return;
-    }
-    countdownEl.hidden = countdown.pending === null;
-    if (countdownValueEl) {
-      countdownValueEl.textContent = String(Math.max(1, countdown.value));
-    }
-  }
-
-  function cancelCountdown() {
-    if (countdown.timer !== null) {
-      window.clearInterval(countdown.timer);
-      countdown.timer = null;
-    }
-    countdown.pending = null;
-    countdown.value = 0;
-    renderCountdown();
-    if (state.page === 'Result') {
-      btnRestart.disabled = false;
-    }
-  }
-
-  /**
-   * 3→2→1（每秒一跳），结束后才发指令。倒计时期间：
-   * - 点难度卡 → cancelCountdown（Starting 回 Ready；Result 继续走中止流程）；
-   * - 页面隐藏/失焦 → cancelCountdown，绝不后台开局。
-   */
-  function startCountdown(kind) {
-    if (countdown.pending) {
-      return;
+    if (btnFullscreen) {
+      // 全屏入口只在进入游戏后出现：Shell 阶段给全屏会陷入“全屏内没有开始按钮”的矛盾。
+      btnFullscreen.hidden = !entered;
     }
 
-    countdown.pending = kind;
-    countdown.value = COUNTDOWN_SECONDS;
-    renderCountdown();
-
-    countdown.timer = window.setInterval(function () {
-      countdown.value -= 1;
-      if (countdown.value > 0) {
-        renderCountdown();
-        return;
+    if (nicknameInput) {
+      nicknameInput.disabled = state.page !== 'Shell';
+      if (state.page === 'Shell') {
+        nicknameInput.value = state.nickname;
       }
+    }
 
-      var pending = countdown.pending;
-      cancelCountdown();
-      if (pending === 'start') {
-        sendStartCommand();
-      } else if (pending === 'restart') {
-        sendRestartCommand();
+    if (overlay) {
+      overlay.hidden = entered;
+    }
+
+    if (overlayText) {
+      if (state.page === 'Loading') {
+        overlayText.textContent = '加载中…';
+      } else if (state.page === 'Shell') {
+        overlayText.textContent = '游戏已就绪';
+      } else if (state.page === 'Error') {
+        overlayText.textContent = '加载失败';
       }
-    }, 1000);
+    }
+
+    if (errorCard) {
+      errorCard.hidden = state.page !== 'Error';
+    }
+
+    renderData();
   }
 
-  // ---------- 用户操作 ----------
-
-  function beginStartCountdown() {
-    if (!state.ready || state.page !== 'Ready') {
-      return;
+  function renderData() {
+    if (dataNickname) {
+      dataNickname.textContent =
+        state.page === 'Shell' && nicknameInput
+          ? normalizeNickname(nicknameInput.value)
+          : state.nickname;
     }
 
-    var nickname = normalizeNickname(nicknameInput.value);
-    nicknameInput.value = nickname;
-
-    if (storage) {
-      storage.set(NICKNAME_KEY, nickname);
-      saveHintIfNeeded();
+    if (dataBest) {
+      dataBest.textContent = String(state.best);
     }
 
-    // 键盘事件要落在画布上（Unity 6 从 document 收键盘，但焦点放对才不会被昵称输入框抢走）。
-    if (canvas && typeof canvas.focus === 'function') {
-      canvas.focus();
-    }
-
-    setPage('Starting');
-    setHint('3 秒后开始 · 点难度卡可取消');
-    startCountdown('start');
-  }
-
-  function sendStartCommand() {
-    var nickname = normalizeNickname(nicknameInput.value);
-
-    // 顺序不能反：Unity 的 SendMessage 是同步的，onStateChange(Playing) 会在
-    // sendMessage() 返回前到达。先设 Starting + 兜底计时器，再由状态回调清除。
-    setHint('正在开始…');
-    if (state.page !== 'Starting') {
-      setPage('Starting');
-    }
-
-    // 兜底只提示、不改状态：Unity 可能已经在跑，只是状态回调没到。
-    window.clearTimeout(state.startTimeout);
-    state.startTimeout = window.setTimeout(function () {
-      if (state.page === 'Starting') {
-        setHint('启动较慢，若已在游戏中请直接玩；未开始请刷新');
+    if (dataLast) {
+      if (!state.lastRound) {
+        dataLast.textContent = '—';
+        dataLast.removeAttribute('title');
+        dataLast.removeAttribute('aria-label');
+      } else {
+        var round = state.lastRound;
+        // 数据栏按 mock 只显示「难度 分数」；胜负/存活放 title/aria，不上屏重复 Unity 结算。
+        dataLast.textContent = DIFFICULTY_NAMES[round.difficulty] + ' ' + round.score;
+        var full = (round.result === 'win' ? '胜利' : '失败') + ' · 存活 ' + round.survived.toFixed(1) + ' 秒';
+        dataLast.title = full;
+        dataLast.setAttribute('aria-label', full);
       }
-    }, START_RESPONSE_TIMEOUT_MS);
-
-    if (!sendMessage('StartGame', JSON.stringify({ nickname: nickname, difficulty: state.difficulty }))) {
-      window.clearTimeout(state.startTimeout);
-      setPage('Ready');
-      setHint('开始指令发送失败，请刷新页面重试');
     }
   }
 
-  function beginRestartCountdown() {
-    if (state.page !== 'Result' || countdown.pending) {
-      return;
+  function showError(message) {
+    state.ready = false;
+    if (errorText) {
+      errorText.textContent = message || '未知错误';
     }
-
-    btnRestart.disabled = true;
-    setHint('3 秒后重新开始 · 点难度卡可返回主菜单');
-
-    // 结算卡可能在视口底部、画布已被滚走；倒计时画在画布上，先把它滚回来。
-    var frame = document.querySelector('.game-frame');
-    if (frame && typeof frame.scrollIntoView === 'function') {
-      frame.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-
-    startCountdown('restart');
+    setPage('Error');
+    setHint('');
+    console.error('[App] ' + message);
   }
 
-  function sendRestartCommand() {
-    if (!sendMessage('RestartGame', '')) {
-      btnRestart.disabled = false;
-      setHint('重新开始指令发送失败，请刷新页面重试');
-      return;
-    }
-
-    // 正常由 onStateChange(Playing) 驱动；失败时恢复按钮。
-    window.setTimeout(function () {
-      if (state.page === 'Result') {
-        btnRestart.disabled = false;
-        setHint('重新开始无响应，请再试一次');
-      }
-    }, 1500);
-  }
-
-  /** 页面隐藏/失焦时取消倒计时：不允许在玩家看不见的时候自动开局。 */
-  function cancelCountdownBecauseHidden() {
-    if (!countdown.pending) {
-      return;
-    }
-
-    var kind = countdown.pending;
-    cancelCountdown();
-    if (kind === 'start') {
-      setPage('Ready');
-      setHint('已取消开始（页面切走了）');
-    } else if (kind === 'restart') {
-      btnRestart.disabled = false;
-      setHint('已取消重新开始（页面切走了）');
-    }
-  }
-
-  // ---------- Unity → H5 事件（由 bridge.js 转发） ----------
+  // ---------- Unity → H5 ----------
 
   function onProgress(progress) {
-    if (typeof progress !== 'number') return;
+    if (state.page !== 'Loading' || !overlayText) {
+      return;
+    }
     var percent = Math.max(0, Math.min(100, Math.round(progress * 100)));
-    showOverlay('加载中… ' + percent + '%');
+    overlayText.textContent = '加载中… ' + percent + '%';
   }
 
   function onReady(json) {
-    if (state.ready) {
+    // 已经进入 Error（例如版本不匹配）后不再被迟到的 onReady 改写状态。
+    if (state.page === 'Error') {
       return;
     }
 
     var message = parseJson(json);
-    // 旧 Unity（protocol 1）不会读 difficulty，开局会按 normal；只告警，不阻塞（协议 v2 §2.2 兼容矩阵）。
-    if (message && message.protocol !== undefined && message.protocol !== PROTOCOL_VERSION) {
-      console.warn('[App] 协议版本不一致：' + message.protocol + '（期望 ' + PROTOCOL_VERSION + '）');
+    if (!message || typeof message.protocol !== 'number') {
+      showError('Unity 未返回有效协议版本，请刷新重试');
+      return;
+    }
+
+    // 新 H5 配旧 Unity 会进入一个没有菜单的壳：必须显式中止，而不是只 warning。
+    if (message.protocol !== PROTOCOL_VERSION) {
+      showError('版本不匹配（Unity ' + message.protocol + ' / 页面 ' + PROTOCOL_VERSION + '），请刷新重试');
+      return;
     }
 
     state.ready = true;
-    hideOverlay();
-    setPage('Ready');
+    state.nickname = loadStoredNickname();
+    state.difficulty = loadStoredDifficulty();
+    setPage('Shell');
+    setHint('点击「开始游戏」进入；难度在游戏内选择');
 
-    var savedNickname = storage ? storage.get(NICKNAME_KEY) : null;
-    if (savedNickname) {
-      nicknameInput.value = savedNickname;
+    if (storage && !storage.isAvailable()) {
+      setHint('当前浏览器无法保存成绩，刷新后会丢失');
     }
 
-    saveHintIfNeeded();
-    console.log('[App] Unity ready');
+    console.log('[App] Unity ready (protocol 3)');
   }
 
   function onStateChange(json) {
@@ -482,49 +281,42 @@
       return;
     }
 
+    // 只做状态文案，不控制布局（壳的进入/退出只由 EnterGame 与刷新决定）。
     switch (message.state) {
-      case 'Playing':
-        window.clearTimeout(state.startTimeout);
-        cancelCountdown();
-        state.gameOverHandled = false;
-        state.returnPending = false;
-        setPage('Playing');
-        // 开始按钮消失后页面不能一片空白，否则像卡死（M4 第 1.5 节）。
+      case 'menu':
+        setHint(state.entered ? '游戏菜单 · 在画面内选择难度和开始' : '点击「开始游戏」进入');
+        if (state.page === 'GameOver') {
+          setPage('Entered');
+        }
+        break;
+      case 'playing':
         setHint('游戏中 · 暂停按钮在游戏内右上角');
+        if (state.page === 'GameOver') {
+          setPage('Entered');
+        }
         break;
-
-      case 'Paused':
-        setPage('Paused');
-        // M4.6：失焦切回保持暂停，只有玩家点「继续」/按 P 才开始 3-2-1；文案不能暗示自动恢复。
-        setHint(isCoarsePointer()
-          ? '已暂停 · 点「继续」，3 秒后开始'
-          : '已暂停 · 点「继续」或按 P，3 秒后开始');
+      case 'paused':
+        setHint('已暂停 · 在画面内点「继续」');
         break;
-
-      case 'Ready':
-        // 只有 ReturnToMenu 会让 Unity 主动回到 Ready；清掉「正在返回主菜单…」提示。
-        state.returnPending = false;
-        cancelCountdown();
-        setPage('Ready');
-        setHint('');
+      case 'result':
+        setHint('本局结束 · 在画面内选择再来一局或返回菜单');
         break;
-
-      case 'Won':
-      case 'Lost':
-        // 结算以 onGameOver 为准（带分数与明细）。
-        break;
-
       default:
         console.log('[App] 未知状态：' + message.state);
     }
   }
 
-  function onGameOver(json) {
-    if (state.gameOverHandled) {
-      console.warn('[App] 收到重复的 onGameOver，已忽略');
+  function onDifficultyChanged(json) {
+    var message = parseJson(json);
+    if (!message || typeof message.difficulty !== 'string') {
+      console.warn('[App] onDifficultyChanged 载荷无效，已忽略', json);
       return;
     }
+    saveDifficulty(normalizeDifficulty(message.difficulty));
+    console.log('[App] difficulty changed: ' + state.difficulty);
+  }
 
+  function onGameOver(json) {
     var message = parseJson(json);
     var payload = message && message.payload;
     if (!payload || typeof payload !== 'object') {
@@ -532,141 +324,103 @@
       return;
     }
 
-    state.gameOverHandled = true;
-
-    var won = payload.result === 'win';
     var score = Number(payload.score);
     score = isFinite(score) && score > 0 ? Math.round(score) : 0;
 
     var survived = Number(payload.survivedSeconds);
     survived = isFinite(survived) && survived > 0 ? survived : 0;
 
-    var nickname = normalizeNickname(payload.nickname);
-    // 以 Unity 回传的实际档位为准（非法/缺省已被回落为 normal）；旧 Unity 没有该字段时用本局选择。
-    var roundDifficulty = normalizeDifficulty(payload.difficulty) || state.difficulty;
-    var previousBest = state.bests[roundDifficulty];
-    var isNewRecord = score > previousBest;
+    var difficulty = normalizeDifficulty(payload.difficulty || state.difficulty);
+    var newRecord = score > state.best;
 
-    if (isNewRecord) {
-      state.bests[roundDifficulty] = score;
-      if (storage && !storage.set(DIFFICULTY_META[roundDifficulty].bestKey, score)) {
-        setHint('本次成绩无法保存（浏览器存储不可用）');
+    if (newRecord) {
+      state.best = score;
+      if (storage) {
+        storage.set(BEST_KEY, state.best);
       }
     }
 
-    function showResultCard() {
-      resultTitle.textContent = won ? '胜利' : '失败';
-      resultScore.textContent = String(score);
-      resultBest.textContent = String(state.bests[roundDifficulty]);
-      if (resultDifficulty) resultDifficulty.textContent = DIFFICULTY_META[roundDifficulty].name;
-      resultNickname.textContent = nickname;
-      resultSurvived.textContent = survived.toFixed(1) + ' 秒';
-      resultRecord.hidden = !isNewRecord;
-      resultEl.hidden = false;
+    // 最近一局只在内存里（刷新清空）；完整信息放 title/aria，不上屏。
+    state.lastRound = {
+      score: score,
+      difficulty: difficulty,
+      result: payload.result === 'win' ? 'win' : 'lose',
+      survived: survived
+    };
 
-      // 结算卡已包含「重新开始」按钮。等两帧让卡片完成布局（直接调用时高度还是旧的，
-      // 滚不到按钮），再只在底部超出视口时对齐卡片底部；短横屏/320 小屏都能看到按钮。
-      if (typeof resultEl.scrollIntoView === 'function') {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            if (resultEl.getBoundingClientRect().bottom > window.innerHeight) {
-              resultEl.scrollIntoView({ behavior: 'smooth', block: 'end' });
-            }
-          });
-        });
-      }
-
-      nicknameInput.value = nickname;
-      setPage('Result');
-      hideOverlay();
-
-      if (storage && !storage.isAvailable()) {
-        setHint('本次成绩无法保存（浏览器存储不可用）');
-      } else if (isNewRecord) {
-        setHint('新纪录已保存');
-      } else {
-        setHint('');
-      }
-
-      console.log('[App] gameOver score=' + score + ' difficulty=' + roundDifficulty +
-        ' best=' + state.bests[roundDifficulty] + ' newRecord=' + isNewRecord);
-    }
-
-    // 全屏下 H5 结算卡被 CSS 隐藏；先退出全屏，等退出完成再显示结算，避免玩家只看到游戏画面。
-    if (isFullscreen()) {
-      var exit = document.exitFullscreen || document.webkitExitFullscreen;
-      if (exit) {
-        try {
-          var pendingExit = exit.call(document);
-          if (pendingExit && typeof pendingExit.finally === 'function') {
-            pendingExit.finally(showResultCard);
-            return;
-          }
-        } catch (error) {
-          // 退出失败就按普通流程显示，状态不丢。
-        }
-      }
-    }
-
-    showResultCard();
+    setPage('GameOver');
+    setHint(newRecord ? '本局结束 · 新纪录' : '本局结束 · 在画面内选择再来一局或返回菜单');
+    console.log('[App] gameOver score=' + score + ' difficulty=' + difficulty + ' best=' + state.best + ' newRecord=' + newRecord);
   }
 
   function onFatalError(message) {
-    setPage('Error');
-    showOverlay('加载失败');
-    if (overlayText) overlayText.textContent = '加载失败';
-    if (errorCard) errorCard.hidden = false;
-    if (errorText) errorText.textContent = message || '未知错误';
-    if (btnStart) btnStart.hidden = true;
-    console.error('[App] ' + message);
+    showError(message || '加载失败');
   }
 
   function onFileProtocol() {
-    setPage('Error');
-    showOverlay('请用本地服务器打开此页面');
-    if (overlayText) {
-      overlayText.textContent = '请用本地服务器打开此页面：在 web 目录运行 python -m http.server 8000，再访问 http://localhost:8000';
+    showError('请通过本地 HTTP 服务打开本页（不能直接双击 HTML 文件）');
+  }
+
+  // ---------- H5 → Unity ----------
+
+  function sendMessage(method, payload) {
+    if (!state.instance || typeof state.instance.SendMessage !== 'function') {
+      console.warn('[App] Unity 实例未就绪，无法发送：' + method);
+      return false;
     }
-    if (errorCard) errorCard.hidden = false;
-    if (errorText) errorText.textContent = 'file:// 方式无法加载 Unity WebGL（浏览器跨域限制）。';
-    if (btnRetry) btnRetry.hidden = true;
-    if (btnStart) btnStart.hidden = true;
-  }
-
-  function setBuildInfo(info) {
-    var version = (info && info.productVersion) || '?';
-    if (versionEl) versionEl.textContent = 'v' + version;
-
-    var builtAt = info && info.builtAt;
-    if (buildTimeEl) {
-      buildTimeEl.textContent = builtAt ? formatBuildTime(builtAt) : '构建时间未知';
+    try {
+      state.instance.SendMessage('WebGLBridge', method, payload);
+      state.sentMessages.push({ method: method, payload: payload });
+      return true;
+    } catch (error) {
+      console.warn('[App] SendMessage 失败：' + method + ' ' + error);
+      return false;
     }
   }
 
-  function formatBuildTime(iso) {
-    var date = new Date(iso);
-    if (isNaN(date.getTime())) {
-      return iso;
+  function beginEnter() {
+    if (!state.ready || state.entered || state.enterSent) {
+      return;
     }
-    var pad = function (value) { return value < 10 ? '0' + value : String(value); };
-    return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) +
-      ' ' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+
+    var nickname = normalizeNickname(nicknameInput ? nicknameInput.value : state.nickname);
+    saveNickname(nickname);
+    if (nicknameInput) {
+      nicknameInput.value = nickname;
+    }
+
+    // 先设页面状态再发送：SendMessage 是同步的，反序会被刚到的状态回调覆盖。
+    state.entered = true;
+    state.enterSent = true;
+    setPage('Entered');
+    setHint('游戏菜单 · 在画面内选择难度和开始');
+
+    var payload = JSON.stringify({
+      nickname: nickname,
+      lastDifficulty: normalizeDifficulty(state.difficulty)
+    });
+
+    if (!sendMessage('EnterGame', payload)) {
+      state.entered = false;
+      state.enterSent = false;
+      setPage('Shell');
+      setHint('进入失败，请刷新页面重试');
+    }
   }
 
-  function setInstance(instance) {
-    state.unityInstance = instance;
-  }
-
-  // ---------- 全屏（H5，M4.5 §1） ----------
+  // ---------- 全屏 ----------
 
   var fullscreenHintTimer = null;
+  var fsToastTimer = null;
 
   function isFullscreen() {
     return !!(document.fullscreenElement || document.webkitFullscreenElement);
   }
 
   function showFullscreenHint(text) {
-    if (!fullscreenHint) return;
+    if (!fullscreenHint) {
+      return;
+    }
     fullscreenHint.hidden = false;
     fullscreenHint.textContent = text;
     window.clearTimeout(fullscreenHintTimer);
@@ -676,28 +430,53 @@
     }, 5000);
   }
 
-  // 全屏里不放任何网页端按钮（L1）：进入后按钮随 .controls 一起隐藏，退出靠 Esc / 系统手势；
-  // 这里只处理横屏锁定与页面恢复（退出全屏后 CSS 自动恢复外壳，状态仍由 body[data-page] 驱动）。
+  function showFsToast() {
+    if (!fsToast) {
+      return;
+    }
+    fsToast.textContent = isCoarsePointer() ? '手势返回退出全屏' : '按 Esc 退出全屏';
+    fsToast.hidden = false;
+    window.clearTimeout(fsToastTimer);
+    fsToastTimer = window.setTimeout(function () {
+      fsToast.hidden = true;
+    }, 2500);
+  }
+
   function updateFullscreenUi() {
     var active = isFullscreen();
 
     if (active) {
-      // 横屏锁定是 best-effort：桌面/部分浏览器会 reject，失败就保留 H5 竖屏提示。
+      showFsToast();
       try {
         if (screen.orientation && typeof screen.orientation.lock === 'function') {
           var lock = screen.orientation.lock('landscape');
-          if (lock && typeof lock.catch === 'function') lock.catch(function () {});
+          if (lock && typeof lock.catch === 'function') {
+            lock.catch(function () {});
+          }
         }
       } catch (error) {
         // 不支持 orientation.lock 的浏览器直接忽略。
       }
-    } else if (screen.orientation && typeof screen.orientation.unlock === 'function') {
-      try { screen.orientation.unlock(); } catch (error) { /* 忽略 */ }
+    } else {
+      if (fsToast) {
+        fsToast.hidden = true;
+      }
+      if (screen.orientation && typeof screen.orientation.unlock === 'function') {
+        try {
+          screen.orientation.unlock();
+        } catch (error) {
+          // 忽略
+        }
+      }
     }
   }
 
   function requestFullscreen() {
-    var element = document.documentElement;
+    if (!isEnteredLayout()) {
+      return;
+    }
+
+    var element = gameFrame || document.documentElement;
     var request = element.requestFullscreen || element.webkitRequestFullscreen;
     if (!request) {
       showFullscreenHint('当前浏览器不支持网页全屏，请横屏或添加到主屏幕');
@@ -719,17 +498,12 @@
     }
   }
 
-  // ---------- 画布滚轮穿透（M6 §1.3） ----------
+  // ---------- 画布滚轮穿透 ----------
 
   /**
-   * Unity WebGL 运行时会在画布上注册 wheel 回调并 `preventDefault()`（引擎行为，不是本页 CSS），
-   * 页面在画布上永远滚不动；而画布占了大半屏，鼠标多半悬在画布上。这里自己接管滚轮：
-   * `preventDefault()` 后 `scrollBy`，浏览器默认滚动被拦掉，所以不会双重滚动。
-   * - 监听挂 document 的捕获阶段（不在画布本身上）：同一元素上的监听按注册顺序执行，
-   *   Unity 在自己初始化的过程中给画布注册，谁先谁后不受我们控制；捕获阶段一定早于目标监听。
-   * - 全屏：`html:fullscreen` 已 `overflow:hidden`，页面本就不滚，直接放行（不吞 Unity 的事件）。
-   * - Ctrl+滚轮：留给浏览器缩放。
-   * - deltaMode：0=像素、1=行（取 16px/行，浏览器常见行高）、2=页（按视口高度）。
+   * Unity WebGL 运行时会在画布上注册 wheel 回调并 preventDefault（引擎行为），页面在画布上滚不动。
+   * 这里在 document 捕获阶段接管：preventDefault 后 scrollBy，全屏/Ctrl+滚轮放行。
+   * 监听挂 document 而不是画布，避免与 Unity 自己注册的监听抢顺序。
    */
   function onCanvasWheel(event) {
     if (event.target !== canvas || event.defaultPrevented || isFullscreen() || event.ctrlKey) {
@@ -753,39 +527,55 @@
     window.scrollBy(0, pixels);
   }
 
-  // ---------- 初始化 ----------
+  // ---------- 可见性（环境信号，不是局内指令） ----------
 
-  // 只负责进入全屏；退出交给浏览器的 Esc / 系统手势，不在页面里提供按钮（L1）。
-  if (btnFullscreen) btnFullscreen.addEventListener('click', requestFullscreen);
-  document.addEventListener('fullscreenchange', updateFullscreenUi);
-  document.addEventListener('webkitfullscreenchange', updateFullscreenUi);
-  updateFullscreenUi();
+  var lastVisibilitySent = null;
 
-  // 必须非 passive 才能 preventDefault；挂在 document 捕获阶段，保证早于 Unity 在画布上
-  // 注册的回调执行（详见 onCanvasWheel 注释）。Unity 的回调随后仍会收到事件。
-  if (canvas) {
-    document.addEventListener('wheel', onCanvasWheel, { passive: false, capture: true });
+  function syncVisibility(hidden) {
+    if (!state.entered || hidden === lastVisibilitySent) {
+      return;
+    }
+    lastVisibilitySent = hidden;
+    if (!sendMessage('SetPausedByVisibility', hidden ? 'true' : 'false')) {
+      lastVisibilitySent = null;
+    }
   }
 
-  if (btnStart) btnStart.addEventListener('click', beginStartCountdown);
-  if (btnRestart) btnRestart.addEventListener('click', beginRestartCountdown);
+  // ---------- 构建信息 ----------
 
-  // 用 click 而不是 change：点「已选中」的卡也要触发（change 不会）。
-  // 点击 label 会激活内部 radio，事件冒泡到 input，所以监听 input 的 click 恰好一次。
-  for (var inputIndex = 0; inputIndex < difficultyInputs.length; inputIndex++) {
-    difficultyInputs[inputIndex].addEventListener('click', function () {
-      onDifficultyPicked(this.value);
-    });
+  function formatBuildTime(iso) {
+    var date = new Date(iso);
+    if (isNaN(date.getTime())) {
+      return iso || '-';
+    }
+    var pad = function (value) {
+      return value < 10 ? '0' + value : String(value);
+    };
+    return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) +
+      ' ' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+  }
 
-    // 键盘方向键只改 checked、不发 click：只在 Ready 接受选择，其余状态回弹，
-    // 避免在局内用方向键误触发中止（中止只能通过鼠标/触摸点击卡片）。
-    difficultyInputs[inputIndex].addEventListener('change', function () {
-      if (state.page === 'Ready') {
-        applyDifficulty(this.value);
-      } else {
-        renderDifficulty();
-      }
-    });
+  function setBuildInfo(info) {
+    if (versionEl) {
+      versionEl.textContent = 'v' + ((info && info.productVersion) || '-');
+    }
+    if (buildTimeEl) {
+      buildTimeEl.textContent = info && info.builtAt ? formatBuildTime(info.builtAt) : '构建时间未知';
+    }
+  }
+
+  function setInstance(instance) {
+    state.instance = instance;
+  }
+
+  // ---------- 初始化 ----------
+
+  if (btnStart) {
+    btnStart.addEventListener('click', beginEnter);
+  }
+
+  if (btnFullscreen) {
+    btnFullscreen.addEventListener('click', requestFullscreen);
   }
 
   if (btnRetry) {
@@ -794,27 +584,19 @@
     });
   }
 
-  // 失焦 / 标签页隐藏 → Unity 自动暂停；切回**不瞬时恢复**，由 Unity 暂停面板走 3-2-1 倒计时
-  // （M4 第 1.5 节）。blur/focus 与 visibilitychange 都要监听：桌面 Alt-Tab 只发前两个，
-  // 移动端切 App 通常只有 visibilitychange。
-  // 同一次切换会同时触发 blur/focus 和 visibilitychange，H5 侧先按「最后发出的值」去重；
-  // Unity 侧还有 _pausedByVisibility 标记兜底，两层都幂等（ticket 1.5）。
-  var lastVisibilitySent = null;
+  if (nicknameInput) {
+    nicknameInput.addEventListener('input', function () {
+      if (state.page === 'Shell') {
+        renderData();
+      }
+    });
+  }
 
-  function syncVisibility(hidden) {
-    if (!state.ready) return;
+  document.addEventListener('fullscreenchange', updateFullscreenUi);
+  document.addEventListener('webkitfullscreenchange', updateFullscreenUi);
 
-    // 倒计时中切走：直接取消，不能在后台把局开起来（哪怕 Unity 没收到暂停指令）。
-    if (hidden) {
-      cancelCountdownBecauseHidden();
-    }
-
-    if (hidden === lastVisibilitySent) return;
-
-    lastVisibilitySent = hidden;
-    if (!sendMessage('SetPausedByVisibility', hidden ? 'true' : 'false')) {
-      lastVisibilitySent = null;
-    }
+  if (canvas) {
+    document.addEventListener('wheel', onCanvasWheel, { passive: false, capture: true });
   }
 
   window.addEventListener('blur', function () {
@@ -829,28 +611,34 @@
     syncVisibility(document.hidden);
   });
 
-  if (storage && !storage.isAvailable()) {
-    setHint('当前浏览器无法保存成绩，刷新后会丢失');
-  }
-
   document.body.dataset.page = state.page;
-  renderDifficulty();
-  renderButtons(state.page);
+  render();
 
   window.SurvivalApp = {
     onProgress: onProgress,
     onReady: onReady,
     onStateChange: onStateChange,
     onGameOver: onGameOver,
+    onDifficultyChanged: onDifficultyChanged,
     onFatalError: onFatalError,
     onFileProtocol: onFileProtocol,
     setBuildInfo: setBuildInfo,
     setInstance: setInstance
   };
 
-  // E2E 专用（?testhook=1）：暴露原始 SendMessage，用来验证 Unity 对「非法 difficulty」和
-  // 「v1 纯昵称载荷」的回落。正常页面（没有参数）不挂这个全局，调试入口不会进线上。
+  // E2E 专用（?testhook=1）：暴露已发送消息与状态，用于断言“只发一次 EnterGame、不发旧指令”。
   if (/[?&]testhook=1(?:&|$)/.test(window.location.search)) {
-    window.SurvivalApp.__sendMessage = sendMessage;
+    window.SurvivalApp.getSentMessages = function () {
+      return state.sentMessages.slice();
+    };
+    window.SurvivalApp.getState = function () {
+      return {
+        page: state.page,
+        ready: state.ready,
+        entered: state.entered,
+        best: state.best,
+        difficulty: state.difficulty
+      };
+    };
   }
 })();

@@ -1,363 +1,305 @@
+/* v1.2 薄壳：H5 只做昵称 / 进入 / 数据面板 / 全屏入口；游戏内 UI 全在 Unity 画布。 */
 :root {
-  --bg: #15151f;
-  --panel: #222232;
-  --panel-2: #2b2b3f;
-  --line: #3a3a52;
-  --text: #ececf5;
-  --muted: #9a9ab0;
-  --accent: #7c5cff;
-  --accent-strong: #6a4cff;
-  --success: #4cd97b;
-  --danger: #ff6b81;
+  --bg: #0b0b12;
+  --panel: #171724;
+  --panel-2: #1f1f30;
+  --line: #2b2b40;
+  --text: #f2f2f8;
+  --muted: #9b9bb3;
+  --purple: #6b4cff;
+  --pink: #ff3c8e;
+  --danger: #ff6b6b;
 }
 
 * {
   box-sizing: border-box;
 }
 
-[hidden] {
-  display: none !important;
-}
-
 html,
 body {
   margin: 0;
-  padding: 0;
   min-height: 100%;
   background: var(--bg);
   color: var(--text);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: "Microsoft YaHei", "Noto Sans SC", system-ui, -apple-system, sans-serif;
 }
 
-.shell {
-  /* dvh 是 iOS 15.4+；先给 vh 兜底，老 Safari 也不至于塌成 0 高。 */
-  min-height: 100vh;
-  min-height: 100dvh;
-  max-width: 960px;
+body {
+  overflow-x: hidden;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+/* ---------- 布局 ---------- */
+
+.app {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  max-width: 1460px;
   margin: 0 auto;
-  padding: calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right))
-    calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  padding: 18px;
 }
 
-/* ---------- 顶部 ---------- */
-
-.header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+.panel {
+  position: sticky;
+  top: 18px;
+  min-width: 0;
+  padding: 18px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
 }
 
-.header-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
+.stage-wrap {
   min-width: 0;
 }
 
+/* ---------- 左侧栏 ---------- */
+
 .title {
   margin: 0;
-  font-size: 18px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-size: 22px;
+  letter-spacing: 0.3px;
 }
 
-/* 一句话规则（M6 §2 主界面顺序：标题 → 规则 → 昵称）。
-   只服务于菜单；局内隐藏，否则 1280×720 会多出约 18px 把页面撑出纵向滚动。 */
 .tagline {
-  margin: 0;
-  font-size: 13px;
-  line-height: 1.4;
+  margin: 5px 0 0;
+  font-size: 12px;
   color: var(--muted);
 }
 
-/* 菜单常驻后页面结构在所有状态一致：不再按状态隐藏规则行/页脚，避免开局时页面跳动。 */
-
-.nickname-field {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.field {
+  margin-top: 16px;
 }
 
-.nickname-label {
-  font-size: 14px;
+.field-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
   color: var(--muted);
-  white-space: nowrap;
 }
 
 .nickname-input {
-  width: 180px;
-  min-height: 44px;
-  padding: 0 12px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--panel);
+  width: 100%;
+  padding: 10px 12px;
   color: var(--text);
-  font-size: 16px;
-  font-family: inherit;
+  background: #0f0f1a;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  outline: none;
 }
 
-.nickname-input::placeholder {
-  color: var(--muted);
+.nickname-input:focus-visible {
+  border-color: var(--purple);
 }
 
 .nickname-input:disabled {
-  opacity: 0.6;
+  color: var(--muted);
+  background: #12121d;
   cursor: not-allowed;
 }
 
-/* ---------- 游戏区 ---------- */
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.btn {
+  min-height: 44px;
+  padding: 0 16px;
+  color: var(--text);
+  font-weight: 700;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.btn:disabled {
+  color: #6b6b82;
+  cursor: not-allowed;
+}
+
+.btn-primary {
+  flex: 1;
+  background: var(--purple);
+  border-color: var(--purple);
+}
+
+.btn-primary:disabled {
+  background: #3a3358;
+  border-color: #3a3358;
+}
+
+.btn-secondary {
+  min-width: 86px;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--pink);
+  outline-offset: 2px;
+}
+
+/* ---------- 数据面板 ---------- */
+
+.data {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.data-title {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.data-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.data-row b {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.data-row-last {
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line);
+}
+
+.status-hint {
+  min-height: 18px;
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.hint {
+  margin: 12px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.footer {
+  margin-top: 14px;
+  font-size: 11px;
+  color: #6b6b82;
+}
+
+.dot {
+  margin: 0 4px;
+}
+
+/* ---------- 画布区 ---------- */
 
 .game-frame {
   position: relative;
-  /* 16:9 不变形；横屏手机时把宽度压到可用高度内，避免整页出现纵向滚动。
-     dvh 是 iOS 15.4+，先写 vh 让老 Safari 也能拿到尺寸。 */
-  width: min(100%, calc((100vh - 170px) * 16 / 9));
-  width: min(100%, calc((100dvh - 170px) * 16 / 9));
-  margin-inline: auto;
+  width: 100%;
   aspect-ratio: 16 / 9;
-  background: #0d0d15;
-  border-radius: 12px;
   overflow: hidden;
+  background: #000;
+  border: 1px solid #202032;
+  border-radius: 12px;
+  touch-action: none;
 }
 
 #unity-canvas {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
-  background: #0d0d15;
-  outline: none;
-  /* 全屏拖动移动时不许页面跟着滚动/缩放（M4 第 1.1 节） */
   touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-touch-callout: none;
 }
 
 .overlay {
   position: absolute;
   inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 16px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
   padding: 16px;
-  background: rgba(13, 13, 21, 0.92);
   text-align: center;
+  background: radial-gradient(circle at 50% 40%, #1a1a2e, #0d0d15 72%);
+  pointer-events: auto;
+}
+
+.overlay[hidden] {
+  display: none;
 }
 
 .overlay-text {
   margin: 0;
-  font-size: 16px;
-  line-height: 1.6;
-  max-width: 40em;
-}
-
-/* 开始/重开的 3-2-1：盖在画布上，和 Unity 暂停面板的倒计时观感一致（深色底 + 大号白字）。
-   pointer-events:none 让点击照常落到画布（倒计时期间本来也不接受画布交互）。 */
-.countdown {
-  position: absolute;
-  inset: 0;
-  z-index: 5;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(13, 13, 21, 0.55);
-  pointer-events: none;
-}
-
-.countdown-value {
-  font-size: clamp(44px, 16vw, 96px);
-  font-weight: 800;
-  line-height: 1;
-  color: #fff;
-  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.7);
-  font-variant-numeric: tabular-nums;
+  font-size: clamp(14px, 2.2vw, 20px);
+  font-weight: 700;
 }
 
 .error-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
   max-width: 420px;
-  padding: 16px 20px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--panel);
+  margin-top: 12px;
+  padding: 14px;
+  background: #1f1520;
+  border: 1px solid #4a2a35;
+  border-radius: 10px;
 }
 
 .error-text {
-  margin: 0;
-  font-size: 14px;
-  color: var(--muted);
-  line-height: 1.5;
-}
-
-/* ---------- 难度（M6 §2） ---------- */
-
-.difficulty {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.difficulty-cards {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-}
-
-/* 整卡可点（label 包住 radio），保证 ≥44px 命中区；短横屏由下面的媒体查询压到 36。 */
-.difficulty-card {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-height: 64px;
-  padding: 8px 12px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--panel);
-  cursor: pointer;
-  touch-action: manipulation;
-}
-
-.difficulty-card.is-selected {
-  border-color: var(--accent);
-  background: rgba(124, 92, 255, 0.16);
-  box-shadow: inset 0 0 0 1px var(--accent);
-}
-
-
-/* 原生 radio：只做视觉隐藏，键盘/读屏能力保留（不要 display:none 或 visibility:hidden）。 */
-.difficulty-input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: 0;
-  opacity: 0;
-}
-
-.difficulty-input:focus-visible + .difficulty-name {
-  outline: 3px solid #b9a7ff;
-  outline-offset: 4px;
-  border-radius: 4px;
-}
-
-.difficulty-input:disabled ~ * {
-  opacity: 0.65;
-}
-
-.difficulty-name {
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.difficulty-desc {
-  font-size: 12px;
-  line-height: 1.35;
-  color: var(--muted);
-}
-
-.difficulty-mult {
-  font-size: 12px;
-  color: #b9a7ff;
-  font-variant-numeric: tabular-nums;
-}
-
-.best-line {
-  margin: 0;
+  margin: 0 0 12px;
   font-size: 13px;
-  color: var(--muted);
-  text-align: center;
+  line-height: 1.5;
+  color: #ffc2c2;
 }
 
-.best-line b {
-  color: var(--text);
-  font-variant-numeric: tabular-nums;
-}
-
-.difficulty-note {
+.fs-toast {
+  position: absolute;
+  bottom: 6%;
+  left: 50%;
+  z-index: 3;
+  max-width: 84%;
   margin: 0;
+  padding: 8px 14px;
+  font-size: clamp(12px, 1.6vw, 15px);
+  color: #fff;
+  white-space: nowrap;
+  background: rgba(8, 8, 14, 0.82);
+  border: 1px solid #3a3a58;
+  border-radius: 999px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.fs-toast[hidden] {
+  display: none;
+}
+
+.rotate-hint {
+  display: none;
+  margin: 0 0 8px;
   font-size: 12px;
   color: var(--muted);
-  text-align: center;
 }
 
-/* ---------- 操作区 ---------- */
-
-.controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 12px;
-}
-
-.btn {
-  min-width: 132px;
-  min-height: 44px;
-  padding: 0 20px;
-  border: none;
-  border-radius: 10px;
-  background: var(--accent);
-  color: #fff;
-  font-size: 16px;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  touch-action: manipulation;
-  transition: background-color 120ms ease;
-}
-
-.btn:hover:not(:disabled) {
-  background: var(--accent-strong);
-}
-
-.btn:disabled {
-  background: var(--panel-2);
-  color: var(--muted);
-  cursor: not-allowed;
-}
-
-/* 次要按钮（全屏）：不抢「开始游戏」的视觉权重。 */
-.btn-secondary {
-  background: var(--panel-2);
-  color: var(--text);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: var(--line);
-}
-
-
-.btn:focus-visible,
-.nickname-input:focus-visible {
-  outline: 3px solid #b9a7ff;
-  outline-offset: 2px;
-}
-
-.status-hint {
-  margin: 0;
-  flex: 1 1 220px;
-  min-height: 1.4em;
-  font-size: 14px;
-  color: var(--muted);
-  line-height: 1.4;
-}
-
-/* 操作提示：DOM 文本，不塞进 Unity HUD（避免重烤字体图集，M4 第 1.4 节）。
-   触屏设备用 pointer: coarse 判断，不按宽度猜——窄桌面窗口仍然是键盘操作。 */
 .op-hint {
-  margin: 0;
-  font-size: 14px;
-  color: var(--muted);
+  margin: 10px 2px 0;
+  font-size: 12px;
   line-height: 1.5;
+  color: var(--muted);
 }
 
 .op-touch {
@@ -374,245 +316,73 @@ body {
   }
 }
 
-/* 竖屏手机提示横屏，但不阻塞游戏 */
-.rotate-hint {
-  display: none;
-  margin: 0;
-  padding: 8px 12px;
-  border-radius: 10px;
-  background: rgba(124, 92, 255, 0.12);
-  color: #cfc6ff;
-  font-size: 14px;
-  text-align: center;
+/* ---------- 全屏：只保留画布，0 网页按钮 ---------- */
+
+.game-frame:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  aspect-ratio: auto;
+  border: 0;
+  border-radius: 0;
+  background: #000;
 }
 
-@media (orientation: portrait) and (pointer: coarse) {
+.game-frame:fullscreen #unity-canvas {
+  width: min(100vw, 177.78vh);
+  height: min(100vh, 56.25vw);
+  left: 50%;
+  top: 50%;
+  right: auto;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+}
+
+/* ---------- 手机：单列，允许纵向滚动 ---------- */
+
+@media (max-width: 899px) {
+  .app {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .panel {
+    position: static;
+    padding: 14px;
+  }
+
+  .title {
+    font-size: 19px;
+  }
+
+  .field {
+    margin-top: 10px;
+  }
+
+  .actions {
+    margin-top: 10px;
+  }
+
+  .data {
+    margin-top: 12px;
+    padding-top: 10px;
+  }
+
+  .hint {
+    display: none;
+  }
+
+  .game-frame {
+    border-radius: 10px;
+  }
+
+  .op-hint {
+    margin-top: 8px;
+  }
+}
+
+@media (max-width: 899px) and (orientation: portrait) {
   .rotate-hint {
     display: block;
-  }
-}
-
-/* ---------- 结算 ---------- */
-
-.result {
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--panel);
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.result-title {
-  margin: 0;
-  font-size: 24px;
-  font-weight: 700;
-}
-
-/* 「重新开始 / 返回主菜单」在结算卡内，滚动到卡顶后与明细同屏。
-   宽屏并排；320 宽放不下两列时自动换行，仍然占满宽度便于手指点击。 */
-.result-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 4px;
-}
-
-.result-actions .btn {
-  flex: 1 1 150px;
-  width: auto;
-  margin-top: 0;
-}
-
-.result-grid {
-  margin: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 12px;
-}
-
-.result-item {
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: var(--panel-2);
-}
-
-.result-item dt {
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.result-item dd {
-  margin: 4px 0 0;
-  font-size: 22px;
-  font-weight: 700;
-  word-break: break-word;
-}
-
-.record {
-  align-self: flex-start;
-  margin: 0;
-  padding: 4px 12px;
-  border-radius: 999px;
-  background: rgba(76, 217, 123, 0.16);
-  color: var(--success);
-  font-size: 14px;
-  font-weight: 600;
-}
-
-/* ---------- 页脚 ---------- */
-
-.footer {
-  margin-top: auto;
-  padding-top: 8px;
-  font-size: 12px;
-  color: var(--muted);
-  text-align: center;
-}
-
-.footer .dot {
-  margin: 0 4px;
-}
-
-/* ---------- 响应式 ---------- */
-
-@media (min-width: 720px) {
-  .title {
-    font-size: 22px;
-  }
-
-  .nickname-input {
-    width: 220px;
-  }
-}
-
-/* 横屏手机：屏幕高度只有约 390px，压缩页头/间距，把高度让给 16:9 游戏区。 */
-@media (max-height: 560px) and (orientation: landscape) {
-  .shell {
-    gap: 8px;
-    padding: calc(6px + env(safe-area-inset-top)) calc(8px + env(safe-area-inset-right))
-      calc(6px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left));
-  }
-
-  .title {
-    font-size: 15px;
-  }
-
-  .nickname-input {
-    min-height: 36px;
-    width: 140px;
-    font-size: 14px;
-  }
-
-  .btn {
-    min-height: 36px;
-  }
-
-  .footer {
-    display: none;
-  }
-
-  .difficulty-card {
-    min-height: 44px;
-    padding: 6px 10px;
-  }
-
-  .difficulty-desc {
-    display: none;
-  }
-
-  /* 用高度定尺寸，宽度由 16:9 反推：横屏一屏仍能放下标题/菜单/按钮/画面。
-     菜单常驻后页面允许纵向滚动，超出部分靠滚动，不缩画布。 */
-  .game-frame {
-    height: calc(100vh - 132px);
-    height: calc(100dvh - 132px);
-    width: auto;
-    max-width: 100%;
-    align-self: center;
-  }
-}
-
-/* 320 宽的小屏：三列难度卡放不下描述，只留名称 + 倍率，保证开始按钮留在首屏 */
-@media (max-width: 360px) {
-  .difficulty-desc {
-    display: none;
-  }
-}
-
-/* 菜单常驻后页面会变高：允许纵向滚动（网页游戏的常规做法），画布在所有状态保持完整尺寸。
-   320×568 这类小屏只是收紧间距，不再缩小画布。 */
-@media (max-height: 620px) and (orientation: portrait) {
-  .shell {
-    gap: 8px;
-  }
-}
-
-/* ---------- 全屏（M4.5 §1） ---------- */
-
-/* 只请求 documentElement 全屏；保留 16:9 画面居中，多出来的部分用纯色 letterbox。 */
-html:fullscreen {
-  background: #000;
-  overflow: hidden;
-}
-
-html:fullscreen body {
-  background: #000;
-  overflow: hidden;
-}
-
-html:fullscreen .shell {
-  max-width: none;
-  min-height: 100vh;
-  min-height: 100dvh;
-  padding: 0;
-  gap: 0;
-  align-items: center;
-  justify-content: center;
-}
-
-/* L1.1 用户口径：「全屏无网页控件」只针对游戏中的 Playing/Paused；
-   Ready/Starting 全屏保留难度区 + 最高分行 + 开始（否则进全屏没法开局，M4.5 行为）。
-   全屏按钮自身在任何全屏下隐藏，退出只靠 Esc / 系统手势。 */
-html:fullscreen .header,
-html:fullscreen .rotate-hint,
-html:fullscreen .op-hint,
-html:fullscreen .footer,
-html:fullscreen .result,
-html:fullscreen #fullscreen-hint,
-html:fullscreen #btn-fullscreen {
-  display: none !important;
-}
-
-/* 游戏中（含暂停）全屏：网页外壳与按钮全部收起，只留画面。 */
-html:fullscreen body[data-page="Playing"] .controls,
-html:fullscreen body[data-page="Paused"] .controls,
-html:fullscreen body[data-page="Playing"] .difficulty,
-html:fullscreen body[data-page="Paused"] .difficulty {
-  display: none !important;
-}
-
-/* Ready/Starting 全屏：画面 + 菜单同屏，按剩余高度反推画面宽度，避免把开始按钮挤出屏幕。 */
-html:fullscreen body[data-page="Ready"] .game-frame,
-html:fullscreen body[data-page="Starting"] .game-frame {
-  width: min(100vw, calc((100vh - 220px) * 16 / 9));
-  width: min(100vw, calc((100dvh - 220px) * 16 / 9));
-  height: auto;
-  max-width: 100%;
-}
-
-html:fullscreen .game-frame {
-  width: min(100vw, calc(100vh * 16 / 9));
-  width: min(100vw, calc(100dvh * 16 / 9));
-  height: auto;
-  max-width: none;
-  margin: 0;
-  border-radius: 0;
-  aspect-ratio: 16 / 9;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .btn {
-    transition: none;
   }
 }

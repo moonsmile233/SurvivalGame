@@ -11,6 +11,10 @@
     },
     onGameOver: function (json) {
       forward('onGameOver', json);
+    },
+    // v3：Unity 菜单难度选择变化；H5 只代存，不提供选择 UI。
+    onDifficultyChanged: function (json) {
+      forward('onDifficultyChanged', json);
     }
   };
 

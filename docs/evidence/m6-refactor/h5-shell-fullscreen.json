@@ -1,0 +1,7 @@
+{
+  "supported": true,
+  "id": "game-frame",
+  "visibleButtonsInFrame": 0,
+  "toast": "按 Esc 退出全屏",
+  "toastVisible": true
+}

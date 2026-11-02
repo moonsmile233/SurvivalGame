@@ -10,121 +10,78 @@
   <link rel="stylesheet" href="css/style.css?v=1.2.0">
 </head>
 <body>
-  <main class="shell">
-    <header class="header">
-      <div class="header-text">
+  <!-- v1.2 薄壳：H5 只负责昵称、进入、数据展示、全屏入口。
+       难度/开局/暂停/重开/结算都在 Unity 画布内（菜单入口由 EnterGame 打开）。 -->
+  <main class="app">
+    <aside class="panel">
+      <header class="brand">
         <h1 class="title">SurvivalGame</h1>
-        <p class="tagline">躲开追踪你的敌人，存活 60 秒</p>
-      </div>
-      <div class="nickname-field">
-        <label class="nickname-label" for="nickname">昵称</label>
+        <p class="tagline">2D 生存挑战 · 存活 60 秒</p>
+      </header>
+
+      <div class="field">
+        <label class="field-label" for="nickname">昵称</label>
         <input id="nickname" class="nickname-input" type="text" maxlength="16" autocomplete="nickname"
                placeholder="玩家" spellcheck="false" disabled>
       </div>
-    </header>
 
-    <p class="rotate-hint">横屏体验更佳</p>
-
-    <!-- 难度（M6 §2）：常驻可见、随时可点。
-         Ready 只选择；倒计时中点会取消倒计时；Playing/Paused/Result 点会中止本局回主菜单（不计分）。
-         用原生 radio + label：方向键、读屏能力交给浏览器。 -->
-    <section id="difficulty" class="difficulty" role="radiogroup" aria-label="难度">
-      <div class="difficulty-cards">
-        <label class="difficulty-card">
-          <input class="difficulty-input" type="radio" name="difficulty" value="easy" disabled>
-          <span class="difficulty-name">简单</span>
-          <span class="difficulty-desc">敌人更慢、更少</span>
-          <span class="difficulty-mult">×1.0</span>
-        </label>
-        <label class="difficulty-card">
-          <input class="difficulty-input" type="radio" name="difficulty" value="normal" disabled>
-          <span class="difficulty-name">普通</span>
-          <span class="difficulty-desc">标准节奏</span>
-          <span class="difficulty-mult">×1.3</span>
-        </label>
-        <label class="difficulty-card">
-          <input class="difficulty-input" type="radio" name="difficulty" value="hard" disabled>
-          <span class="difficulty-name">困难</span>
-          <span class="difficulty-desc">敌人更快、更多</span>
-          <span class="difficulty-mult">×1.6</span>
-        </label>
+      <div class="actions">
+        <button id="btn-start" class="btn btn-primary" type="button" disabled>开始游戏</button>
+        <button id="btn-fullscreen" class="btn btn-secondary" type="button" hidden>全屏</button>
       </div>
-      <p id="best-line" class="best-line"><span id="best-label">普通</span>最高分 <b id="best-value">0</b></p>
-      <!-- 倍率只乘存活分；胜利奖励固定 200（协议 v2 §3），一句话说清，避免误以为总分乘倍率。 -->
-      <p class="difficulty-note">倍率只作用于存活分，胜利奖励固定 +200</p>
-    </section>
 
-    <!-- 开始/全屏在画布上方：Ready 首屏一定能看到开始；Playing 时只隐藏开始按钮，行高不变。
-         全屏按钮在 Ready/Starting/Playing/Paused 出现（Result 不提供）；Ready/Starting 全屏保留菜单。
-         页面允许纵向滚动（菜单常驻后高度会超出小屏），画布自己 touch-action:none，拖动摇杆不会滚页。 -->
-    <section class="controls">
-      <button id="btn-start" class="btn" type="button" disabled>开始游戏</button>
-      <button id="btn-fullscreen" class="btn btn-secondary" type="button">全屏</button>
+      <section class="data" aria-label="成绩数据">
+        <h2 class="data-title">数据</h2>
+        <div class="data-row">
+          <span>昵称</span>
+          <b id="data-nickname">玩家</b>
+        </div>
+        <div class="data-row">
+          <span>最高分</span>
+          <b id="data-best">0</b>
+        </div>
+        <div class="data-row data-row-last">
+          <span>最近一局</span>
+          <b id="data-last">—</b>
+        </div>
+      </section>
+
       <p id="status-hint" class="status-hint" aria-live="polite"></p>
       <p id="fullscreen-hint" class="status-hint" role="status" hidden></p>
-    </section>
+      <p class="hint">进入后在游戏内选择难度、开始/暂停/重开；网页只负责昵称、成绩和最高分。</p>
 
-    <section class="game-frame" aria-label="游戏画面">
-      <canvas id="unity-canvas" tabindex="0"></canvas>
-      <div id="overlay" class="overlay">
-        <p id="overlay-text" class="overlay-text">加载中…</p>
-        <div id="error-card" class="error-card" hidden>
-          <p id="error-text" class="error-text"></p>
-          <button id="btn-retry" class="btn" type="button">重试</button>
+      <footer class="footer">
+        <span id="version">v-</span>
+        <span class="dot" aria-hidden="true">·</span>
+        <span id="build-time">-</span>
+      </footer>
+    </aside>
+
+    <div class="stage-wrap">
+      <p class="rotate-hint">横屏体验更佳</p>
+
+      <!-- 全屏元素只包含画布：全屏内没有任何网页按钮，退出靠 Esc / 系统手势。 -->
+      <div id="game-frame" class="game-frame" aria-label="游戏画面">
+        <canvas id="unity-canvas" tabindex="0"></canvas>
+
+        <!-- 加载 / 已就绪 / 错误共用一层；Shell 阶段挡住画布，避免未进入就操作 Unity 菜单。 -->
+        <div id="overlay" class="overlay">
+          <p id="overlay-text" class="overlay-text">加载中…</p>
+          <div id="error-card" class="error-card" hidden>
+            <p id="error-text" class="error-text"></p>
+            <button id="btn-retry" class="btn btn-primary" type="button">重试</button>
+          </div>
         </div>
+
+        <!-- 全屏内 2~3 秒自动消失的提示；不是按钮，不拦截操作。 -->
+        <p id="fs-toast" class="fs-toast" role="status" hidden></p>
       </div>
-      <!-- 开始/重新开始的 3-2-1：H5 自己在画布上倒数，3 秒后才发 StartGame/RestartGame。
-           与 Unity 暂停面板的 3-2-1 视觉尽量一致；倒计时中点难度卡或页面切走都会取消。 -->
-      <div id="countdown" class="countdown" aria-live="assertive" aria-atomic="true" hidden>
-        <span id="countdown-value" class="countdown-value">3</span>
-      </div>
-    </section>
 
-    <p class="op-hint">
-      <span class="op-desktop">操作：WASD / 方向键移动 · Esc / P 暂停 · 躲开敌人 · 存活 60 秒</span>
-      <span class="op-touch">操作：拖动屏幕移动 · 点画面内「暂停」 · 躲开敌人 · 存活 60 秒</span>
-    </p>
-
-    <section id="result" class="result" aria-live="polite" hidden>
-      <p id="result-title" class="result-title"></p>
-      <dl class="result-grid">
-        <div class="result-item">
-          <dt>本次得分</dt>
-          <dd id="result-score">0</dd>
-        </div>
-        <div class="result-item">
-          <dt>本难度最高分</dt>
-          <dd id="result-best">0</dd>
-        </div>
-        <div class="result-item">
-          <dt>难度</dt>
-          <dd id="result-difficulty">普通</dd>
-        </div>
-        <div class="result-item">
-          <dt>昵称</dt>
-          <dd id="result-nickname"></dd>
-        </div>
-        <div class="result-item">
-          <dt>存活</dt>
-          <dd id="result-survived">0 秒</dd>
-        </div>
-      </dl>
-      <p id="result-record" class="record" hidden>新纪录</p>
       <p class="op-hint">
         <span class="op-desktop">操作：WASD / 方向键移动 · Esc / P 暂停 · 躲开敌人 · 存活 60 秒</span>
         <span class="op-touch">操作：拖动屏幕移动 · 点画面内「暂停」 · 躲开敌人 · 存活 60 秒</span>
       </p>
-      <!-- 按钮放进结算卡：block:'start' 滚动后卡片与按钮同屏，小屏不会把按钮顶出视口（M4.6/M4.7 响应式）。 -->
-      <div class="result-actions">
-        <button id="btn-restart" class="btn" type="button" hidden>重新开始</button>
-      </div>
-    </section>
-
-    <footer class="footer">
-      <span id="version">v-</span>
-      <span class="dot" aria-hidden="true">·</span>
-      <span id="build-time">-</span>
-    </footer>
+    </div>
   </main>
 
   <script src="js/storage.js?v=1.2.0"></script>
