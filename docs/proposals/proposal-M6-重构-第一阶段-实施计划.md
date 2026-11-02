@@ -174,10 +174,15 @@ public enum GameState
 - 真实失焦验证：沿用 `tools/e2e/smoke.mjs` 的做法（CDP `Emulation.setFocusEmulationEnabled(false)` +
   第二个页面抢焦点），在 Standalone 页面重跑；无头下只验 Chrome/Edge（Firefox 无该开关）。
 
-### 4.6 难度记忆（会话内）
+### 4.6 难度记忆（H5 代存，Unity 不使用 PlayerPrefs）
 
-- **不用 `PlayerPrefs`**（策划裁决 6）：`MenuPanel` 用会话内字段记住选择；首次加载 = `Normal`；
-  本会话内 `ReturnToMenu` 保留上次选择；**刷新/重开页面重置为普通**。
+- **难度只在 Unity 菜单选**；暂停重开/结算再来一局/返回菜单都沿用当前难度，不弹选择。
+- **不用 `PlayerPrefs`**（项目交付约束 + 策划裁决）。跨刷新偏好由 H5 代存：
+  - `EnterGame` 可选 `lastDifficulty`（`easy|normal|hard`，非法/缺省 → `normal`）→ 只作菜单初始选中，不自动开局；
+  - 菜单选择变化时 Unity 发 `onDifficultyChanged`（`{"protocol":3,"difficulty":"hard"}`），H5 存
+    `survival.difficulty`；EnterGame 回填后**不回声**（Bridge 抑制）。
+  - standalone / 无 H5 时每次启动默认普通（文档写清）。
+- 首次启动 = 普通；`ReturnToMenu` 沿用本会话选择；H5 真正存取在下一阶段（本阶段只做 Unity 侧）。
 - `GameConfig.ActiveDifficulty` 仍是运行时字段（不加 `[SerializeField]`、不写回资产），`RestartGame` 沿用。
 
 ## 5. 文案与字体
@@ -223,9 +228,10 @@ public enum GameState
 
 | 方向 | 消息 | 载荷 | 说明 |
 |---|---|---|---|
-| H5→Unity | `EnterGame` | `{"nickname":"阿宝"}`（可空） | 进入游戏；昵称只记日志；`Menu` 下幂等；`Starting/Playing/...` 下忽略并 warning |
-| Unity→H5 | `onReady` | `{"protocol":3,"capabilities":["enterGame","stateChange","gameOver"]}` | 首帧后一次 |
+| H5→Unity | `EnterGame` | `{"nickname":"阿宝","lastDifficulty":"easy\|normal\|hard"}`（均可空） | 进入游戏；昵称只记日志；`lastDifficulty` 只作菜单初始选中、不自动开局；`Menu` 下幂等 |
+| Unity→H5 | `onReady` | `{"protocol":3,"capabilities":["enterGame","stateChange","gameOver","difficultyChanged"]}` | 首帧后一次 |
 | Unity→H5 | `onStateChange` | `{"protocol":3,"state":"menu\|playing\|paused\|result"}` | 每次状态变化；`Starting` 不单独发（仍在来源态/playing 前的等待，H5 不需要） |
+| Unity→H5 | `onDifficultyChanged` | `{"protocol":3,"difficulty":"easy\|normal\|hard"}` | 菜单选择变化时一次；H5 代存 `survival.difficulty`；EnterGame 回填不回声 |
 | Unity→H5 | `onGameOver` | §6.2 | 每局一次（`_reported` 守卫） |
 | 旧兼容 | `StartGame` | v2 JSON / 纯昵称 | **当 `EnterGame`**，不自动开局；打一次 warning |
 | 旧兼容 | `SetPausedByVisibility` | `"true"/"false"` | 保留；与原生失焦幂等 |
@@ -396,7 +402,8 @@ public enum GameState
 - 全屏按钮**只在 `EnterGame` 后显示**；Shell 阶段只有昵称 + 开始；全屏内 0 网页按钮，画布内 Unity 菜单可点。
 - 单一最高分 key `survival.bestScore`；首次迁移取 `bestScore.{easy,normal,hard}` 三者 max，
   旧键只读一次后不再读写；**最近一局只从 `onGameOver` 更新、不持久化**（刷新清空）。
-- `survival.difficulty` 废弃（难度归 Unity）。
+- `survival.difficulty` **保留**：H5 只代存 Unity 的难度偏好（收 `onDifficultyChanged`，
+  `EnterGame` 时回传 `lastDifficulty`），**H5 不提供难度选择 UI**。
 - H5 不再发局内指令；开始与全屏两个独立按钮；昵称进入后只读。
 
 ## 12. 待策划确认
@@ -457,3 +464,21 @@ public enum GameState
   至少补一条 **390×844** 的点击链（开始/暂停/结算），覆盖 640×360 参考分辨率分支。
 - **E. 失焦验收两种**：Standalone 用 CDP 真实 window blur + 切标签（visibilitychange），断言进出都保持 `Paused`；
   若 Unity 原生焦点在无头下不触发，明确记录并退回「H5 环境信号为主」，**不许静默放过**。
+
+## 15. 难度偏好补充（2026-11-01，用户确认；覆盖 §12-6 / §14-6 的“会话内”口径）
+
+> 用户原话：「难度设置…在玩家不修改的前提下保持上个难度，游戏内暂停后如果重新开始的话不改变难度，
+> 如果在主界面点开始游戏后这个部分是可以有一个选择难度，就和很多游戏设计一样。其他按行业规范来。」
+
+- **难度归属不变**：只在 Unity 菜单选；暂停重开/结算再来一局/返回菜单沿用当前难度，不弹选择；
+  菜单默认选中“上次难度”，首次启动 = 普通。
+- **“保持上个难度”按跨刷新理解**，但**仍然禁用 `PlayerPrefs`**：由 H5 代存。
+  - `EnterGame` 增加可选 `lastDifficulty`（`easy|normal|hard`；非法/缺省→`normal`），
+    Unity 只把它作为菜单初始选中，**不自动开局**；
+  - 新增 Unity→H5 `onDifficultyChanged`：**菜单选择变化时发一次**，H5 存 `survival.difficulty`；
+  - EnterGame 回填后**不回声**（Bridge 用抑制标记），避免循环；
+  - `onGameOver.difficulty` 不变（Unity 实际采用值）。
+- **本阶段只做 Unity 侧**：解析 `lastDifficulty`、维护 `GameManager.MenuDifficulty`、发 `onDifficultyChanged`；
+  standalone 无 H5 时每次启动默认普通。H5 真正存取在下一阶段。
+- 上一轮“`survival.difficulty` 废弃”作废：改为「H5 代存 Unity 的难度偏好，H5 不提供选择 UI」。
+- `bridge-protocol.md` v3 版本历史补这两项。

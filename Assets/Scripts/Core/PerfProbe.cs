@@ -188,10 +188,11 @@ namespace Survival.Core
                 if (_autoStartCountdown <= 0f)
                 {
                     _autoStarted = true;
-                    if (_manager != null && _manager.State == GameState.Ready)
+                    if (_manager != null && _manager.State == GameState.Menu)
                     {
-                        _manager.StartGame();
-                        Debug.Log("[PERF] autostart -> Playing");
+                        // 压测口径：绕过 3-2-1，直接 Playing（策划裁决 2026-11-01 B）。
+                        _manager.StartGameImmediate(Difficulty.Normal);
+                        Debug.Log("[PERF] autostart -> Playing (immediate)");
                     }
                 }
             }

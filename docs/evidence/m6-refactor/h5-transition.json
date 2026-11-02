@@ -1,0 +1,21 @@
+{
+  "protocolWarning": true,
+  "bestScore": "226",
+  "resultVisible": true,
+  "h5Page": "Result",
+  "consoleLines": [
+    "[Bridge] subscribed to GameManager (state=Menu, protocol=3)\n",
+    "[App] 协议版本不一致：3（期望 2）",
+    "[App] Unity ready",
+    "[Bridge] StartGame（按 EnterGame 处理）：v2 旧指令已废弃，v1.2 由 Unity 内部处理；请刷新到 v1.2 H5\n",
+    "[Bridge] EnterGame nickname='玩家' lastDifficulty=Normal state=Menu\n",
+    "[GameManager] state=Starting return=Menu reset=True\n",
+    "[App] 未知状态：playing",
+    "[Bridge] stateChange -> playing\n",
+    "[GameManager] state=Playing difficulty=Normal\n",
+    "[App] 未知状态：result",
+    "[Bridge] stateChange -> result\n",
+    "[App] gameOver score=226 difficulty=normal best=226 newRecord=true",
+    "[GameManager] state=Result won=True survived=2.0s score=226\n"
+  ]
+}

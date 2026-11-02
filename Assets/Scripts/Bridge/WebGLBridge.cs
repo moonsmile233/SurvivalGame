@@ -4,14 +4,21 @@ using Survival.Core;
 using UnityEngine;
 
 /// <summary>
-/// H5 ↔ Unity 的唯一出口。GameObject 必须叫 `WebGLBridge` 且保持激活，
-/// 否则 H5 侧的 SendMessage 找不到目标。
+/// H5 ↔ Unity 的唯一出口（protocol 3，v1.2 游戏优先）。
+/// GameObject 必须叫 `WebGLBridge` 且保持激活，否则 H5 侧的 SendMessage 找不到目标。
 /// 只做边界转换（JSON 编解码 + 状态转发），不写任何玩法逻辑。
+///
+/// v3 边界：
+/// - H5 → Unity 只保留 `EnterGame`（昵称仅日志）；旧 `StartGame` 当 EnterGame 兼容；
+///   旧局内指令 `PauseGame/ResumeGame/RestartGame/ReturnToMenu` 是 no-op（一次性 warning）；
+///   `SetPausedByVisibility` 保留为失焦兜底（与 ApplicationFocusPause 幂等）。
+/// - Unity → H5：`onReady`(protocol=3 + capabilities)、`onStateChange`(menu/playing/paused/result)、
+///   `onGameOver`（每局一次）。`Starting` 是内部过渡态，不发状态事件。
 /// 协议见 `docs/bridge-protocol.md`。
 /// </summary>
 public class WebGLBridge : MonoBehaviour
 {
-    private const int ProtocolVersion = 2;
+    private const int ProtocolVersion = 3;
     private const int MaxNicknameLength = 64;
 
     [SerializeField] private GameManager _gameManager;
@@ -19,14 +26,11 @@ public class WebGLBridge : MonoBehaviour
     private string _nickname = string.Empty;
     private bool _readySent;
     private bool _reported;
-    private bool _pausedByVisibility;
-    private bool _subscribed;
+    private bool _legacyWarned;
 
-    /// <summary>
-    /// H5 嵌入模式：WebGL 构建下为 true，结算与重开交给页面，Unity 不显示 ResultPanel
-    /// （M4 第 1.3 节）。Editor 里保持 false，方便自测 Unity 结算面板。
-    /// </summary>
-    public bool IsEmbedded { get; private set; }
+    // EnterGame 回填 lastDifficulty 时会触发 GameManager.OnMenuDifficultyChanged；
+    // 这次变化来自 H5 自己，不能再发 onDifficultyChanged 回去（避免循环）。
+    private bool _applyingRemoteDifficulty;
 
     private void Awake()
     {
@@ -34,10 +38,6 @@ public class WebGLBridge : MonoBehaviour
         {
             _gameManager = FindFirstObjectByType<GameManager>();
         }
-
-#if UNITY_WEBGL && !UNITY_EDITOR
-        IsEmbedded = true;
-#endif
     }
 
     private void Start()
@@ -49,15 +49,16 @@ public class WebGLBridge : MonoBehaviour
         }
 
         _gameManager.OnStateChanged += HandleStateChanged;
-        _subscribed = true;
-        Debug.Log($"[Bridge] subscribed to GameManager (state={_gameManager.State})");
+        _gameManager.OnMenuDifficultyChanged += HandleMenuDifficultyChanged;
+        Debug.Log($"[Bridge] subscribed to GameManager (state={_gameManager.State}, protocol={ProtocolVersion})");
     }
 
     private void OnDestroy()
     {
-        if (_subscribed && _gameManager != null)
+        if (_gameManager != null)
         {
             _gameManager.OnStateChanged -= HandleStateChanged;
+            _gameManager.OnMenuDifficultyChanged -= HandleMenuDifficultyChanged;
         }
     }
 
@@ -72,37 +73,85 @@ public class WebGLBridge : MonoBehaviour
         }
 
         _readySent = true;
-        string json = JsonUtility.ToJson(new ReadyMessage { protocol = ProtocolVersion });
+        string json = JsonUtility.ToJson(new ReadyMessage
+        {
+            protocol = ProtocolVersion,
+            capabilities = new[] { "enterGame", "stateChange", "gameOver", "difficultyChanged" },
+        });
         JsNotifyReady(json);
     }
 
     private void HandleStateChanged(GameState state)
     {
-        Debug.Log($"[Bridge] stateChange -> {state}");
+        // Starting 是内部过渡态：不发 onStateChange（策划裁决 2026-11-01）。
+        if (state == GameState.Starting)
+        {
+            return;
+        }
 
-        // 新一局开始：允许下一次结算再次上报（H5 的 RestartGame 与 Unity 结算面板的重开都会走到这里）。
+        // 新一局开始：允许下一次结算再次上报（重开/再来一局都会走到 Playing）。
         if (state == GameState.Playing)
         {
             _reported = false;
         }
 
-        string stateJson = JsonUtility.ToJson(new StateMessage
+        string wire = MapToWire(state);
+        if (wire != null)
         {
-            protocol = ProtocolVersion,
-            state = state.ToString(),
-        });
-        JsNotifyStateChange(stateJson);
+            string stateJson = JsonUtility.ToJson(new StateMessage
+            {
+                protocol = ProtocolVersion,
+                state = wire,
+            });
+            JsNotifyStateChange(stateJson);
+            Debug.Log($"[Bridge] stateChange -> {wire}");
+        }
 
-        if ((state == GameState.Won || state == GameState.Lost) && !_reported)
+        if (state == GameState.Result && !_reported)
         {
             _reported = true;
-            JsNotifyGameOver(BuildGameOverJson(state));
+            JsNotifyGameOver(BuildGameOverJson());
         }
     }
 
-    private string BuildGameOverJson(GameState state)
+    /// <summary>菜单难度选择变化 → H5 代存（H5 不提供选择 UI）。回填产生的回声已抑制。</summary>
+    private void HandleMenuDifficultyChanged(Difficulty difficulty)
     {
-        bool won = state == GameState.Won;
+        if (_applyingRemoteDifficulty)
+        {
+            return;
+        }
+
+        string json = JsonUtility.ToJson(new DifficultyMessage
+        {
+            protocol = ProtocolVersion,
+            difficulty = DifficultyToWire(difficulty),
+        });
+        JsNotifyDifficultyChanged(json);
+        Debug.Log($"[Bridge] difficultyChanged -> {difficulty}");
+    }
+
+    /// <summary>唯一的状态→线格式表；新增状态必须在这里显式决定是否发给 H5。</summary>
+    private static string MapToWire(GameState state)
+    {
+        switch (state)
+        {
+            case GameState.Menu:
+                return "menu";
+            case GameState.Playing:
+                return "playing";
+            case GameState.Paused:
+                return "paused";
+            case GameState.Result:
+                return "result";
+            default:
+                return null;
+        }
+    }
+
+    private string BuildGameOverJson()
+    {
+        bool won = _gameManager.LastRoundWon;
         float survived = Mathf.Min(_gameManager.ElapsedTime, _gameManager.Config.RoundDuration);
         ScoreService score = _gameManager.Score;
 
@@ -117,11 +166,10 @@ public class WebGLBridge : MonoBehaviour
                 survivedSeconds = Mathf.Round(survived * 10f) / 10f,
                 kills = score.Kills,
                 nickname = _nickname,
-                // 回传「Unity 实际采用」的档位（非法/缺省已被回落为 normal），H5 以它分档记分。
+                // 回传「Unity 实际采用」的档位，H5 以它记分（协议 v3）。
                 difficulty = DifficultyToWire(_gameManager.Config.ActiveDifficulty),
                 breakdown = new ScoreBreakdown
                 {
-                    // survival 已含难度倍率；H5 只展示，不再换算（协议 v2 §3）。
                     survival = score.SurvivalScore,
                     kills = score.KillScore,
                     winBonus = score.WinBonus,
@@ -129,94 +177,71 @@ public class WebGLBridge : MonoBehaviour
             },
         };
 
-        // JsonUtility 会把浮点数 60 写成 60，H5 侧统一按 number 处理。
         return JsonUtility.ToJson(envelope);
     }
 
     // ---------- H5 → Unity（SendMessage 只能带一个 string 参数） ----------
 
     /// <summary>
-    /// Ready → Playing。参数：JSON `{"nickname":"...","difficulty":"easy|normal|hard"}`；
-    /// 兼容 v1 的直接传昵称字符串（难度按 normal）。难度只在这里解析一次，局内锁定（协议 v2 §2.2）。
+    /// 进入游戏（H5「开始游戏」）。参数 JSON `{"nickname":"...","lastDifficulty":"easy|normal|hard"}`
+    /// 或纯昵称字符串（v1 写法）。昵称只保存不渲染；lastDifficulty 只作菜单初始选中，不自动开局。
+    /// H5 回填难度时不发 onDifficultyChanged 回声（避免循环）。
     /// </summary>
-    public void StartGame(string payload)
+    public void EnterGame(string payload)
     {
-        if (!EnsureManager("StartGame"))
+        if (!EnsureManager("EnterGame"))
         {
             return;
         }
 
-        if (_gameManager.State != GameState.Ready)
+        // EnterGame 只属于“进入游戏”这一次：局内/倒计时/结算里再来一次说明 H5 状态过期，
+        // 忽略而不是悄悄改难度偏好（与 bridge-protocol §2 的守卫一致）。
+        if (_gameManager.State != GameState.Menu)
         {
-            Debug.LogWarning($"[Bridge] StartGame ignored in state {_gameManager.State}");
+            Debug.LogWarning($"[Bridge] EnterGame ignored in state {_gameManager.State}");
             return;
         }
 
-        ParseStartGame(payload, out string nickname, out Difficulty difficulty);
+        ParseEnterGame(payload, out string nickname, out Difficulty difficulty);
         _nickname = nickname;
-        _pausedByVisibility = false;
         _reported = false;
 
-        // 能收到 StartGame 就说明页面在驱动游戏：结算交给 H5（ticket M4 1.3）。
-        IsEmbedded = true;
-        _gameManager.StartGame(difficulty);
-    }
-
-    /// <summary>Playing → Paused（H5 手动暂停）。</summary>
-    public void PauseGame(string _)
-    {
-        if (!EnsureManager("PauseGame"))
+        _applyingRemoteDifficulty = true;
+        try
         {
-            return;
+            _gameManager.SetMenuDifficulty(difficulty);
+        }
+        finally
+        {
+            _applyingRemoteDifficulty = false;
         }
 
-        _pausedByVisibility = false;
-        _gameManager.PauseGame();
+        Debug.Log($"[Bridge] EnterGame nickname='{_nickname}' lastDifficulty={difficulty} state={_gameManager.State}");
     }
 
-    /// <summary>Paused → 先 3-2-1 再 Playing（H5 手动继续；M4.6 起不直接恢复）。</summary>
-    public void ResumeGame(string _)
+    /// <summary>v2 旧入口：按 EnterGame 处理，不自动开局（方案 §7 兼容口径）。</summary>
+    public void StartGame(string payload)
     {
-        if (!EnsureManager("ResumeGame"))
-        {
-            return;
-        }
-
-        _pausedByVisibility = false;
-        _gameManager.RequestCountdownResume();
+        WarnLegacy("StartGame（按 EnterGame 处理）");
+        EnterGame(payload);
     }
 
-    /// <summary>Won / Lost → Playing，全量重置；昵称沿用。</summary>
-    public void RestartGame(string _)
-    {
-        if (!EnsureManager("RestartGame"))
-        {
-            return;
-        }
+    /// <summary>v2 旧指令：v1.2 起局内全部由 Unity UI 处理，这里只告警不执行。</summary>
+    public void PauseGame(string _) => WarnLegacy("PauseGame");
 
-        _pausedByVisibility = false;
-        _gameManager.RestartGame();
-    }
+    /// <summary>v2 旧指令：no-op。</summary>
+    public void ResumeGame(string _) => WarnLegacy("ResumeGame");
+
+    /// <summary>v2 旧指令：no-op。</summary>
+    public void RestartGame(string _) => WarnLegacy("RestartGame");
+
+    /// <summary>v2 旧指令：no-op。</summary>
+    public void ReturnToMenu(string _) => WarnLegacy("ReturnToMenu");
 
     /// <summary>
-    /// 中止本局回到 Ready（H5「返回主菜单」，协议 v2 §2）。不计分、不发 onGameOver。
-    /// 允许从 Playing / Paused / Won / Lost 调用。
-    /// </summary>
-    public void ReturnToMenu(string _)
-    {
-        if (!EnsureManager("ReturnToMenu"))
-        {
-            return;
-        }
-
-        _pausedByVisibility = false;
-        _gameManager.ReturnToMenu();
-    }
-
-    /// <summary>
-    /// 失焦/标签页隐藏时自动暂停，切回**保持暂停**，恢复必须由玩家主动触发（M4.6）。
-    /// 切回只清标记，不请求倒计时、不 ResumeGame；否则玩家看不见时游戏会自己继续。
-    /// 倒计时中再次失焦：停表并保持暂停。
+    /// 失焦/标签页隐藏（环境信号，不是局内操作）：Playing → Paused；Starting → 取消倒计时回来源态。
+    /// 切回 `"false"` 只清标记，保持 Paused、不自动恢复（M4.6）。
+    /// 与 <see cref="ApplicationFocusPause"/> 幂等：重复 true 由 GameManager 状态守卫吸收。
     /// </summary>
     public void SetPausedByVisibility(string payload)
     {
@@ -226,25 +251,30 @@ public class WebGLBridge : MonoBehaviour
         }
 
         bool hidden = string.Equals(payload, "true", StringComparison.OrdinalIgnoreCase);
-
-        if (hidden)
+        if (!hidden)
         {
-            if (_gameManager.State == GameState.Playing)
-            {
-                _gameManager.PauseGame();
-                _pausedByVisibility = true;
-            }
-            else if (_gameManager.State == GameState.Paused)
-            {
-                // 不管是失焦自动暂停还是玩家主动恢复的倒计时，只要再次隐藏就停表、保持暂停。
-                _gameManager.CancelCountdownResume();
-            }
-
             return;
         }
 
-        // 切回：只清标记，等玩家点「继续」或按 P 再倒数。
-        _pausedByVisibility = false;
+        if (_gameManager.State == GameState.Playing)
+        {
+            _gameManager.PauseGame();
+        }
+        else if (_gameManager.State == GameState.Starting)
+        {
+            _gameManager.CancelStartCountdown();
+        }
+    }
+
+    private void WarnLegacy(string method)
+    {
+        if (_legacyWarned)
+        {
+            return;
+        }
+
+        _legacyWarned = true;
+        Debug.LogWarning($"[Bridge] {method}：v2 旧指令已废弃，v1.2 由 Unity 内部处理；请刷新到 v1.2 H5");
     }
 
     private bool EnsureManager(string caller)
@@ -259,10 +289,10 @@ public class WebGLBridge : MonoBehaviour
     }
 
     /// <summary>
-    /// 解析昵称 + 难度（一次解析、开局快照）。昵称只保存不渲染，超长截断，避免把异常大的字符串带进结算 JSON。
-    /// 非法/缺省难度 → normal；纯昵称字符串（v1 写法）→ 昵称 + normal。
+    /// 解析 EnterGame 载荷：昵称 + lastDifficulty（可选）。昵称只保存不渲染，超长截断；
+    /// lastDifficulty 非法/缺省 → normal（与 H5 代存契约一致，协议 v3）。
     /// </summary>
-    private static void ParseStartGame(string payload, out string nickname, out Difficulty difficulty)
+    private static void ParseEnterGame(string payload, out string nickname, out Difficulty difficulty)
     {
         nickname = string.Empty;
         difficulty = Difficulty.Normal;
@@ -274,7 +304,7 @@ public class WebGLBridge : MonoBehaviour
             {
                 try
                 {
-                    var message = JsonUtility.FromJson<StartGameMessage>(trimmed);
+                    var message = JsonUtility.FromJson<EnterGameMessage>(trimmed);
                     if (message != null)
                     {
                         if (message.nickname != null)
@@ -282,23 +312,21 @@ public class WebGLBridge : MonoBehaviour
                             nickname = message.nickname;
                         }
 
-                        // 缺省（v1 H5）静默按 normal；有值但认不出才告警，方便排查前端拼错。
-                        if (!string.IsNullOrEmpty(message.difficulty) &&
-                            !TryParseDifficulty(message.difficulty, out difficulty))
+                        if (!string.IsNullOrEmpty(message.lastDifficulty) &&
+                            !TryParseDifficulty(message.lastDifficulty, out difficulty))
                         {
-                            Debug.LogWarning($"[Bridge] 未知难度 '{message.difficulty}'，按 normal 处理");
+                            Debug.LogWarning($"[Bridge] 未知 lastDifficulty '{message.lastDifficulty}'，按 normal 处理");
                             difficulty = Difficulty.Normal;
                         }
                     }
                 }
                 catch (Exception exception)
                 {
-                    Debug.LogWarning($"[Bridge] StartGame JSON 解析失败，按空昵称/普通难度处理: {exception.Message}");
+                    Debug.LogWarning($"[Bridge] EnterGame JSON 解析失败，按空昵称/普通难度处理: {exception.Message}");
                 }
             }
             else
             {
-                // 兼容旧协议：直接传昵称字符串（难度 normal）。
                 nickname = trimmed;
             }
         }
@@ -330,6 +358,7 @@ public class WebGLBridge : MonoBehaviour
         }
     }
 
+    /// <summary>枚举 → 线格式（结算回传 / onDifficultyChanged）。</summary>
     private static string DifficultyToWire(Difficulty difficulty)
     {
         switch (difficulty)
@@ -349,10 +378,12 @@ public class WebGLBridge : MonoBehaviour
     [DllImport("__Internal")] private static extern void JsNotifyReady(string json);
     [DllImport("__Internal")] private static extern void JsNotifyStateChange(string json);
     [DllImport("__Internal")] private static extern void JsNotifyGameOver(string json);
+    [DllImport("__Internal")] private static extern void JsNotifyDifficultyChanged(string json);
 #else
     private static void JsNotifyReady(string json) => Debug.Log($"[Bridge] ready (editor): {json}");
     private static void JsNotifyStateChange(string json) => Debug.Log($"[Bridge] stateChange (editor): {json}");
     private static void JsNotifyGameOver(string json) => Debug.Log($"[Bridge] gameOver (editor): {json}");
+    private static void JsNotifyDifficultyChanged(string json) => Debug.Log($"[Bridge] difficultyChanged (editor): {json}");
 #endif
 
     // ---------- JSON 消息结构（JsonUtility 只认字段） ----------
@@ -361,6 +392,7 @@ public class WebGLBridge : MonoBehaviour
     private sealed class ReadyMessage
     {
         public int protocol;
+        public string[] capabilities;
     }
 
     [Serializable]
@@ -371,9 +403,16 @@ public class WebGLBridge : MonoBehaviour
     }
 
     [Serializable]
-    private sealed class StartGameMessage
+    private sealed class EnterGameMessage
     {
         public string nickname;
+        public string lastDifficulty;
+    }
+
+    [Serializable]
+    private sealed class DifficultyMessage
+    {
+        public int protocol;
         public string difficulty;
     }
 

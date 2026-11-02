@@ -1,7 +1,7 @@
 # 验收记录（living document）
 
-> 最后更新：2026-11-01（L1.1 全屏口径：Ready/Starting 可全屏且保留菜单，游戏中全屏无网页按钮，见 §3.4；
-> M6 第 2 步：三档难度 + H5 主界面 + `ReturnToMenu` 自动化全绿，见 §3.3；
+> 最后更新：2026-11-02（v1.2 第一阶段：Unity 菜单/状态机 + 协议 v3 骨架，见 §3.5；
+> 2026-11-01：L1.1 全屏口径见 §3.4；M6 第 2 步三档难度 + H5 主界面 + `ReturnToMenu` 见 §3.3；
 > 此前 M5-3：无水印 1.0.0 构建 `2026-10-31T14:53:47Z`、M4.7 摇杆/响应式/全屏验收、无头 E2E、build 入库 `f19fcb79`、
 > Release `v1.0.0`、干净克隆通过；人工/真机仍待测）
 > 规则：只写实际跑过的结果；没跑就写「待测」。证据放 `docs/evidence/`。
@@ -180,6 +180,26 @@
 - **已知边界**：无头 Chrome 的 `Esc` 不退出全屏却会传给 Unity（Esc 也是暂停热键），测试已按该分支恢复；
   真实浏览器通常由浏览器消费 `Esc`，有头/真机行为仍待确认。
 
+## 3.5 v1.2 第一阶段（Unity 菜单/状态机 + 协议 v3 骨架，2026-11-02）
+
+> 构建：`productVersion 1.2.0`，`builtAt 2026-11-02T05:12:58Z`，约 9.3MB；产物不入库（本地/临时目录）。
+> 详细记录：`docs/M6-重构-执行记录.md`；协议：`docs/bridge-protocol.md` v3。
+
+- **Standalone 直开（1280×720，无 H5）**：菜单 → 困难卡（`onDifficultyChanged=hard`）→ 3-2-1 → Playing →
+  Esc 暂停 → 继续（3-2-1）→ 暂停重开（3-2-1）→ 2s 短局结果（`onGameOver.difficulty=hard / score=232`）→
+  再来一局 → 暂停返回菜单 → 再开一局 → 结果「返回菜单」全链路 PASS。事件 16 条，序列见
+  `docs/evidence/m6-refactor/standalone-flow-events.json`；截图 `standalone-flow-v1.2-*.png`。
+- **390×844（16:9 画布，640×360 参考分支）**：同一点击链 PASS；`standalone-mobile-*.png`。
+- **6 视口（16:9 画布约束）**：320×568 / 390×844 / 844×390 / 768×1024 / 1280×720 / 1920×1080 的
+  menu / countdown / paused / result 各一张，无 tofu、无横向溢出；`standalone-viewport-*.png`。
+- **失焦**：原生 blur 与切标签都自动 Paused，切回保持 Paused；Starting 中失焦分别回 Menu / Paused，
+  全程不出现 Playing。证据 `standalone-focus-native.json`、`standalone-focus-starting-cancel.json`。
+- **旧 H5 过渡**：协议 3 warning；点旧开始 → Unity 菜单；可开局；`onGameOver` 后旧页最高分更新为 226、
+  页面进入 Result（双结算卡属已知过渡）。证据 `h5-transition.json`、`h5-transition-result.png`。
+- **40 只性能（headed Chrome，离屏）**：165 FPS / p95 7ms / alloc 41.4KB/s / capAt 49.46s；
+  FPS/p95 与基线一致，alloc 略高于 M6 记录的 26~35KB/s（记录，不宣称零回归）。`perf-40.json`。
+- **字体**：菜单/暂停/结算无 tofu；`×` 正常；TMP 图集 75 字符（1024×1024）。
+
 ## 4. 未关闭项
 
 1. **人工 60 秒胜利未测**：自动化脚本（M3 60.1s、M4 60.0s）只证明功能链路，**不算人工验收**；需在最终构建上人工跑 1 次。
@@ -190,8 +210,8 @@
    但国内 4G 直连仍慢/不稳定；README 的国内链接只能写「待定」，不能宣称「手机 4G 可玩」。
 5. **正式美术 / 音效**：仍是占位圆点 + 网格。
 6. **加载性能**：约 9 MB/次；Netlify 国内实测很慢（首次 50～61s），国内托管方案见 `docs/部署与托管.md`。
-7. **M4.5 §2/§3**：暂停菜单「重新开始」未做；Unity 主菜单按 M6 D1 决定不做（主界面在 H5，三档难度已实现）。
-   全屏 §1 已完成。
+7. **M4.5 §2/§3（历史项）**：v1.2 已实现暂停菜单「重新开始 / 返回菜单」与 Unity 主菜单（难度 + 开始）；
+   H5 薄壳改版（昵称/进入/数据面板/全屏入口）仍在下一阶段。全屏 §1 已完成。
 8. **M6 第 2 步遗留**：真机未测（Honor 90 Pro 三档各 1 局 + 40 只 `?perf=1`）；
    游戏中（Playing/Paused）全屏不显示网页控件（L1.1）——换档需先退出全屏；Result 下难度卡与结算卡不同屏。
    这些不影响功能链路，但人工验收时要按此口径检查。

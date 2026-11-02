@@ -15,6 +15,8 @@ namespace Survival.UI
         [SerializeField] private GameManager _gameManager;
         [SerializeField] private PlayerHealth _playerHealth;
 
+        [Tooltip("HUD 根节点；Menu 状态整体隐藏（v1.2 主菜单不显示 HUD）。")]
+        [SerializeField] private GameObject _hudRoot;
         [SerializeField] private Image _hpFill;
         [SerializeField] private TMP_Text _hpText;
         [SerializeField] private TMP_Text _timeText;
@@ -28,7 +30,8 @@ namespace Survival.UI
 
         private void Start()
         {
-            if (_gameManager == null || _playerHealth == null || _gameManager.Score == null)
+            if (_gameManager == null || _playerHealth == null || _gameManager.Score == null
+                || _hudRoot == null)
             {
                 Debug.LogError("[HudView] Missing serialized references, component disabled.");
                 enabled = false;
@@ -119,6 +122,10 @@ namespace Survival.UI
 
         private void HandleStateChanged(GameState state)
         {
+            // 菜单与结算不显示 HUD：结算卡在小视口（320 宽）会和大号时间/分数压在一起。
+            // 暂停仍保留 HUD（玩家需要确认血量/剩余时间）。
+            _hudRoot.SetActive(state != GameState.Menu && state != GameState.Result);
+
             if (_pauseButton != null)
             {
                 _pauseButton.gameObject.SetActive(state == GameState.Playing);

@@ -1,0 +1,78 @@
+{
+  "result": {
+    "startCancel": true,
+    "stateAfterStartCancel": "menu",
+    "resumeCancel": true,
+    "stateAfterResumeCancel": "paused"
+  },
+  "menuEvents": [
+    {
+      "type": "ready",
+      "payload": {
+        "protocol": 3,
+        "capabilities": [
+          "enterGame",
+          "stateChange",
+          "gameOver",
+          "difficultyChanged"
+        ]
+      },
+      "at": 1793596627376
+    },
+    {
+      "type": "stateChange",
+      "payload": {
+        "protocol": 3,
+        "state": "menu"
+      },
+      "at": 1793596628587
+    }
+  ],
+  "resumeEvents": [
+    {
+      "type": "ready",
+      "payload": {
+        "protocol": 3,
+        "capabilities": [
+          "enterGame",
+          "stateChange",
+          "gameOver",
+          "difficultyChanged"
+        ]
+      },
+      "at": 1793596627376
+    },
+    {
+      "type": "stateChange",
+      "payload": {
+        "protocol": 3,
+        "state": "menu"
+      },
+      "at": 1793596628587
+    },
+    {
+      "type": "stateChange",
+      "payload": {
+        "protocol": 3,
+        "state": "playing"
+      },
+      "at": 1793596634727
+    },
+    {
+      "type": "stateChange",
+      "payload": {
+        "protocol": 3,
+        "state": "paused"
+      },
+      "at": 1793596634738
+    },
+    {
+      "type": "stateChange",
+      "payload": {
+        "protocol": 3,
+        "state": "paused"
+      },
+      "at": 1793596635457
+    }
+  ]
+}

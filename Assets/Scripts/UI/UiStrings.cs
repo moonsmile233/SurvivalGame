@@ -48,6 +48,7 @@ namespace Survival.UI
         public const string SurvivedLabel = "存活";
         public const string SecondsSuffix = "秒";
         public const string MultiplierLabel = "倍率";
+        public const string TimesSign = "×";
 
         /// <summary>结算信息行的分隔符；与 `×` 一起必须进字体子集。</summary>
         public const string InfoSeparator = " · ";
@@ -62,7 +63,7 @@ namespace Survival.UI
             TagEasy + TagNormal + TagHard +
             BackToMenuButton + PlayAgainButton +
             RoundScoreLabel + DifficultyLabel + SurvivedLabel + SecondsSuffix + MultiplierLabel +
-            InfoSeparator +
+            TimesSign + InfoSeparator +
             " %-./0123456789:×";
     }
 }

@@ -1,0 +1,161 @@
+[
+  {
+    "type": "ready",
+    "payload": {
+      "protocol": 3,
+      "capabilities": [
+        "enterGame",
+        "stateChange",
+        "gameOver",
+        "difficultyChanged"
+      ]
+    },
+    "at": 1793596460859
+  },
+  {
+    "type": "difficultyChanged",
+    "payload": {
+      "protocol": 3,
+      "difficulty": "hard"
+    },
+    "at": 1793596461562
+  },
+  {
+    "type": "stateChange",
+    "payload": {
+      "protocol": 3,
+      "state": "playing"
+    },
+    "at": 1793596464716
+  },
+  {
+    "type": "stateChange",
+    "payload": {
+      "protocol": 3,
+      "state": "paused"
+    },
+    "at": 1793596464831
+  },
+  {
+    "type": "stateChange",
+    "payload": {
+      "protocol": 3,
+      "state": "playing"
+    },
+    "at": 1793596468368
+  },
+  {
+    "type": "stateChange",
+    "payload": {
+      "protocol": 3,
+      "state": "paused"
+    },
+    "at": 1793596468377
+  },
+  {
+    "type": "stateChange",
+    "payload": {
+      "protocol": 3,
+      "state": "playing"
+    },
+    "at": 1793596471814
+  },
+  {
+    "type": "stateChange",
+    "payload": {
+      "protocol": 3,
+      "state": "result"
+    },
+    "at": 1793596473820
+  },
+  {
+    "type": "gameOver",
+    "payload": {
+      "protocol": 3,
+      "event": "gameOver",
+      "payload": {
+        "result": "win",
+        "score": 232,
+        "survivedSeconds": 2,
+        "kills": 0,
+        "nickname": "",
+        "difficulty": "hard",
+        "breakdown": {
+          "survival": 32,
+          "kills": 0,
+          "winBonus": 200
+        }
+      }
+    },
+    "at": 1793596473821
+  },
+  {
+    "type": "stateChange",
+    "payload": {
+      "protocol": 3,
+      "state": "playing"
+    },
+    "at": 1793596477379
+  },
+  {
+    "type": "stateChange",
+    "payload": {
+      "protocol": 3,
+      "state": "paused"
+    },
+    "at": 1793596477395
+  },
+  {
+    "type": "stateChange",
+    "payload": {
+      "protocol": 3,
+      "state": "menu"
+    },
+    "at": 1793596477842
+  },
+  {
+    "type": "stateChange",
+    "payload": {
+      "protocol": 3,
+      "state": "playing"
+    },
+    "at": 1793596480980
+  },
+  {
+    "type": "stateChange",
+    "payload": {
+      "protocol": 3,
+      "state": "result"
+    },
+    "at": 1793596482987
+  },
+  {
+    "type": "gameOver",
+    "payload": {
+      "protocol": 3,
+      "event": "gameOver",
+      "payload": {
+        "result": "win",
+        "score": 232,
+        "survivedSeconds": 2,
+        "kills": 0,
+        "nickname": "",
+        "difficulty": "hard",
+        "breakdown": {
+          "survival": 32,
+          "kills": 0,
+          "winBonus": 200
+        }
+      }
+    },
+    "at": 1793596482987
+  },
+  {
+    "type": "stateChange",
+    "payload": {
+      "protocol": 3,
+      "state": "menu"
+    },
+    "at": 1793596483419
+  }
+]

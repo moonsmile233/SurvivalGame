@@ -112,9 +112,9 @@ public static class SceneSetup
         // Ready 状态禁止移动：PlayerController 需要读 GameManager.State（M3 第 1.2 节）。
         SetObjectReference(playerController, "_gameManager", manager);
 
-        // 先建桥再接 HUD：结算面板要读桥的 IsEmbedded 决定显不显示（M4 第 1.3 节）。
+        // 桥只负责协议；v1.2 起结算面板不再读桥（结算归 Unity），顺序不再有依赖。
         WebGLBridge bridge = CreateBridge(manager);
-        CreateHud(manager, playerHealth, bridge, touchInput);
+        CreateHud(manager, playerHealth, config, touchInput);
         CreateBootstrap(bridge);
 
         EditorSceneManager.SaveScene(scene, ScenePath);
@@ -233,6 +233,10 @@ public static class SceneSetup
         var hotkey = go.AddComponent<PauseHotkey>();
         SetObjectReference(hotkey, "_gameManager", manager);
 
+        // 独立运行失焦暂停（v1.2）：WebGL/Standalone 生效，Editor 内自跳过。
+        var focusPause = go.AddComponent<ApplicationFocusPause>();
+        SetObjectReference(focusPause, "_gameManager", manager);
+
         return manager;
     }
 
@@ -256,7 +260,7 @@ public static class SceneSetup
     private static void CreateHud(
         GameManager manager,
         PlayerHealth playerHealth,
-        WebGLBridge bridge,
+        GameConfig config,
         TouchInput touchInput)
     {
         var eventSystemGo = new GameObject("EventSystem");
@@ -280,7 +284,7 @@ public static class SceneSetup
 
         var canvasRect = (RectTransform)canvasGo.transform;
 
-        // ---- 常驻 HUD：顶行 HP 左 / 时间中 / 分数右；暂停挪到右下（拇指可达，也不和分数抢顶行） ----
+        // ---- 常驻 HUD：顶行 HP 左 / 时间中 / 分数右；暂停挪到右上（拇指可达，也不和分数抢顶行） ----
         RectTransform hud = CreateRect("HUD", canvasRect);
         Stretch(hud);
 
@@ -298,12 +302,11 @@ public static class SceneSetup
             TextAlignmentOptions.TopLeft);
         SetAnchored(hpText.rectTransform, TopLeft, TopLeft, new Vector2(16f, -38f), new Vector2(220f, 30f));
 
-        TMP_Text timeText = CreateText("TimeText", hud, $"{UiStrings.TimeLabel} 00:60", 34f,
+        TMP_Text timeText = CreateText("TimeText", hud, $"{UiStrings.TimeLabel} 01:00", 34f,
             TextAlignmentOptions.Top, true);
         SetAnchored(timeText.rectTransform, TopCenter, TopCenter, new Vector2(0f, -14f), new Vector2(260f, 44f));
 
-        // 暂停在右上（H5 文案点名「右上角」）；分数放到暂停按钮下方，避免窄屏顶行互相挤。
-        // 高 80：在 640×360 参考下，390 手机约 46 CSS px、320 约 37 CSS px，满足触控目标 ≥36（M4.7 响应式矩阵）。
+        // 暂停在右上；高 80：在 640×360 参考下，390 手机约 46 CSS px、320 约 37 CSS px，满足触控目标 ≥36（M4.7 响应式矩阵）。
         Button pauseButton = CreateButton("PauseButton", hud, UiStrings.PauseButton, TopRight, TopRight,
             new Vector2(-16f, -12f), new Vector2(140f, 80f), 26f);
 
@@ -311,7 +314,40 @@ public static class SceneSetup
             TextAlignmentOptions.TopRight, true);
         SetAnchored(scoreText.rectTransform, TopRight, TopRight, new Vector2(-16f, -102f), new Vector2(220f, 30f));
 
-        // ---- 暂停面板（默认隐藏）：标题 / 3-2-1 倒计时 / 继续 ----
+        // ---- 主菜单（v1.2）：不透明底 + 三档难度卡 + 开始；不显示最高分/昵称/全屏 ----
+        RectTransform menuPanel = CreatePanel("MenuPanel", canvasRect);
+        Image menuBackdrop = CreateImage("Backdrop", menuPanel, new Color(0.05f, 0.05f, 0.09f, 1f));
+        Stretch(menuBackdrop.rectTransform);
+
+        TMP_Text menuTitle = CreateText("Title", menuPanel, UiStrings.MenuTitle, 54f,
+            TextAlignmentOptions.Center, true);
+        SetBand(menuTitle.rectTransform, 0.10f, 0.90f, 0.86f, 60f);
+
+        TMP_Text menuSubtitle = CreateText("Subtitle", menuPanel, UiStrings.MenuSubtitle, 24f,
+            TextAlignmentOptions.Center);
+        SetBand(menuSubtitle.rectTransform, 0.10f, 0.90f, 0.74f, 32f);
+
+        RectTransform cardsRow = CreateRect("DifficultyCards", menuPanel);
+        cardsRow.anchorMin = new Vector2(0.12f, 0.36f);
+        cardsRow.anchorMax = new Vector2(0.88f, 0.62f);
+        cardsRow.pivot = new Vector2(0.5f, 0.5f);
+        cardsRow.offsetMin = Vector2.zero;
+        cardsRow.offsetMax = Vector2.zero;
+
+        Button easyCard = CreateMenuCard(cardsRow, 0.01f, 1f / 3f - 0.01f,
+            UiStrings.DifficultyEasy, UiStrings.TagEasy, MultiplierText(config, Difficulty.Easy),
+            out Image easyBackground);
+        Button normalCard = CreateMenuCard(cardsRow, 1f / 3f + 0.01f, 2f / 3f - 0.01f,
+            UiStrings.DifficultyNormal, UiStrings.TagNormal, MultiplierText(config, Difficulty.Normal),
+            out Image normalBackground);
+        Button hardCard = CreateMenuCard(cardsRow, 2f / 3f + 0.01f, 1f - 0.01f,
+            UiStrings.DifficultyHard, UiStrings.TagHard, MultiplierText(config, Difficulty.Hard),
+            out Image hardBackground);
+
+        Button menuStartButton = CreateButtonBand("StartButton", menuPanel, 0.27f, 0.73f, 0.20f, 88f,
+            UiStrings.StartGameButton, 32f);
+
+        // ---- 暂停菜单（默认隐藏）：继续 / 重新开始 / 返回菜单；3-2-1 由 StartCountdownPanel 显示 ----
         RectTransform pausePanel = CreatePanel("PausePanel", canvasRect);
         CreateDim(pausePanel);
 
@@ -320,41 +356,53 @@ public static class SceneSetup
         SetAnchored(pauseTitle.rectTransform, new Vector2(0.5f, 0.68f), Center, Vector2.zero,
             new Vector2(700f, 90f));
 
-        TMP_Text countdownText = CreateText("CountdownText", pausePanel, "3", 120f,
-            TextAlignmentOptions.Center, true);
-        SetAnchored(countdownText.rectTransform, Center, Center, Vector2.zero, new Vector2(300f, 160f));
+        // 三按钮同一水平带，宽度按百分比切分：640×360 参考下约 187 单位，仍可点（≥44 CSS px）。
+        Button resumeButton = CreateButtonBand("ResumeButton", pausePanel, 0.055f, 0.348f, 0.30f, 84f,
+            UiStrings.ResumeButton, 22f);
+        Button pauseRestartButton = CreateButtonBand("RestartButton", pausePanel, 0.351f, 0.649f, 0.30f, 84f,
+            UiStrings.RestartButton, 22f);
+        Button pauseMenuButton = CreateButtonBand("MenuButton", pausePanel, 0.652f, 0.945f, 0.30f, 84f,
+            UiStrings.BackToMenuButton, 22f);
 
-        // 高 88：小屏（320 宽）也能有约 41 CSS px 的点击高度；参考 640×360 时随 Canvas 等比缩放。
-        Button resumeButton = CreateButton("ResumeButton", pausePanel, UiStrings.ResumeButton,
-            new Vector2(0.5f, 0.32f), Center, Vector2.zero, new Vector2(260f, 88f), 30f);
-
-        // ---- 结算面板（默认隐藏；WebGL 嵌入模式下由 ResultPanel 自己抑制） ----
+        // ---- 结算（默认隐藏；v1.2 起 WebGL 里也显示，结算归 Unity） ----
         RectTransform resultPanel = CreatePanel("ResultPanel", canvasRect);
         CreateDim(resultPanel);
 
-        TMP_Text resultTitle = CreateText("TitleText", resultPanel, UiStrings.VictoryTitle, 64f,
+        TMP_Text resultTitle = CreateText("TitleText", resultPanel, UiStrings.VictoryTitle, 56f,
             TextAlignmentOptions.Center, true);
-        SetAnchored(resultTitle.rectTransform, new Vector2(0.5f, 0.76f), Center, Vector2.zero,
-            new Vector2(700f, 90f));
+        SetBand(resultTitle.rectTransform, 0.10f, 0.90f, 0.80f, 72f);
 
-        TMP_Text resultScore = CreateText("ScoreText", resultPanel, $"{UiStrings.FinalScoreLabel} 0", 38f,
+        TMP_Text resultScore = CreateText("ScoreText", resultPanel, $"{UiStrings.RoundScoreLabel} 0", 36f,
             TextAlignmentOptions.Center, true);
-        SetAnchored(resultScore.rectTransform, new Vector2(0.5f, 0.56f), Center, Vector2.zero,
-            new Vector2(600f, 56f));
+        SetBand(resultScore.rectTransform, 0.10f, 0.90f, 0.62f, 48f);
 
-        TMP_Text resultBreakdown = CreateText("BreakdownText", resultPanel, $"{UiStrings.SurvivalLabel} 0", 26f,
-            TextAlignmentOptions.Top);
-        SetAnchored(resultBreakdown.rectTransform, new Vector2(0.5f, 0.40f), Center, Vector2.zero,
-            new Vector2(600f, 120f));
+        TMP_Text resultInfo = CreateText("InfoText", resultPanel,
+            $"{UiStrings.DifficultyLabel} {UiStrings.DifficultyNormal}", 22f,
+            TextAlignmentOptions.Center);
+        SetBand(resultInfo.rectTransform, 0.06f, 0.94f, 0.49f, 60f);
+        // 窄窗口（390 直立）允许折成两行；16:9 下仍是一行。
+        resultInfo.textWrappingMode = TextWrappingModes.Normal;
 
-        Button restartButton = CreateButton("RestartButton", resultPanel, UiStrings.RestartButton,
-            new Vector2(0.5f, 0.19f), Center, Vector2.zero, new Vector2(260f, 60f), 26f);
+        Button againButton = CreateButtonBand("AgainButton", resultPanel, 0.16f, 0.48f, 0.23f, 76f,
+            UiStrings.PlayAgainButton, 24f);
+        Button resultMenuButton = CreateButtonBand("MenuButton", resultPanel, 0.52f, 0.84f, 0.23f, 76f,
+            UiStrings.BackToMenuButton, 24f);
 
+        // ---- 统一 3-2-1（默认隐藏）：菜单开始 / 暂停继续 / 重开 / 再来一局共用 ----
+        RectTransform countdownPanel = CreatePanel("StartCountdownPanel", canvasRect);
+        CreateDim(countdownPanel);
+
+        TMP_Text countdownText = CreateText("CountdownText", countdownPanel, "3", 120f,
+            TextAlignmentOptions.Center, true);
+        SetAnchored(countdownText.rectTransform, Center, Center, Vector2.zero, new Vector2(300f, 160f));
+
+        menuPanel.gameObject.SetActive(false);
         pausePanel.gameObject.SetActive(false);
         resultPanel.gameObject.SetActive(false);
+        countdownPanel.gameObject.SetActive(false);
 
         // ---- 触控浮动摇杆（M4.7，只做可视化；输入仍由 TouchInput 决定） ----
-        // 放成第一个 sibling，保证在 HUD 与暂停/结算面板下层；初始隐藏，由 View 在触摸时显示。
+        // 放成第一个 sibling，保证在 HUD 与菜单/暂停/结算/倒计时面板下层；初始隐藏，由 View 在触摸时显示。
         Image joystickBase = CreateImage("Joystick", canvasRect, new Color(1f, 1f, 1f, 0f));
         SetAnchored(joystickBase.rectTransform, Center, Center, Vector2.zero, new Vector2(160f, 160f));
         joystickBase.rectTransform.SetAsFirstSibling();
@@ -367,27 +415,42 @@ public static class SceneSetup
         var hudView = canvasGo.AddComponent<HudView>();
         SetObjectReference(hudView, "_gameManager", manager);
         SetObjectReference(hudView, "_playerHealth", playerHealth);
+        SetObjectReference(hudView, "_hudRoot", hud.gameObject);
         SetObjectReference(hudView, "_hpFill", hpFill);
         SetObjectReference(hudView, "_hpText", hpText);
         SetObjectReference(hudView, "_timeText", timeText);
         SetObjectReference(hudView, "_scoreText", scoreText);
         SetObjectReference(hudView, "_pauseButton", pauseButton);
 
+        var menuController = canvasGo.AddComponent<MenuPanel>();
+        SetObjectReference(menuController, "_gameManager", manager);
+        SetObjectReference(menuController, "_panel", menuPanel.gameObject);
+        SetObjectReference(menuController, "_startButton", menuStartButton);
+        SetObjectReferenceArray(menuController, "_difficultyButtons", new Object[] { easyCard, normalCard, hardCard });
+        SetObjectReferenceArray(menuController, "_difficultyBackgrounds",
+            new Object[] { easyBackground, normalBackground, hardBackground });
+
         var pauseController = canvasGo.AddComponent<PausePanel>();
         SetObjectReference(pauseController, "_gameManager", manager);
         SetObjectReference(pauseController, "_panel", pausePanel.gameObject);
         SetObjectReference(pauseController, "_resumeButton", resumeButton);
+        SetObjectReference(pauseController, "_restartButton", pauseRestartButton);
+        SetObjectReference(pauseController, "_menuButton", pauseMenuButton);
         SetObjectReference(pauseController, "_titleText", pauseTitle);
-        SetObjectReference(pauseController, "_countdownText", countdownText);
 
         var resultController = canvasGo.AddComponent<ResultPanel>();
         SetObjectReference(resultController, "_gameManager", manager);
-        SetObjectReference(resultController, "_bridge", bridge);
         SetObjectReference(resultController, "_panel", resultPanel.gameObject);
         SetObjectReference(resultController, "_titleText", resultTitle);
         SetObjectReference(resultController, "_scoreText", resultScore);
-        SetObjectReference(resultController, "_breakdownText", resultBreakdown);
-        SetObjectReference(resultController, "_restartButton", restartButton);
+        SetObjectReference(resultController, "_infoText", resultInfo);
+        SetObjectReference(resultController, "_againButton", againButton);
+        SetObjectReference(resultController, "_menuButton", resultMenuButton);
+
+        var countdownController = canvasGo.AddComponent<StartCountdownPanel>();
+        SetObjectReference(countdownController, "_gameManager", manager);
+        SetObjectReference(countdownController, "_panel", countdownPanel.gameObject);
+        SetObjectReference(countdownController, "_countdownText", countdownText);
 
         var joystickView = canvasGo.AddComponent<TouchJoystickView>();
         SetObjectReference(joystickView, "_touchInput", touchInput);
@@ -400,6 +463,67 @@ public static class SceneSetup
         SetObjectReference(joystickView, "_knobImage", joystickKnob);
     }
 
+    /// <summary>菜单卡/结算信息展示的倍率文本；读真实资产，避免数值改了文案不跟。</summary>
+    private static string MultiplierText(GameConfig config, Difficulty difficulty)
+    {
+        DifficultyProfile profile = config != null ? config.GetProfile(difficulty) : null;
+        float multiplier = profile != null ? profile.ScoreMultiplier : 1f;
+        return $"{UiStrings.TimesSign}{multiplier:0.0}";
+    }
+
+    /// <summary>横向铺满父节点的一段（x 用百分比锚点），纵向固定高度并居中在 yAnchor。</summary>
+    private static void SetBand(RectTransform rect, float xMin, float xMax, float yAnchor, float height)
+    {
+        rect.anchorMin = new Vector2(xMin, yAnchor);
+        rect.anchorMax = new Vector2(xMax, yAnchor);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = Vector2.zero;
+        rect.sizeDelta = new Vector2(0f, height);
+    }
+
+    private static Button CreateButtonBand(string name, Transform parent, float xMin, float xMax, float yAnchor,
+        float height, string label, float labelFontSize)
+    {
+        RectTransform rect = CreateRect(name, parent);
+        SetBand(rect, xMin, xMax, yAnchor, height);
+        return BuildButton(rect, label, labelFontSize);
+    }
+
+    /// <summary>
+    /// 菜单难度卡：整卡是按钮，内含名称/短标签/倍率三行文本。
+    /// 背景 Image 同时是 Button.targetGraphic，MenuPanel 直接改它的 color 表示选中态。
+    /// </summary>
+    private static Button CreateMenuCard(Transform parent, float xMin, float xMax, string title, string tag,
+        string multiplier, out Image background)
+    {
+        RectTransform rect = CreateRect("Card", parent);
+        rect.anchorMin = new Vector2(xMin, 0f);
+        rect.anchorMax = new Vector2(xMax, 1f);
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.offsetMin = Vector2.zero;
+        rect.offsetMax = Vector2.zero;
+
+        background = rect.gameObject.AddComponent<Image>();
+        background.sprite = s_uiSprite;
+        background.color = new Color(0.13f, 0.13f, 0.20f, 1f);
+        background.raycastTarget = true;
+
+        var button = rect.gameObject.AddComponent<Button>();
+        button.targetGraphic = background;
+        button.transition = Selectable.Transition.ColorTint;
+
+        TMP_Text titleText = CreateText("Title", rect, title, 30f, TextAlignmentOptions.Center, true);
+        SetBand(titleText.rectTransform, 0.02f, 0.98f, 0.76f, 30f);
+
+        TMP_Text tagText = CreateText("Tag", rect, tag, 18f, TextAlignmentOptions.Center);
+        SetBand(tagText.rectTransform, 0.02f, 0.98f, 0.47f, 22f);
+
+        TMP_Text multiplierText = CreateText("Multiplier", rect, multiplier, 18f, TextAlignmentOptions.Center);
+        SetBand(multiplierText.rectTransform, 0.02f, 0.98f, 0.20f, 22f);
+
+        return button;
+    }
+
     private static RectTransform CreatePanel(string name, Transform parent)
     {
         RectTransform rect = CreateRect(name, parent);
@@ -409,7 +533,8 @@ public static class SceneSetup
 
     private static void CreateDim(Transform parent)
     {
-        Image dim = CreateImage("Dim", parent, new Color(0f, 0f, 0f, 0.6f));
+        // 0.72：冻结的敌人/玩家仍能看见，但不会压在倒计时数字或结算信息行上（P3 2026-11-01）。
+        Image dim = CreateImage("Dim", parent, new Color(0f, 0f, 0f, 0.72f));
         Stretch(dim.rectTransform);
 
         // 半透明遮罩吞掉点击，避免穿透到下层按钮。
@@ -492,7 +617,12 @@ public static class SceneSetup
     {
         RectTransform rect = CreateRect(name, parent);
         SetAnchored(rect, anchor, pivot, anchoredPosition, size);
+        return BuildButton(rect, label, labelFontSize);
+    }
 
+    /// <summary>给已定好 RectTransform 的节点补 Image + Button + 居中标签（固定/百分比两种入口共用）。</summary>
+    private static Button BuildButton(RectTransform rect, string label, float labelFontSize)
+    {
         var image = rect.gameObject.AddComponent<Image>();
         image.sprite = s_uiSprite;
         image.color = new Color(0.24f, 0.24f, 0.36f, 1f);

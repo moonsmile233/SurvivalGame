@@ -152,6 +152,9 @@ namespace Survival.Core
         /// <summary>当前档位的配置；资产缺失/数组没挂时返回 null，各乘区 getter 会回落到本资产字段。</summary>
         public DifficultyProfile ActiveProfile => ResolveProfile(_activeDifficulty);
 
+        /// <summary>按档位取配置（主菜单倍率文案用）；缺失返回 null，调用方回落到 1.0。</summary>
+        public DifficultyProfile GetProfile(Difficulty difficulty) => ResolveProfile(difficulty);
+
         public float EnemySpeedMultiplier => ActiveProfile != null ? ActiveProfile.EnemySpeedMultiplier : 1f;
         public float SpawnIntervalMultiplier => ActiveProfile != null ? ActiveProfile.SpawnIntervalMultiplier : 1f;
         public float DamageMultiplier => ActiveProfile != null ? ActiveProfile.DamageMultiplier : 1f;

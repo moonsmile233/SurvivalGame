@@ -41,6 +41,19 @@ mergeInto(LibraryManager.library, {
     }
   },
 
+  // Unity → H5：菜单难度选择变化（H5 只代存，不提供选择 UI）。可选事件：
+  // 旧页面没注册也不报错，避免缓存页每次点卡都刷 warning。
+  JsNotifyDifficultyChanged: function (ptr) {
+    try {
+      var json = UTF8ToString(ptr);
+      if (window.SurvivalGameBridge && typeof window.SurvivalGameBridge.onDifficultyChanged === 'function') {
+        window.SurvivalGameBridge.onDifficultyChanged(json);
+      }
+    } catch (e) {
+      console.error('[Bridge] onDifficultyChanged failed', e);
+    }
+  },
+
   // 只给压测探针（PerfProbe，?perf=1）用：WASM 线性内存字节数。
   // Unity 托管堆就在这块内存里，手机上这是最早撞到的内存上限；取不到就返回 0，不影响其他指标。
   JsGetWasmHeapBytes: function () {
