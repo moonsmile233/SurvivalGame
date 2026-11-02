@@ -44,6 +44,7 @@
     best: loadBest(),
     difficulty: loadStoredDifficulty(),
     lastRound: null,
+    lastUnityState: null,
     sentMessages: []
   };
 
@@ -255,14 +256,43 @@
     state.ready = true;
     state.nickname = loadStoredNickname();
     state.difficulty = loadStoredDifficulty();
-    setPage('Shell');
-    setHint('点击「开始游戏」进入；难度在游戏内选择');
+
+    // 事件可能早于 onReady（?perf=1&autostart=1 或极慢首帧）：Unity 已在局内时不能把页面退回 Shell，
+    // 否则遮罩会盖住正在运行的游戏、状态文案也被覆盖。
+    var pending = state.lastUnityState;
+    if (pending === 'playing' || pending === 'paused' || pending === 'result') {
+      state.entered = true;
+      state.enterSent = true;
+      if (state.page !== 'GameOver') {
+        setPage('Entered');
+      }
+      setHint(hintForState(pending, true));
+    } else {
+      setPage('Shell');
+      setHint('点击「开始游戏」进入；难度在游戏内选择');
+    }
 
     if (storage && !storage.isAvailable()) {
       setHint('当前浏览器无法保存成绩，刷新后会丢失');
     }
 
     console.log('[App] Unity ready (protocol 3)');
+  }
+
+  /** 状态文案的唯一映射（onStateChange 与 onReady 的乱序补偿共用）。 */
+  function hintForState(name, entered) {
+    switch (name) {
+      case 'menu':
+        return entered ? '游戏菜单 · 在画面内选择难度和开始' : '点击「开始游戏」进入';
+      case 'playing':
+        return '游戏中 · 暂停按钮在游戏内右上角';
+      case 'paused':
+        return '已暂停 · 在画面内点「继续」';
+      case 'result':
+        return '本局结束 · 在画面内选择再来一局或返回菜单';
+      default:
+        return '';
+    }
   }
 
   function onStateChange(json) {
@@ -281,28 +311,18 @@
       return;
     }
 
+    state.lastUnityState = message.state;
+
     // 只做状态文案，不控制布局（壳的进入/退出只由 EnterGame 与刷新决定）。
-    switch (message.state) {
-      case 'menu':
-        setHint(state.entered ? '游戏菜单 · 在画面内选择难度和开始' : '点击「开始游戏」进入');
-        if (state.page === 'GameOver') {
-          setPage('Entered');
-        }
-        break;
-      case 'playing':
-        setHint('游戏中 · 暂停按钮在游戏内右上角');
-        if (state.page === 'GameOver') {
-          setPage('Entered');
-        }
-        break;
-      case 'paused':
-        setHint('已暂停 · 在画面内点「继续」');
-        break;
-      case 'result':
-        setHint('本局结束 · 在画面内选择再来一局或返回菜单');
-        break;
-      default:
-        console.log('[App] 未知状态：' + message.state);
+    var hint = hintForState(message.state, state.entered);
+    if (!hint) {
+      console.log('[App] 未知状态：' + message.state);
+      return;
+    }
+
+    setHint(hint);
+    if (state.page === 'GameOver' && (message.state === 'menu' || message.state === 'playing')) {
+      setPage('Entered');
     }
   }
 

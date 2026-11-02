@@ -128,6 +128,8 @@ async function readBuildInfo(baseUrl) {
 async function runCap(browser, baseUrl, cap, buildInfo) {
   const query = new URLSearchParams({
     perf: '1',
+    // 薄壳在 autostart 时可能直接进 Entered（开始按钮隐藏），用 getState().ready 作就绪信号。
+    testhook: '1',
     // v1.2 薄壳的 H5「开始游戏」只进入 Unity 菜单；压测需要 PerfProbe 直接开局。
     autostart: '1',
     enemyLimit: String(cap),
@@ -144,15 +146,25 @@ async function runCap(browser, baseUrl, cap, buildInfo) {
     viewport: { width: 1280, height: 800 },
     deviceScaleFactor: 1,
   });
+  // D5 回归：预置玩家难度偏好为 hard，autostart 不应把它改回 normal。
+  await context.addInitScript(() => {
+    if (!localStorage.getItem('survival.difficulty')) {
+      localStorage.setItem('survival.difficulty', 'hard');
+    }
+  });
   const page = await context.newPage();
 
   const windows = [];
   const consoleErrors = [];
   let summary = null;
   let lastPerfAt = Date.now();
+  let autostartSeen = false;
 
   page.on('console', (message) => {
     const text = message.text();
+    if (text.includes('[PERF] autostart')) {
+      autostartSeen = true;
+    }
     if (message.type() === 'error') {
       consoleErrors.push(`[console] ${text}`);
     }
@@ -172,16 +184,26 @@ async function runCap(browser, baseUrl, cap, buildInfo) {
   console.log(`\n=== cap ${cap} ===`);
   console.log(`URL: ${url}`);
   await page.goto(url, { waitUntil: 'domcontentloaded' });
-  await page.waitForSelector('#btn-start:not([disabled])', { timeout: READY_TIMEOUT });
+  await page.waitForFunction(
+    () => window.SurvivalApp?.getState?.().ready === true,
+    null,
+    { timeout: READY_TIMEOUT },
+  );
   await page.bringToFront();
 
-  // ?autostart=1：PerfProbe 在 Menu 直接 StartGameImmediate，不经过 H5 EnterGame/Unity 菜单；
-  // H5 仍会收到 onStateChange(playing)，所以状态文案可作就绪信号。
-  await page.waitForFunction(
-    () => (document.getElementById('status-hint')?.textContent || '').includes('游戏中'),
-    null,
-    { timeout: 60000 },
-  );
+  // ?autostart=1：PerfProbe 在 Menu 直接 StartGameImmediate，不经过 H5 EnterGame/Unity 菜单。
+  // 以 PerfProbe 自己的 console 行为信号，不依赖 H5 文案（stateChange 可能早于 onReady）。
+  const autostartDeadline = Date.now() + 60000;
+  while (!autostartSeen && Date.now() < autostartDeadline) {
+    await page.waitForTimeout(250);
+  }
+  if (!autostartSeen) {
+    throw new Error('PerfProbe autostart not seen within 60s');
+  }
+  const difficultyAfterStart = await page.evaluate(() => localStorage.getItem('survival.difficulty'));
+  if (difficultyAfterStart !== 'hard') {
+    consoleErrors.push(`[D5] autostart changed survival.difficulty to '${difficultyAfterStart}'`);
+  }
 
   const startedAt = new Date();
   console.log(`开始采样：${startedAt.toISOString()}（约 ${PERF_SECONDS}s，窗口在屏幕外）`);
@@ -242,6 +264,7 @@ async function runCap(browser, baseUrl, cap, buildInfo) {
     windows,
     summary,
     tail20s: { samples: tail.length, avgFps: steadyFps, avgP95ms: steadyP95 },
+    difficultyAfterStart,
     consoleErrors,
     screenshot: path.relative(repoRoot, screenshotPath).split(path.sep).join('/'),
     screenshotB: path.relative(repoRoot, screenshotBPath).split(path.sep).join('/'),
@@ -312,7 +335,11 @@ async function main() {
       console.log(line);
     }
 
-    const ok = records.every((record) => record.summary && record.summary.capReached);
+    const d5Ok = records.every((record) => record.difficultyAfterStart === 'hard');
+    const ok = records.every((record) => record.summary && record.summary.capReached) && d5Ok;
+    if (!d5Ok) {
+      console.log('\n⚠ D5：autostart 改写了 survival.difficulty（应为 hard）。');
+    }
     if (!ok) {
       console.log('\n⚠ 有上限没在采集期内摸到，看 [PERF] 序列或调大 PERF_SECONDS。');
     }

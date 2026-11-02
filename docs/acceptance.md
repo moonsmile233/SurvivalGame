@@ -200,6 +200,25 @@
   FPS/p95 与基线一致，alloc 略高于 M6 记录的 26~35KB/s（记录，不宣称零回归）。`perf-40.json`。
 - **字体**：菜单/暂停/结算无 tofu；`×` 正常；TMP 图集 75 字符（1024×1024）。
 
+## 3.6 v1.2 清理后重建（2026-11-02）
+
+> 构建 `productVersion 1.2.0`，`builtAt 2026-11-02T11:02:31Z`（本地 19:02），耗时 3:42，
+> 总大小 9,650,984 B（wasm 7,002,319 / data 2,435,213 / framework 75,669 / loader 117,894）。
+> 产物副本在仓库外 `D:/unityFile/_builds/SurvivalGame-1.2.0-clean-2026-11-02/`；测试后 `web/unity` 已恢复 1.0.0。
+
+- **字体**：按 `UiStrings.AllCharacters` 重生成 71 字符子集（18KB），构建重烤 71 字符图集；
+  菜单/结算截图逐字检查无 tofu（`standalone-flow-v1.2-menu.png`、`-result.png`）。§3.5 的 75 字符是清理前构建。
+- **C# 清理**：死代码、`ReturnToMenu` 不再 `BeginRound`、D1 旧页 `difficulty` 别名、D5 autostart 不改难度偏好、
+  昵称按码点截断；编译 0 error。
+- **回归**：`standalone-menu` flow（16 事件 / hard 232）、`standalone-focus`（原生 blur/visibility + Starting 取消）、
+  `h5-shell` core+viewports、`smoke` 9 项，全 PASS。
+- **40 只**：交付页 165 FPS / p95 7ms / alloc 29.4KB/s / capAt 49.43s；standalone 30.2KB/s
+  （`docs/evidence/perf-local-chrome-desktop-cap40.json`、`m6-refactor/perf-40.json`）。
+- **D1/D5**：Editor Play 旧载荷 `{"nickname","difficulty":"hard"}` → `MenuDifficulty Normal→Hard`；
+  perf 40 记录 `difficultyAfterStart=hard`。
+- **未做**：死资源删除（`NotoSansSC-UI-Subset-SDF.asset`、`SampleScene.unity`）因权限策略待用户确认；
+  `web/unity` 入库/部署/Release 等用户放行。
+
 ## 4. 未关闭项
 
 1. **人工 60 秒胜利未测**：自动化脚本（M3 60.1s、M4 60.0s）只证明功能链路，**不算人工验收**；需在最终构建上人工跑 1 次。
