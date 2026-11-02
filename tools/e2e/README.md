@@ -11,7 +11,7 @@
 | 脚本 | 作用 | 关键环境变量 |
 |---|---|---|
 | `smoke.mjs` | 薄壳主流程：加载 → 昵称 → 进入 → 画布菜单开局 → 暂停/继续 → 短局结算 → 再来一局/返回菜单 → 刷新保留 | `BASE_URL`、`E2E_PROXY`、`BROWSER`、`MOBILE`、`HEADED`、`READY_TIMEOUT`、`ROUND_SECONDS` |
-| `h5-shell.mjs` | H5 薄壳验收：`MODE=core`（协议/昵称/进入/难度偏好/结算/最高分/迁移/全屏）、`MODE=viewports`（6 视口） | `MODE`、`PORT`、`HEADED`、`READY_TIMEOUT`、`GAME_TIMEOUT` |
+| `h5-shell.mjs` | H5 薄壳验收：`MODE=core`（协议/昵称/进入/难度偏好/结算/最高分/迁移/全屏）、`MODE=viewports`（6 视口；移动视口 `hasTouch`，390×844 跑真实 2s 短局，其余 GameOver 为 `layout-only`） | `MODE`、`PORT`、`HEADED`、`READY_TIMEOUT`、`GAME_TIMEOUT` |
 | `standalone-menu.mjs` | 无 H5 直开 Unity 构建：菜单/难度/3-2-1/暂停/继续/重开/结算/再来一局/返回菜单 | `MODE=flow\|mobile\|viewports`、`PORT`、`HEADED`、`EVIDENCE_TAG` |
 | `standalone-focus.mjs` | 失焦暂停 + 切回保持暂停（原生 blur / visibilitychange） | `PORT`、`HEADED`、`READY_TIMEOUT` |
 | `standalone-perf.mjs` | standalone 40 只压测（headed、离屏窗口） | `CAP`、`PERF_SECONDS`、`PERF_TIMEOUT` |

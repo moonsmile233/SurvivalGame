@@ -3,7 +3,9 @@
 // Modes:
 //   MODE=core       protocol, nickname, enter, data panel, difficulty pref, gameOver/best, low score,
 //                   no legacy commands, refresh (default; also runs migration + fullscreen)
-//   MODE=viewports  6 viewports: Shell / Entered / GameOver screenshots + no horizontal scroll
+//   MODE=viewports  6 viewports: Shell / Entered screenshots + no horizontal scroll;
+//                   390×844 plays a real 2s round (gameover-real), other viewports inject
+//                   a layout-only GameOver (gameover-layout-only); mobile viewports use hasTouch.
 //
 // Unity buttons are clicked by fractional canvas coordinates (ui-layout.mjs); H5 assertions use
 // localStorage + the ?testhook=1 state/message log exposed by web/js/app.js.
@@ -391,12 +393,20 @@ async function runFullscreen(browser, baseUrl) {
 async function runViewports(browser, baseUrl) {
   ensureEvidenceDir();
   for (const viewport of VIEWPORTS) {
+    // 移动视口必须开触摸：CSS 用 (pointer: coarse) 切手机操作文案，Playwright 不开 hasTouch 会
+    // 渲染成键盘文案，截图就不是真手机状态。
+    const isMobile = viewport.width < 900;
+    // 390×844 跑一次真实 2s 短局（Unity 结算卡 + H5 数据栏）；其余视口只验布局，
+    // GameOver 用注入态并在文件名标 layout-only，避免被当成真实结算。
+    const realRound = viewport.name === '390x844';
+    const query = realRound ? '&perf=1&roundDuration=2' : '';
     const context = await browser.newContext({
       viewport: { width: viewport.width, height: viewport.height },
       deviceScaleFactor: 1,
+      hasTouch: isMobile,
     });
     const page = await context.newPage();
-    await page.goto(`${baseUrl}/index.html?testhook=1`, { waitUntil: 'domcontentloaded' });
+    await page.goto(`${baseUrl}/index.html?testhook=1${query}`, { waitUntil: 'domcontentloaded' });
     await waitReady(page);
 
     const noHorizontal = await page.evaluate(
@@ -409,18 +419,26 @@ async function runViewports(browser, baseUrl) {
     await page.waitForTimeout(500);
     await saveScreenshot(page, `h5-shell-${viewport.name}-entered.png`);
 
-    // Layout-only GameOver state: inject the same payload the bridge delivers. The real event path
-    // (including the Unity result panel) is covered by MODE=core at 1280×720; playing a real round
-    // in every viewport would make this matrix slow and flaky without adding H5-layout coverage.
-    await page.evaluate(() => {
-      window.SurvivalApp.onGameOver(JSON.stringify({
-        protocol: 3,
-        event: 'gameOver',
-        payload: { result: 'win', score: 980, survivedSeconds: 60, difficulty: 'normal' },
-      }));
-    });
-    await page.waitForTimeout(200);
-    await saveScreenshot(page, `h5-shell-${viewport.name}-gameover.png`);
+    if (realRound) {
+      await waitStatus(page, '游戏菜单', 30000);
+      const layout = await canvasLayout(page);
+      await clickCanvas(page, layout.menuStart);
+      await waitStatus(page, '游戏中', 60000);
+      await waitGameOverH5(page);
+      await saveScreenshot(page, `h5-shell-${viewport.name}-gameover-real.png`);
+    } else {
+      // Layout-only：注入与 bridge 相同的载荷，只验 H5 排版；真实结算见 h5-shell-gameover-1280.png
+      // 与 h5-shell-390x844-gameover-real.png。
+      await page.evaluate(() => {
+        window.SurvivalApp.onGameOver(JSON.stringify({
+          protocol: 3,
+          event: 'gameOver',
+          payload: { result: 'win', score: 980, survivedSeconds: 60, difficulty: 'normal' },
+        }));
+      });
+      await page.waitForTimeout(200);
+      await saveScreenshot(page, `h5-shell-${viewport.name}-gameover-layout-only.png`);
+    }
 
     const overflowAfter = await page.evaluate(
       () => document.documentElement.scrollWidth <= document.documentElement.clientWidth,
