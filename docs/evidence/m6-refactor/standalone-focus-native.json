@@ -21,7 +21,7 @@
           "difficultyChanged"
         ]
       },
-      "at": 1793619320053
+      "at": 1793621796930
     },
     {
       "type": "stateChange",
@@ -29,7 +29,7 @@
         "protocol": 3,
         "state": "playing"
       },
-      "at": 1793619323586
+      "at": 1793621800472
     },
     {
       "type": "stateChange",
@@ -37,7 +37,7 @@
         "protocol": 3,
         "state": "paused"
       },
-      "at": 1793619323612
+      "at": 1793621800496
     },
     {
       "type": "stateChange",
@@ -45,7 +45,7 @@
         "protocol": 3,
         "state": "playing"
       },
-      "at": 1793619328197
+      "at": 1793621805062
     },
     {
       "type": "stateChange",
@@ -53,7 +53,7 @@
         "protocol": 3,
         "state": "paused"
       },
-      "at": 1793619328214
+      "at": 1793621805083
     }
   ],
   "consoleLines": [
@@ -110,8 +110,8 @@
     "[Physics::Module] Threading Mode: Single-Threaded\n",
     "Input Manager initialize...\n",
     "Input System initialize...\n",
-    "UnloadTime: 1.800000 ms\n",
-    "Audio context resumed after 0.173 seconds.",
+    "UnloadTime: 1.500000 ms\n",
+    "Audio context resumed after 0.186 seconds.",
     "[Bridge] subscribed to GameManager (state=Menu, protocol=3)\n",
     "[GameManager] state=Starting return=Menu reset=True\n",
     "[EnemySpawner] begin difficulty=Normal interval=1.500s limit=20\n",
