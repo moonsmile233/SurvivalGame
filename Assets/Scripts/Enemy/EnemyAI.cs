@@ -93,6 +93,17 @@ namespace Survival.Enemy
         private static readonly Color ChargerWindupTint = new Color(1f, 0.85f, 0.2f, 1f);
         private static readonly Color ChargerDashTint = new Color(1f, 0.1f, 0.05f, 1f);
 
+        // 绕行者进入“侧绕计时”的距离：从出生点 11.7u 赶来不算侧绕时间，否则 6s 会在半路耗尽。
+        private const float FlankEngageDistance = 4.5f;
+
+        private float _flankRadius;
+        private float _flankAngleDegrees;
+        private float _flankPounceDistance;
+        private float _flankTimeoutSeconds;
+        private float _flankTimer;
+        private FlankerState _flankerState = FlankerState.Flank;
+        private static bool s_logFlankerStates;
+
         private enum ChargerState
         {
             Approach = 0,
@@ -100,6 +111,13 @@ namespace Survival.Enemy
             Dash = 2,
             Recover = 3,
             Cooldown = 4,
+        }
+
+        private enum FlankerState
+        {
+            Flank = 0,
+            Pounce = 1,
+            Direct = 2,
         }
 
         /// <summary>已在前环（离停距 ≤0.15）。不是“钉住”——软墙/让位仍然生效。</summary>
@@ -116,6 +134,15 @@ namespace Survival.Enemy
 
         /// <summary>只给 PerfProbe 用：强制类型测试时打开冲锋状态日志。</summary>
         public static void SetLogChargerStates(bool value) => s_logChargerStates = value;
+
+        /// <summary>Flanker 是否处于侧绕帧（只读探针）。</summary>
+        public bool IsFlanking => _kind == EnemyKind.Flanker && _flankerState == FlankerState.Flank;
+
+        /// <summary>Flanker 状态名；非 Flanker 返回空串。只在探针/日志读。</summary>
+        public string FlankerStateName => _kind == EnemyKind.Flanker ? _flankerState.ToString() : string.Empty;
+
+        /// <summary>只给 PerfProbe 用：强制类型测试时打开绕行状态日志。</summary>
+        public static void SetLogFlankerStates(bool value) => s_logFlankerStates = value;
 
         /// <summary>离停距还差多少（&gt;0 表示还没到前环；压测探针用）。</summary>
         public float ExcessDistance => _excessDistance;
@@ -184,6 +211,16 @@ namespace Survival.Enemy
                 _chargeCooldownSeconds = Mathf.Max(0f, definition.ChargeCooldownSeconds);
                 _chargeDamage = Mathf.Max(1, Mathf.RoundToInt(definition.ChargeDamage * config.DamageMultiplier));
             }
+
+            if (_kind == EnemyKind.Flanker)
+            {
+                _flankRadius = Mathf.Max(0.1f, definition.FlankRadius);
+                _flankAngleDegrees = definition.FlankAngleDegrees;
+                _flankPounceDistance = Mathf.Max(0.1f, definition.FlankPounceDistance);
+                _flankTimeoutSeconds = Mathf.Max(0.1f, definition.FlankTimeoutSeconds);
+                _flankTimer = _flankTimeoutSeconds;
+                _flankerState = FlankerState.Flank;
+            }
         }
 
         /// <summary>Spawner 30Hz 调用：只更新“看得见谁”，位置在 Update 里读实时 transform。</summary>
@@ -242,6 +279,12 @@ namespace Survival.Enemy
             if (_kind == EnemyKind.Charger)
             {
                 UpdateCharger(position, direction, distance, speed, rawDelta, delta);
+                return;
+            }
+
+            if (_kind == EnemyKind.Flanker)
+            {
+                UpdateFlanker(position, direction, distance, speed, rawDelta, delta);
                 return;
             }
 
@@ -534,6 +577,97 @@ namespace Survival.Enemy
             return new Vector2(
                 Mathf.Clamp(position.x, -halfWidth, halfWidth),
                 Mathf.Clamp(position.y, -halfHeight, halfHeight));
+        }
+
+        /// <summary>
+        /// 绕行者：侧后方目标点 2.4（相对玩家速度方向；玩家静止时相对自身方位），
+        /// 距玩家 ≤1.2 直接扑；进入 4.5 后侧绕 6s 未切入则转直追。
+        /// </summary>
+        private void UpdateFlanker(Vector2 position, Vector2 direction, float distance, float speed,
+            float rawDelta, float delta)
+        {
+            switch (_flankerState)
+            {
+                case FlankerState.Flank:
+                    if (distance <= _flankPounceDistance)
+                    {
+                        EnterFlankerState(FlankerState.Pounce);
+                        return;
+                    }
+
+                    // 只有进入交战距离后才计侧绕时间，出生赶路不算。
+                    if (distance <= FlankEngageDistance)
+                    {
+                        _flankTimer -= delta;
+                        if (_flankTimer <= 0f)
+                        {
+                            EnterFlankerState(FlankerState.Direct);
+                            return;
+                        }
+                    }
+
+                    Vector2 target = ComputeFlankTarget(position);
+                    Vector2 toTarget = target - position;
+                    Vector2 seek = toTarget.sqrMagnitude > 0.36f
+                        ? toTarget.normalized * speed
+                        : ComputeSeekVelocity(direction, distance, speed);
+
+                    MoveFlankerWithCrowd(position, direction, distance, speed, seek, rawDelta, delta);
+                    return;
+
+                case FlankerState.Pounce:
+                case FlankerState.Direct:
+                    Vector2 seekPlayer = ComputeSeekVelocity(direction, distance, speed);
+                    MoveFlankerWithCrowd(position, direction, distance, speed, seekPlayer, rawDelta, delta);
+                    return;
+            }
+        }
+
+        private void MoveFlankerWithCrowd(Vector2 position, Vector2 direction, float distance, float speed,
+            Vector2 seekVelocity, float rawDelta, float delta)
+        {
+            Vector2 moved = ApplyCrowdMovement(position, direction, distance, speed, seekVelocity, delta);
+            UpdateRecycle(moved, rawDelta);
+        }
+
+        /// <summary>
+        /// 目标点 = 玩家 + 侧后方 2.4。玩家在动就用速度方向做 forward；静止时用“玩家→绕行者”方位，
+        /// 保证静止玩家也会被侧绕而不是被直线贴脸。目标点钳在地图内。
+        /// </summary>
+        private Vector2 ComputeFlankTarget(Vector2 position)
+        {
+            Vector2 playerPosition = _target.position;
+            Vector2 playerVelocity = _playerBody != null ? _playerBody.linearVelocity : Vector2.zero;
+
+            Vector2 forward;
+            if (playerVelocity.sqrMagnitude > 0.09f)
+            {
+                forward = playerVelocity.normalized;
+            }
+            else
+            {
+                Vector2 bearing = position - playerPosition;
+                forward = bearing.sqrMagnitude > DirectionEpsilon ? bearing.normalized : Vector2.up;
+            }
+
+            float angle = _flankAngleDegrees * Mathf.Deg2Rad * _sideSign;
+            float cos = Mathf.Cos(angle);
+            float sin = Mathf.Sin(angle);
+            Vector2 side = new Vector2(
+                forward.x * cos - forward.y * sin,
+                forward.x * sin + forward.y * cos);
+
+            return ClampToMap(playerPosition + side * _flankRadius);
+        }
+
+        private void EnterFlankerState(FlankerState next)
+        {
+            _flankerState = next;
+            if (s_logFlankerStates)
+            {
+                float elapsed = _spawner != null ? _spawner.RoundElapsed : 0f;
+                Debug.Log($"[Flanker] state={next} t={elapsed:F2} pos={transform.position.x:F2},{transform.position.y:F2}");
+            }
         }
 
         /// <summary>

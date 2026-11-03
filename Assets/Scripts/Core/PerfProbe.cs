@@ -184,6 +184,11 @@ namespace Survival.Core
                     EnemyAI.SetLogChargerStates(true);
                 }
 
+                if (_forcedKind.Value == EnemyKind.Flanker && _limitOverride > 0 && _limitOverride <= 2)
+                {
+                    EnemyAI.SetLogFlankerStates(true);
+                }
+
                 Debug.Log($"[PERF] forced enemy kind = {_forcedKind.Value}");
             }
 
