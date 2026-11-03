@@ -1,0 +1,47 @@
+[PERF] forced enemy kind = Flanker
+
+[PERF] probe start {,"screen":"1280x720","dpi":96,"gpu":"ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)","cpu":"n/a","device":"Chrome 156.0.0.0","os":"Windows 10","invincible":true,"roundDuration":50,"perfSeconds":20,"autostart":true}
+
+[PERF] autostart -> Playing (immediate)
+
+[Flanker] state=Flank t=1.51 pos=2.65,11.42
+
+[PERF] cap reached limit=1 at=3.80s
+
+[PERF] {"t":4.00,"alive":1,"avgAlive":0.1,"settled":0.0,"motionUps":0.479,"unsettledMax":11.03,"minPairDist":0.900,"playerUps":0.00,"fps":53.9,"p95ms":12.00,"p99ms":86.00,"maxms":2163.00,"allocKBps":40.0,"heapKB":2196,"wasmMB":55.4,"gc":2}
+
+[Flanker] state=Flank t=2.01 dist=10.89 bearing=-1 abs=76 pos=2.57,10.59 moving=0
+
+[Flanker] state=Flank t=2.51 dist=9.94 bearing=-1 abs=76 pos=2.47,9.63 moving=0
+
+[Flanker] state=Flank t=3.01 dist=8.98 bearing=-2 abs=75 pos=2.37,8.66 moving=0
+
+[Flanker] state=Flank t=3.52 dist=8.03 bearing=-3 abs=74 pos=2.27,7.70 moving=0
+
+[PERF] {"t":6.01,"alive":1,"avgAlive":1.0,"settled":0.0,"motionUps":1.921,"unsettledMax":10.76,"minPairDist":0.900,"playerUps":0.00,"fps":140.4,"p95ms":9.00,"p99ms":11.00,"maxms":13.00,"allocKBps":38.0,"heapKB":2272,"wasmMB":55.4,"gc":2}
+
+[Flanker] state=Flank t=4.02 dist=7.07 bearing=-5 abs=72 pos=2.17,6.73 moving=0
+
+[Flanker] state=Flank t=4.53 dist=6.11 bearing=-7 abs=70 pos=2.07,5.75 moving=0
+
+[Flanker] state=Flank t=5.03 dist=5.18 bearing=-9 abs=68 pos=1.97,4.79 moving=0
+
+[Flanker] state=Flank t=5.53 dist=4.25 bearing=-13 abs=64 pos=1.87,3.82 moving=0
+
+[PERF] {"t":8.00,"alive":1,"avgAlive":1.0,"settled":0.0,"motionUps":1.937,"unsettledMax":6.96,"minPairDist":0.900,"playerUps":0.00,"fps":139.3,"p95ms":10.00,"p99ms":11.00,"maxms":13.00,"allocKBps":45.9,"heapKB":2360,"wasmMB":55.4,"gc":2}
+
+[Flanker] state=Direct t=5.90 pos=1.80,3.11
+
+[PERF] {"t":10.00,"alive":1,"avgAlive":1.0,"settled":0.2,"motionUps":1.657,"unsettledMax":3.23,"minPairDist":0.900,"playerUps":0.00,"fps":143.0,"p95ms":9.00,"p99ms":12.00,"maxms":14.00,"allocKBps":45.8,"heapKB":2452,"wasmMB":55.4,"gc":2}
+
+[PERF] {"t":12.00,"alive":1,"avgAlive":1.0,"settled":1.0,"motionUps":0.004,"unsettledMax":0.00,"minPairDist":0.900,"playerUps":0.00,"fps":140.3,"p95ms":9.00,"p99ms":11.00,"maxms":12.00,"allocKBps":41.9,"heapKB":2536,"wasmMB":55.4,"gc":2}
+
+[PERF] {"t":14.00,"alive":1,"avgAlive":1.0,"settled":1.0,"motionUps":0.000,"unsettledMax":0.00,"minPairDist":0.900,"playerUps":0.00,"fps":142.5,"p95ms":9.00,"p99ms":10.00,"maxms":11.00,"allocKBps":37.9,"heapKB":2252,"wasmMB":55.4,"gc":3}
+
+[PERF] {"t":16.00,"alive":1,"avgAlive":1.0,"settled":1.0,"motionUps":0.000,"unsettledMax":0.00,"minPairDist":0.900,"playerUps":0.00,"fps":145.3,"p95ms":9.00,"p99ms":10.00,"maxms":11.00,"allocKBps":35.9,"heapKB":2324,"wasmMB":55.4,"gc":3}
+
+[PERF] {"t":18.00,"alive":1,"avgAlive":1.0,"settled":1.0,"motionUps":0.000,"unsettledMax":0.00,"minPairDist":0.900,"playerUps":0.00,"fps":145.9,"p95ms":9.00,"p99ms":10.00,"maxms":11.00,"allocKBps":36.0,"heapKB":2396,"wasmMB":55.4,"gc":3}
+
+[PERF] {"t":20.00,"alive":1,"avgAlive":1.0,"settled":1.0,"motionUps":0.000,"unsettledMax":0.00,"minPairDist":0.900,"playerUps":0.00,"fps":148.3,"p95ms":9.00,"p99ms":9.00,"maxms":10.00,"allocKBps":41.9,"heapKB":2480,"wasmMB":55.4,"gc":3}
+
+[PERF] {"t":22.00,"alive":1,"avgAlive":1.0,"settled":1.0,"motionUps":0.000,"unsettledMax":0.00,"minPairDist":0.900,"playerUps":0.00,"fps":145.9,"p95ms":9.00,"p99ms":11.00,"maxms":19.00,"allocKBps":42.0,"heapKB":2200,"wasmMB":55.4,"gc":4}

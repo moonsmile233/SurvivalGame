@@ -92,6 +92,7 @@ namespace Survival.Core
         private int _limitOverride;
         private float _roundOverride;
         private EnemyKind? _forcedKind;
+        private float _flankTimeoutOverride;
         private bool _invincible;
         private bool _drawHud;
         private bool _autoStart;
@@ -139,6 +140,7 @@ namespace Survival.Core
             _drawHud = ParseInt(query, "hud") == 1;
             _autoStart = ParseInt(query, "autostart") == 1;
             _forcedKind = ParseEnemyKind(query);
+            _flankTimeoutOverride = ParseFloat(query, "flankTimeout");
             float seconds = ParseFloat(query, "perfSeconds");
             if (seconds > 0f)
             {
@@ -184,9 +186,14 @@ namespace Survival.Core
                     EnemyAI.SetLogChargerStates(true);
                 }
 
-                if (_forcedKind.Value == EnemyKind.Flanker && _limitOverride > 0 && _limitOverride <= 2)
+                if (_forcedKind.Value == EnemyKind.Flanker)
                 {
-                    EnemyAI.SetLogFlankerStates(true);
+                    // perf-only 覆盖：把 6s 侧绕超时压短，用于黑盒验证 Direct 分支；正常游玩不设此参数。
+                    EnemyAI.SetPerfFlankTimeoutOverride(_flankTimeoutOverride);
+                    if (_limitOverride > 0 && _limitOverride <= 2)
+                    {
+                        EnemyAI.SetLogFlankerStates(true);
+                    }
                 }
 
                 Debug.Log($"[PERF] forced enemy kind = {_forcedKind.Value}");

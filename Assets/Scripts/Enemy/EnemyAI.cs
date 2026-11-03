@@ -96,13 +96,23 @@ namespace Survival.Enemy
         // 绕行者进入“侧绕计时”的距离：从出生点 11.7u 赶来不算侧绕时间，否则 6s 会在半路耗尽。
         private const float FlankEngageDistance = 4.5f;
 
+        // 探针日志间隔：只给单 Flanker 截图/轨迹核对用，40 只压测不会开（见 PerfProbe）。
+        private const float FlankLogInterval = 0.5f;
+
         private float _flankRadius;
         private float _flankAngleDegrees;
         private float _flankPounceDistance;
         private float _flankTimeoutSeconds;
         private float _flankTimer;
+        private float _flankLogTimer;
+        // 出生时“玩家→自己”的方位；玩家静止时用它当固定基准，否则每帧用自身方位会让 bearing 恒为 0。
+        private Vector2 _flankReferenceBearing = Vector2.up;
+        // 到达侧后点后闩锁为 true，之后一路 seek 玩家；否则每帧在“追目标点/追玩家”间切换会在 2.4-0.6 处抖动不扑。
+        private bool _flankPointReached;
         private FlankerState _flankerState = FlankerState.Flank;
         private static bool s_logFlankerStates;
+        // perf-only（?flankTimeout=秒）：压短侧绕超时以验证 Direct；0 = 用资产值，正常游玩不设置。
+        private static float s_perfFlankTimeoutOverride;
 
         private enum ChargerState
         {
@@ -143,6 +153,9 @@ namespace Survival.Enemy
 
         /// <summary>只给 PerfProbe 用：强制类型测试时打开绕行状态日志。</summary>
         public static void SetLogFlankerStates(bool value) => s_logFlankerStates = value;
+
+        /// <summary>只给 PerfProbe 的 ?flankTimeout= 用；0 表示使用资产值。</summary>
+        public static void SetPerfFlankTimeoutOverride(float seconds) => s_perfFlankTimeoutOverride = Mathf.Max(0f, seconds);
 
         /// <summary>离停距还差多少（&gt;0 表示还没到前环；压测探针用）。</summary>
         public float ExcessDistance => _excessDistance;
@@ -217,9 +230,16 @@ namespace Survival.Enemy
                 _flankRadius = Mathf.Max(0.1f, definition.FlankRadius);
                 _flankAngleDegrees = definition.FlankAngleDegrees;
                 _flankPounceDistance = Mathf.Max(0.1f, definition.FlankPounceDistance);
-                _flankTimeoutSeconds = Mathf.Max(0.1f, definition.FlankTimeoutSeconds);
+                _flankTimeoutSeconds = s_perfFlankTimeoutOverride > 0f
+                    ? s_perfFlankTimeoutOverride
+                    : Mathf.Max(0.1f, definition.FlankTimeoutSeconds);
                 _flankTimer = _flankTimeoutSeconds;
-                _flankerState = FlankerState.Flank;
+                Vector2 spawnBearing = (Vector2)transform.position - (Vector2)_target.position;
+                _flankReferenceBearing = spawnBearing.sqrMagnitude > DirectionEpsilon
+                    ? spawnBearing.normalized
+                    : Vector2.up;
+                // 走同一个入口打日志：探针需要看到“出生即 Flank”，否则只有 Pounce 一条，无法证明侧绕过程。
+                EnterFlankerState(FlankerState.Flank);
             }
         }
 
@@ -606,11 +626,26 @@ namespace Survival.Enemy
                         }
                     }
 
+                    if (s_logFlankerStates)
+                    {
+                        _flankLogTimer += delta;
+                        if (_flankLogTimer >= FlankLogInterval)
+                        {
+                            _flankLogTimer = 0f;
+                            LogFlankerTelemetry(position, distance);
+                        }
+                    }
+
                     Vector2 target = ComputeFlankTarget(position);
                     Vector2 toTarget = target - position;
-                    Vector2 seek = toTarget.sqrMagnitude > 0.36f
-                        ? toTarget.normalized * speed
-                        : ComputeSeekVelocity(direction, distance, speed);
+                    if (!_flankPointReached && toTarget.sqrMagnitude <= 0.36f)
+                    {
+                        _flankPointReached = true;
+                    }
+
+                    Vector2 seek = _flankPointReached
+                        ? ComputeSeekVelocity(direction, distance, speed)
+                        : toTarget.normalized * speed;
 
                     MoveFlankerWithCrowd(position, direction, distance, speed, seek, rawDelta, delta);
                     return;
@@ -631,7 +666,7 @@ namespace Survival.Enemy
         }
 
         /// <summary>
-        /// 目标点 = 玩家 + 侧后方 2.4。玩家在动就用速度方向做 forward；静止时用“玩家→绕行者”方位，
+        /// 目标点 = 玩家 + 侧后方 2.4。玩家在动就用速度方向做 forward；静止时用出生时的固定方位，
         /// 保证静止玩家也会被侧绕而不是被直线贴脸。目标点钳在地图内。
         /// </summary>
         private Vector2 ComputeFlankTarget(Vector2 position)
@@ -646,8 +681,9 @@ namespace Survival.Enemy
             }
             else
             {
-                Vector2 bearing = position - playerPosition;
-                forward = bearing.sqrMagnitude > DirectionEpsilon ? bearing.normalized : Vector2.up;
+                // 玩家静止：用出生时的固定方位。若用每帧“玩家→自己”的实时方位，
+                // 目标点会跟着自己转，实际轨迹只是轻微内旋、近似正面直冲，绕不出侧后 135°。
+                forward = _flankReferenceBearing;
             }
 
             float angle = _flankAngleDegrees * Mathf.Deg2Rad * _sideSign;
@@ -663,11 +699,44 @@ namespace Survival.Enemy
         private void EnterFlankerState(FlankerState next)
         {
             _flankerState = next;
+            _flankLogTimer = 0f;
+            if (next == FlankerState.Flank)
+            {
+                _flankPointReached = false;
+            }
+
             if (s_logFlankerStates)
             {
                 float elapsed = _spawner != null ? _spawner.RoundElapsed : 0f;
                 Debug.Log($"[Flanker] state={next} t={elapsed:F2} pos={transform.position.x:F2},{transform.position.y:F2}");
             }
+        }
+
+        /// <summary>
+        /// 探针日志：记录侧绕轨迹。bearing 是“玩家朝向 → 玩家到敌人方向”的有符号夹角，
+        /// 期望目标点约 ±135°（侧后方）；玩家静止时用“玩家→敌人”自身方位做 forward，与目标点同一基准。
+        /// 只由 ?enemyKind=flanker&amp;enemyLimit≤2 打开，正常游玩/40 只压测不分配字符串。
+        /// </summary>
+        private void LogFlankerTelemetry(Vector2 position, float distance)
+        {
+            Vector2 playerPosition = _target.position;
+            Vector2 playerVelocity = _playerBody != null ? _playerBody.linearVelocity : Vector2.zero;
+            Vector2 toEnemy = position - playerPosition;
+
+            Vector2 forward = playerVelocity.sqrMagnitude > 0.09f
+                ? playerVelocity.normalized
+                : _flankReferenceBearing;
+
+            float bearing = toEnemy.sqrMagnitude > DirectionEpsilon
+                ? Vector2.SignedAngle(forward, toEnemy)
+                : 0f;
+            float absAngle = toEnemy.sqrMagnitude > DirectionEpsilon
+                ? Vector2.SignedAngle(Vector2.right, toEnemy)
+                : 0f;
+            float elapsed = _spawner != null ? _spawner.RoundElapsed : 0f;
+            Debug.Log($"[Flanker] state=Flank t={elapsed:F2} dist={distance:F2} bearing={bearing:F0} " +
+                      $"abs={absAngle:F0} pos={position.x:F2},{position.y:F2} " +
+                      $"moving={(playerVelocity.sqrMagnitude > 0.09f ? 1 : 0)}");
         }
 
         /// <summary>

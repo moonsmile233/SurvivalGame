@@ -26,6 +26,10 @@ const PORT = Number(process.env.PORT || 8131);
 const HEADED = process.env.HEADED === '1';
 const INVINCIBLE = process.env.INVINCIBLE !== '0';
 const RUN_SECONDS = Number(process.env.RUN_SECONDS || (HEADED ? 45 : 120));
+// MOVE=circle：每 0.9s 换一个方向（W→D→S→A）绕圈，用于黑盒触发 Flanker 的 6s Direct 超时。
+const MOVE = (process.env.MOVE || '').toLowerCase();
+// FLANK_TIMEOUT：perf-only 覆盖侧绕超时（秒），黑盒压不到 6s 时用来验证 Direct 分支。
+const FLANK_TIMEOUT = (process.env.FLANK_TIMEOUT || '').trim();
 const OUT = process.env.OUT || path.join(repoRoot, 'review', `m6-c3-${KIND}`);
 
 fs.mkdirSync(OUT, { recursive: true });
@@ -41,8 +45,11 @@ const page = await context.newPage();
 
 const logs = [];
 const pendingShots = [];
+const seenStateShots = new Set();
 let shotIndex = 0;
 let sawState = false;
+let flankLogCount = 0;
+let sawFlankEngage = false;
 
 async function shot(tag) {
   const index = String(shotIndex++).padStart(2, '0');
@@ -63,10 +70,28 @@ page.on('console', (message) => {
     console.log('[console] ' + text);
   }
 
+  // 每个状态只拍首帧；Flank 的每 0.5s 轨迹日志不能每次都拍（否则几十张）。
   for (const tag of ['Windup', 'Dash', 'Recover', 'Flank', 'Pounce', 'Direct']) {
     if (text.includes(`state=${tag}`)) {
       sawState = true;
-      pendingShots.push(shot(tag.toLowerCase()));
+      if (!seenStateShots.has(tag)) {
+        seenStateShots.add(tag);
+        pendingShots.push(shot(tag.toLowerCase()));
+      }
+    }
+  }
+
+  if (text.includes('state=Flank')) {
+    flankLogCount++;
+    if (flankLogCount === 5) {
+      pendingShots.push(shot('flank-mid'));
+    }
+
+    // 第一次进入 4.5 交战距离时补一张，此时才真正能看到“侧后接近”而不是出生点远景。
+    const distanceMatch = text.match(/dist=([\d.]+)/);
+    if (!sawFlankEngage && distanceMatch && Number(distanceMatch[1]) <= 4.5) {
+      sawFlankEngage = true;
+      pendingShots.push(shot('flank-engage'));
     }
   }
 });
@@ -76,17 +101,39 @@ await openGame(
   page,
   `http://127.0.0.1:${PORT}`,
   `?perf=1&autostart=1&enemyKind=${KIND}&enemyLimit=1&roundDuration=${RUN_SECONDS + 30}` +
-    `&invincible=${INVINCIBLE ? 1 : 0}&perfSeconds=${RUN_SECONDS}`,
+    `&invincible=${INVINCIBLE ? 1 : 0}&perfSeconds=${RUN_SECONDS}` +
+    (FLANK_TIMEOUT ? `&flankTimeout=${FLANK_TIMEOUT}` : ''),
 );
 
+// 黑盒驱动玩家：按住 W/D/S/A 循环绕圈，让 Flanker 的 side-back 目标点持续移动，
+// 距离稳定在 (1.2, 4.5] 时就会走满 6s 触发 Direct（不需要新增玩法参数）。
+let moveTask = null;
+if (MOVE === 'circle') {
+  moveTask = (async () => {
+    const keys = ['w', 'd', 's', 'a'];
+    const deadline = Date.now() + RUN_SECONDS * 1000;
+    let i = 0;
+    while (Date.now() < deadline) {
+      const key = keys[i % keys.length];
+      await page.keyboard.down(key);
+      await page.waitForTimeout(900);
+      await page.keyboard.up(key);
+      i++;
+    }
+  })();
+}
+
 await page.waitForTimeout(RUN_SECONDS * 1000);
+if (moveTask) {
+  await moveTask;
+}
 await shot('final');
 await Promise.all(pendingShots);
 
 fs.writeFileSync(path.join(OUT, `${KIND}-console.log`), logs.join('\n'));
 fs.writeFileSync(
   path.join(OUT, `${KIND}-summary.json`),
-  JSON.stringify({ kind: KIND, headed: HEADED, invincible: INVINCIBLE, runSeconds: RUN_SECONDS, sawState, logs }, null, 2),
+  JSON.stringify({ kind: KIND, headed: HEADED, invincible: INVINCIBLE, move: MOVE, runSeconds: RUN_SECONDS, sawState, logs }, null, 2),
 );
 
 await context.close();
