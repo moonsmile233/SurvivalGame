@@ -52,8 +52,8 @@ namespace Survival.Core
         [SerializeField] private float _enemyEmergencyAccel = 3.6f;
         [Tooltip("总速度上限 = 该比例 × EnemySpeedMax（1.2 → 2.64，仍低于玩家 3.2）。")]
         [SerializeField] private float _enemyMaxVelocityRatio = 1.2f;
-        [Tooltip("离开相机视野（含 0.05 margin）持续 N 秒则回收，释放 20 只名额（M4-B0）。")]
-        [SerializeField] private float _enemyRecycleSeconds = 3f;
+        [Tooltip("离开相机视野（含 0.05 margin）持续 N 秒则回收，释放同屏名额；只对进过视野的敌人生效（M4-B0 / C5 1.5s）。")]
+        [SerializeField] private float _enemyRecycleSeconds = 1.5f;
         [Tooltip("压力曲线终值：敌人速度随局内时间从 1.0 倍升到该倍率，作用于已存在的敌人（M4-B1）。")]
         [SerializeField] private float _enemyPressureMaxMultiplier = 1.15f;
 

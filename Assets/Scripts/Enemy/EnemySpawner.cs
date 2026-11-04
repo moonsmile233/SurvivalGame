@@ -44,8 +44,18 @@ namespace Survival.Enemy
         [SerializeField] private Camera _camera;
         [SerializeField] private EnemyDefinition[] _enemyDefinitions;
 
-        // 只给 PerfProbe 的 ?enemyKind= 测试用；正常游玩为 null（C3/C4 仍只生成 Chaser，C5 才加权）。
+        // 只给 PerfProbe 的 ?enemyKind= 测试用；正常游玩为 null。
         private EnemyKind? _perfForcedKind;
+
+        // 只给 PerfProbe：?enemyMix=1 从 0s 起用晚期权重（压测/证据），?noSpawn=1 完全停生成（alloc 0 敌对照）。
+        private bool _perfForceMix;
+        private bool _perfSuppressSpawn;
+        private int _perfSpawnOpsMask;
+
+        // 三类定义按 Kind 缓存（Awake 解析一次），加权选择不每帧扫数组。
+        private EnemyDefinition _chaserDefinition;
+        private EnemyDefinition _chargerDefinition;
+        private EnemyDefinition _flankerDefinition;
 
         private readonly List<EnemyAI> _enemies = new List<EnemyAI>(24);
 
@@ -82,6 +92,29 @@ namespace Survival.Enemy
         /// <summary>只给 PerfProbe 用：强制生成某种敌人（C3/C4 单类型探针）；正常游玩不调用。</summary>
         public void SetPerfForcedKind(EnemyKind kind) => _perfForcedKind = kind;
 
+        /// <summary>只给 PerfProbe 的 ?enemyMix=1：从 0s 起用晚期权重生成三种敌人（压测/证据用）。</summary>
+        public void SetPerfForceMix(bool value) => _perfForceMix = value;
+
+        /// <summary>只给 PerfProbe 的 ?noSpawn=1：完全停止生成，用于 alloc「0 敌」对照；正常游玩不调用。</summary>
+        public void SetPerfSuppressSpawn(bool value) => _perfSuppressSpawn = value;
+
+        /// <summary>
+        /// 只给 PerfProbe 的 ?spawnOps= 位掩码：逐个关掉生成时的健壮性操作，用于 alloc 归因。
+        /// bit0=跳过 renderer.color、bit1=跳过 localScale、bit2=不传 renderer（走 GetComponent 回退）。
+        /// 正常游玩 mask=0（全部执行），所以这里只影响归因跑法，不改默认行为。
+        /// </summary>
+        public void SetPerfSpawnOps(int skipMask) => _perfSpawnOpsMask = Mathf.Max(0, skipMask);
+
+        /// <summary>到顶时找不到可回收目标（未进过视野 / 都在视野内）而跳过的生成次数；探针只读。</summary>
+        public int CapBlockedCount { get; private set; }
+
+        /// <summary>到顶时为补位回收的敌人数量；探针只读。生成不会静默停刷，被挡下时计入 CapBlockedCount。</summary>
+        public int CapRecycledCount { get; private set; }
+
+        /// <summary>本局所有登记后回收（销毁）的敌人总数，含到顶补位；探针只读。
+        /// 视野超时回收 = RecycleCount − CapRecycledCount。</summary>
+        public int RecycleCount { get; private set; }
+
         private void Awake()
         {
             _root = new GameObject("Enemies").transform;
@@ -93,7 +126,51 @@ namespace Survival.Enemy
             }
 
             CachePlayerRadius();
+            CacheDefinitions();
             MinPairDistance = _config != null ? _config.EnemySeparationRadius : 1f;
+        }
+
+        /// <summary>按 Kind 缓存定义；缺失的类别权重按 0 处理（旧场景只有 Chaser 也能跑）。</summary>
+        private void CacheDefinitions()
+        {
+            if (_enemyDefinitions == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < _enemyDefinitions.Length; i++)
+            {
+                EnemyDefinition definition = _enemyDefinitions[i];
+                if (definition == null)
+                {
+                    continue;
+                }
+
+                switch (definition.Kind)
+                {
+                    case EnemyKind.Chaser:
+                        if (_chaserDefinition == null)
+                        {
+                            _chaserDefinition = definition;
+                        }
+
+                        break;
+                    case EnemyKind.Charger:
+                        if (_chargerDefinition == null)
+                        {
+                            _chargerDefinition = definition;
+                        }
+
+                        break;
+                    case EnemyKind.Flanker:
+                        if (_flankerDefinition == null)
+                        {
+                            _flankerDefinition = definition;
+                        }
+
+                        break;
+                }
+            }
         }
 
         private void Update()
@@ -109,9 +186,22 @@ namespace Survival.Enemy
             if (_spawnTimer >= GetCurrentInterval())
             {
                 _spawnTimer = 0f;
-                if (_enemies.Count < _config.EnemyLimit)
+                if (!_perfSuppressSpawn)
                 {
-                    SpawnEnemy();
+                    if (_enemies.Count < _config.EnemyLimit)
+                    {
+                        SpawnEnemy();
+                    }
+                    else if (TryRecycleFarthestOffscreen())
+                    {
+                        // 同帧补位：回收后立刻生成。生成点仍在视野外，玩家看到的只是“视野外换了一只”。
+                        SpawnEnemy();
+                    }
+                    else
+                    {
+                        // 没有合格候选（都在视野内，或还没进过视野）：记账后跳过，探针能看到 blocked 而不是静默停刷。
+                        CapBlockedCount++;
+                    }
                 }
             }
 
@@ -278,13 +368,21 @@ namespace Survival.Enemy
             _elapsed = 0f;
             _spawnTimer = 0f;
             _separationAccumulator = 0f;
+            CapBlockedCount = 0;
+            CapRecycledCount = 0;
+            RecycleCount = 0;
             MinPairDistance = _config != null ? _config.EnemySeparationRadius : 1f;
             _running = true;
 
             // 每局一行，方便核对档位是否真的生效（间隔/上限是难度最容易配错的两项）。
+            // C5 起再带上解锁时间，自然混合跑完后能和 [PERF-SUMMARY] 的 per-kind 数量对上。
             if (_config != null)
             {
-                Debug.Log($"[EnemySpawner] begin difficulty={_config.ActiveDifficulty} interval={GetCurrentInterval():F3}s limit={_config.EnemyLimit}");
+                DifficultyProfile profile = _config.ActiveProfile;
+                string unlock = profile != null
+                    ? $" chargerUnlock={profile.ChargerUnlockSeconds:F0}s flankerUnlock={profile.FlankerUnlockSeconds:F0}s"
+                    : string.Empty;
+                Debug.Log($"[EnemySpawner] begin difficulty={_config.ActiveDifficulty} interval={GetCurrentInterval():F3}s limit={_config.EnemyLimit}{unlock}");
             }
         }
 
@@ -327,6 +425,7 @@ namespace Survival.Enemy
                 return;
             }
 
+            RecycleCount++;
             Destroy(enemy.gameObject);
         }
 
@@ -356,8 +455,15 @@ namespace Survival.Enemy
             var renderer = go.AddComponent<SpriteRenderer>();
             renderer.sprite = definition.Sprite;
             renderer.sortingOrder = 1;
-            renderer.color = definition.Tint;
-            go.transform.localScale = Vector3.one * definition.VisualScale;
+            if ((_perfSpawnOpsMask & 1) == 0)
+            {
+                renderer.color = definition.Tint;
+            }
+
+            if ((_perfSpawnOpsMask & 2) == 0)
+            {
+                go.transform.localScale = Vector3.one * definition.VisualScale;
+            }
 
             var body = go.AddComponent<Rigidbody2D>();
             body.bodyType = RigidbodyType2D.Kinematic;
@@ -372,14 +478,17 @@ namespace Survival.Enemy
             float stopRadius = _playerRadius + enemyRadius - StopDistancePadding;
 
             var ai = go.AddComponent<EnemyAI>();
-            ai.Initialize(_config, definition, _playerTarget, _playerHealth, this, _camera, stopRadius, renderer);
+            ai.Initialize(_config, definition, _playerTarget, _playerHealth, this, _camera, stopRadius,
+                (_perfSpawnOpsMask & 4) != 0 ? null : renderer);
 
             Register(ai);
         }
 
         /// <summary>
-        /// C3/C4：默认仍只生成 Chaser（保持 v1.2 行为）；PerfProbe 的 enemyKind 参数可强制单类型做探针。
-        /// C5 换成 DifficultyProfile 的解锁/权重加权选择。
+        /// 按 DifficultyProfile 的解锁时间与阶段权重选类型（M6 §3.1）：
+        /// t &lt; chargerUnlock 只有 Chaser；t &lt; flankerUnlock 用中期权重；之后晚期权重。
+        /// 权重全部来自资产，代码不写字面量；缺失的类别权重按 0 处理。
+        /// PerfProbe 的 enemyKind 强制单类型优先；enemyMix=1 从 0s 起用晚期权重（仅压测）。
         /// </summary>
         private EnemyDefinition PickDefinition()
         {
@@ -403,16 +512,142 @@ namespace Survival.Enemy
                 return null;
             }
 
-            for (int i = 0; i < _enemyDefinitions.Length; i++)
+            DifficultyProfile profile = _config != null ? _config.ActiveProfile : null;
+            if (profile == null || profile.NeedsSpawnWeightMigration)
             {
-                EnemyDefinition definition = _enemyDefinitions[i];
-                if (definition != null && definition.Kind == EnemyKind.Chaser)
+                // 旧资产没迁移过权重时保持 v1.2 行为（只生成 Chaser），不让 -1 哨兵变成负权重。
+                return FallbackDefinition();
+            }
+
+            if (_perfForceMix)
+            {
+                // 压测口径：无视解锁时间，从 0s 起就按晚期权重混三种（正常游玩不会带这个参数）。
+                return PickWeighted(profile.LateChaserWeight, profile.LateChargerWeight, profile.LateFlankerWeight);
+            }
+
+            float time = _elapsed;
+            if (time < profile.ChargerUnlockSeconds)
+            {
+                return PickWeighted(profile.EarlyChaserWeight, 0f, 0f);
+            }
+
+            if (time < profile.FlankerUnlockSeconds)
+            {
+                return PickWeighted(profile.MidChaserWeight, profile.MidChargerWeight, 0f);
+            }
+
+            return PickWeighted(profile.LateChaserWeight, profile.LateChargerWeight, profile.LateFlankerWeight);
+        }
+
+        /// <summary>加权随机（无分配）：total 累加已解锁且有权重的类型，再逐项扣减。</summary>
+        private EnemyDefinition PickWeighted(float chaserWeight, float chargerWeight, float flankerWeight)
+        {
+            float wChaser = _chaserDefinition != null ? Mathf.Max(0f, chaserWeight) : 0f;
+            float wCharger = _chargerDefinition != null ? Mathf.Max(0f, chargerWeight) : 0f;
+            float wFlanker = _flankerDefinition != null ? Mathf.Max(0f, flankerWeight) : 0f;
+
+            float total = wChaser + wCharger + wFlanker;
+            if (total <= 0f)
+            {
+                return FallbackDefinition();
+            }
+
+            float r = Random.value * total;
+            if (wChaser > 0f)
+            {
+                r -= wChaser;
+                if (r <= 0f)
                 {
-                    return definition;
+                    return _chaserDefinition;
                 }
             }
 
-            return _enemyDefinitions[0];
+            if (wCharger > 0f)
+            {
+                r -= wCharger;
+                if (r <= 0f)
+                {
+                    return _chargerDefinition;
+                }
+            }
+
+            if (wFlanker > 0f)
+            {
+                return _flankerDefinition;
+            }
+
+            // 浮点扣减后 r 仍 > 0（极端边界）：返回最后一个有权重的类型。
+            return wCharger > 0f ? _chargerDefinition : _chaserDefinition;
+        }
+
+        private EnemyDefinition FallbackDefinition()
+        {
+            if (_chaserDefinition != null)
+            {
+                return _chaserDefinition;
+            }
+
+            if (_chargerDefinition != null)
+            {
+                return _chargerDefinition;
+            }
+
+            if (_flankerDefinition != null)
+            {
+                return _flankerDefinition;
+            }
+
+            return _enemyDefinitions.Length > 0 ? _enemyDefinitions[0] : null;
+        }
+
+        /// <summary>
+        /// 到顶补位（M6 §3.3）：回收「进过视野 + 当前在视野外」里离玩家最远的一只。
+        /// 只回收进过视野的，避免误杀刚出生、还在视野外赶来的敌人；补位生成点仍在视野外。
+        /// 找到就 Unregister（释放名额）并返回 true；没有候选返回 false（调用方计 CapBlockedCount）。
+        /// </summary>
+        private bool TryRecycleFarthestOffscreen()
+        {
+            if (_camera == null || _playerTarget == null || _enemies.Count == 0)
+            {
+                return false;
+            }
+
+            EnemyAI candidate = null;
+            float farthestSqr = -1f;
+            Vector2 playerPosition = _playerTarget.position;
+
+            for (int i = 0; i < _enemies.Count; i++)
+            {
+                EnemyAI enemy = _enemies[i];
+                if (enemy == null || !enemy.HasBeenSeen)
+                {
+                    continue;
+                }
+
+                Vector3 position = enemy.transform.position;
+                if (IsInsideView(position))
+                {
+                    continue;
+                }
+
+                float deltaX = position.x - playerPosition.x;
+                float deltaY = position.y - playerPosition.y;
+                float sqr = deltaX * deltaX + deltaY * deltaY;
+                if (sqr > farthestSqr)
+                {
+                    farthestSqr = sqr;
+                    candidate = enemy;
+                }
+            }
+
+            if (candidate == null)
+            {
+                return false;
+            }
+
+            Unregister(candidate);
+            CapRecycledCount++;
+            return true;
         }
 
         /// <summary>

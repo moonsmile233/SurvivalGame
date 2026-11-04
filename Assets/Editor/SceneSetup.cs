@@ -692,12 +692,12 @@ public static class SceneSetup
             earlyChaser: 1.00f, midChaser: 0.85f, midCharger: 0.15f,
             lateChaser: 0.70f, lateCharger: 0.20f, lateFlanker: 0.10f);
         profiles[(int)Difficulty.Normal] = EnsureDifficultyProfile(
-            DifficultyNormalPath, Difficulty.Normal, speed: 1.00f, chargeSpeed: 4.5f, spawn: 1.00f, damage: 1.00f, limit: 20, pressure: 1.15f, score: 1.3f,
+            DifficultyNormalPath, Difficulty.Normal, speed: 1.00f, chargeSpeed: 4.5f, spawn: 1.00f, damage: 1.00f, limit: 30, pressure: 1.15f, score: 1.3f,
             chargerUnlock: 15f, flankerUnlock: 35f,
             earlyChaser: 1.00f, midChaser: 0.75f, midCharger: 0.25f,
             lateChaser: 0.55f, lateCharger: 0.30f, lateFlanker: 0.15f);
         profiles[(int)Difficulty.Hard] = EnsureDifficultyProfile(
-            DifficultyHardPath, Difficulty.Hard, speed: 1.10f, chargeSpeed: 5.0f, spawn: 0.85f, damage: 1.15f, limit: 20, pressure: 1.20f, score: 1.6f,
+            DifficultyHardPath, Difficulty.Hard, speed: 1.10f, chargeSpeed: 5.0f, spawn: 0.85f, damage: 1.15f, limit: 50, pressure: 1.20f, score: 1.6f,
             chargerUnlock: 10f, flankerUnlock: 25f,
             earlyChaser: 1.00f, midChaser: 0.65f, midCharger: 0.35f,
             lateChaser: 0.45f, lateCharger: 0.35f, lateFlanker: 0.20f);

@@ -28,6 +28,13 @@ namespace Survival.UI
         private int _lastScore = int.MinValue;
         private int _lastHealth = int.MinValue;
 
+        // 只给 PerfProbe 的 alloc 归因用（?noHud=1）：压住 TMP 文本重建，量化 HUD 的分配占比。
+        // 正常游玩恒为 false；只影响显示刷新，不改任何玩法数值。
+        private bool _perfSuppressUpdates;
+
+        /// <summary>只给 PerfProbe 用：暂停 HUD 文本刷新（alloc 归因）；正常游玩不调用。</summary>
+        public void SetPerfSuppressUpdates(bool value) => _perfSuppressUpdates = value;
+
         private void Start()
         {
             if (_gameManager == null || _playerHealth == null || _gameManager.Score == null
@@ -86,7 +93,7 @@ namespace Survival.UI
         private void HandleTimeChanged(float remainingSeconds)
         {
             int seconds = Mathf.CeilToInt(Mathf.Max(0f, remainingSeconds));
-            if (seconds == _lastSecond)
+            if (seconds == _lastSecond || _perfSuppressUpdates)
             {
                 return;
             }
@@ -99,7 +106,7 @@ namespace Survival.UI
 
         private void HandleScoreChanged(int score)
         {
-            if (score == _lastScore)
+            if (score == _lastScore || _perfSuppressUpdates)
             {
                 return;
             }
@@ -110,7 +117,7 @@ namespace Survival.UI
 
         private void HandleHealthChanged(int current, int max)
         {
-            if (current == _lastHealth)
+            if (current == _lastHealth || _perfSuppressUpdates)
             {
                 return;
             }

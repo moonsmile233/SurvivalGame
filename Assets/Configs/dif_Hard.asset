@@ -17,7 +17,7 @@ MonoBehaviour:
   _chargeSpeed: 5
   _spawnIntervalMultiplier: 0.85
   _damageMultiplier: 1.15
-  _enemyLimit: 20
+  _enemyLimit: 50
   _pressureMaxMultiplier: 1.2
   _scoreMultiplier: 1.6
   _chargerUnlockSeconds: 10

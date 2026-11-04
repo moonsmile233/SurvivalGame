@@ -153,11 +153,23 @@ namespace Survival.Enemy
         /// <summary>Flanker 是否处于侧绕帧（只读探针）。</summary>
         public bool IsFlanking => _kind == EnemyKind.Flanker && _flankerState == FlankerState.Flank;
 
+        /// <summary>
+        /// 是否进入过相机视野。Spawner 到顶补位只回收进过视野的敌人，
+        /// 避免误杀刚出生、还在视野外赶来的（与 <see cref="UpdateRecycle"/> 同一判定口径）。
+        /// </summary>
+        public bool HasBeenSeen => _hasBeenSeen;
+
         /// <summary>Flanker 状态名；非 Flanker 返回空串。只在探针/日志读。</summary>
         public string FlankerStateName => _kind == EnemyKind.Flanker ? _flankerState.ToString() : string.Empty;
 
         /// <summary>只给 PerfProbe 用：强制类型测试时打开绕行状态日志。</summary>
         public static void SetLogFlankerStates(bool value) => s_logFlankerStates = value;
+
+        /// <summary>只给 PerfProbe 用：视野超时回收时打一行日志（验证 1.5s 口径），最多 20 行。</summary>
+        public static void SetLogRecycle(bool value) => s_logRecycle = value;
+
+        private static bool s_logRecycle;
+        private static int s_logRecycleCount;
 
         /// <summary>只给 PerfProbe 的 ?flankTimeout= 用；0 表示使用资产值。</summary>
         public static void SetPerfFlankTimeoutOverride(float seconds) => s_perfFlankTimeoutOverride = Mathf.Max(0f, seconds);
@@ -1113,6 +1125,13 @@ namespace Survival.Enemy
             if (_offScreenSeconds < _config.EnemyRecycleSeconds)
             {
                 return;
+            }
+
+            // 探针日志：只验证「进过视野后离屏 N 秒回收」，正常游玩不打开；限 20 行避免刷爆 console。
+            if (s_logRecycle && s_logRecycleCount < 20)
+            {
+                s_logRecycleCount++;
+                Debug.Log($"[Recycle] kind={_kind} offScreen={_offScreenSeconds:F2}s threshold={_config.EnemyRecycleSeconds:F2}s");
             }
 
             _spawner.Unregister(this);

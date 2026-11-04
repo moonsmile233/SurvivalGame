@@ -35,7 +35,7 @@ MonoBehaviour:
   _enemyEmergencyStrength: 2
   _enemyEmergencyAccel: 3.6
   _enemyMaxVelocityRatio: 1.2
-  _enemyRecycleSeconds: 3
+  _enemyRecycleSeconds: 1.5
   _enemyPressureMaxMultiplier: 1.15
   _mapWidth: 36
   _mapHeight: 20

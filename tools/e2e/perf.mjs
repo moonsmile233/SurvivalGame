@@ -155,6 +155,7 @@ async function runCap(browser, baseUrl, cap, buildInfo) {
   const page = await context.newPage();
 
   const windows = [];
+  const recycleLogs = [];
   const consoleErrors = [];
   let summary = null;
   let lastPerfAt = Date.now();
@@ -167,6 +168,10 @@ async function runCap(browser, baseUrl, cap, buildInfo) {
     }
     if (message.type() === 'error') {
       consoleErrors.push(`[console] ${text}`);
+    }
+    // ?logRecycle=1 时 Unity 只打前 20 条视野超时回收；存下来验证 1.5s 口径。
+    if (text.startsWith('[Recycle]') && recycleLogs.length < 20) {
+      recycleLogs.push(text);
     }
     const parsed = parseConsoleLine(text);
     if (!parsed) {
@@ -263,6 +268,7 @@ async function runCap(browser, baseUrl, cap, buildInfo) {
     capAt,
     windows,
     summary,
+    recycleLogs,
     tail20s: { samples: tail.length, avgFps: steadyFps, avgP95ms: steadyP95 },
     difficultyAfterStart,
     consoleErrors,

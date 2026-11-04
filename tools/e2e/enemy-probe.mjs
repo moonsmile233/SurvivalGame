@@ -27,6 +27,7 @@ const HEADED = process.env.HEADED === '1';
 const INVINCIBLE = process.env.INVINCIBLE !== '0';
 const RUN_SECONDS = Number(process.env.RUN_SECONDS || (HEADED ? 45 : 120));
 // MOVE=circle：每 0.9s 换一个方向（W→D→S→A）绕圈，用于黑盒触发 Flanker 的 6s Direct 超时。
+// MOVE=straight：按住 D 12 秒再按住 A 12 秒往复，把敌人甩出视野，用于验证「离屏 1.5s 回收」。
 const MOVE = (process.env.MOVE || '').toLowerCase();
 // FLANK_TIMEOUT：perf-only 覆盖侧绕超时（秒），黑盒压不到 6s 时用来验证 Direct 分支。
 const FLANK_TIMEOUT = (process.env.FLANK_TIMEOUT || '').trim();
@@ -68,7 +69,7 @@ async function shot(tag) {
 page.on('console', (message) => {
   const text = message.text();
   if (text.includes(`[${KIND === 'charger' ? 'Charger' : 'Flanker'}]`) || text.includes('[PERF]')
-      || text.includes('damage=')) {
+      || text.includes('[Recycle]') || text.includes('damage=')) {
     logs.push(text);
     console.log('[console] ' + text);
   }
@@ -115,7 +116,7 @@ await openGame(
   page,
   `http://127.0.0.1:${PORT}`,
   `?perf=1&autostart=1&enemyKind=${KIND}&enemyLimit=1&roundDuration=${RUN_SECONDS + 30}` +
-    `&invincible=${INVINCIBLE ? 1 : 0}&perfSeconds=${RUN_SECONDS}` +
+    `&invincible=${INVINCIBLE ? 1 : 0}&perfSeconds=${RUN_SECONDS}&logRecycle=1` +
     (FLANK_TIMEOUT ? `&flankTimeout=${FLANK_TIMEOUT}` : '') +
     (DIFFICULTY ? `&difficulty=${DIFFICULTY}` : ''),
 );
@@ -123,7 +124,18 @@ await openGame(
 // 黑盒驱动玩家：按住 W/D/S/A 循环绕圈，让 Flanker 的 side-back 目标点持续移动，
 // 距离稳定在 (1.2, 4.5] 时就会走满 6s 触发 Direct（不需要新增玩法参数）。
 let moveTask = null;
-if (MOVE === 'circle') {
+if (MOVE === 'straight') {
+  moveTask = (async () => {
+    const deadline = Date.now() + RUN_SECONDS * 1000;
+    let key = 'd';
+    while (Date.now() < deadline) {
+      await page.keyboard.down(key);
+      await page.waitForTimeout(12000);
+      await page.keyboard.up(key);
+      key = key === 'd' ? 'a' : 'd';
+    }
+  })();
+} else if (MOVE === 'circle') {
   moveTask = (async () => {
     const keys = ['w', 'd', 's', 'a'];
     const deadline = Date.now() + RUN_SECONDS * 1000;

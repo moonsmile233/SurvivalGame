@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using Survival.Enemy;
 using Survival.Player;
+using Survival.UI;
 using UnityEngine;
 
 namespace Survival.Core
@@ -20,6 +21,13 @@ namespace Survival.Core
     /// - <c>hud=1</c>：在屏幕上画调试条（真机看不到 console 时用；桌面压测不要开，避免 IMGUI 扰动采样）
     /// - <c>autostart=1</c>：跳过 H5 点击，直接进 Playing（真机一键跑）
     /// - <c>enemyKind=chaser|charger|flanker</c>：强制只生成该类型（C3/C4 单类型探针；正常游玩不生效）
+    /// - <c>enemyMix=1</c>：从 0s 起用晚期权重混合三种敌人（C5 压测/证据；正常游玩不生效）
+    /// - <c>noSpawn=1</c>：完全不生成敌人（C5 alloc「0 敌」对照；正常游玩不生效）
+    /// - <c>quiet=1</c>：关掉窗口日志与挤动统计，只留 alloc/帧采样（C5 alloc「探针负载」对照）
+    /// - <c>noHud=1</c>：压住 HUD 文本刷新（C5 alloc 归因：量化 TMP 重建占比）
+    /// - <c>spawnOps=7</c>：生成时跳过 tint/scale/传 renderer 的位掩码（C5 alloc 归因；7=三项都跳过）
+    /// - <c>walk=1</c>：让玩家自动往返移动（回收 1.5s/到顶补位的黑盒验证；玩家仍无敌）
+    /// - <c>logRecycle=1</c>：打前 20 条视野超时回收日志（验证 1.5s 口径）
     ///
     /// 输出：每 2 秒一行 <c>[PERF] {json}</c>，结束时一行 <c>[PERF-SUMMARY] {json}</c>，都进浏览器 console，
     /// 由 tools/e2e/perf.mjs 收集；真机看屏幕上的 hud。
@@ -92,6 +100,14 @@ namespace Survival.Core
         private int _limitOverride;
         private float _roundOverride;
         private EnemyKind? _forcedKind;
+        private bool _forceMix;
+        private bool _noSpawn;
+        private bool _quiet;
+        private bool _noHud;
+        private bool _walk;
+        private bool _logRecycle;
+        private int _spawnOps;
+        private float _walkDirection = 1f;
         private float _flankTimeoutOverride;
         private bool _invincible;
         private bool _drawHud;
@@ -141,6 +157,13 @@ namespace Survival.Core
             _drawHud = ParseInt(query, "hud") == 1;
             _autoStart = ParseInt(query, "autostart") == 1;
             _forcedKind = ParseEnemyKind(query);
+            _forceMix = ParseInt(query, "enemyMix") == 1;
+            _noSpawn = ParseInt(query, "noSpawn") == 1;
+            _quiet = ParseInt(query, "quiet") == 1;
+            _noHud = ParseInt(query, "noHud") == 1;
+            _walk = ParseInt(query, "walk") == 1;
+            _logRecycle = ParseInt(query, "logRecycle") == 1;
+            _spawnOps = ParseInt(query, "spawnOps");
             _flankTimeoutOverride = ParseFloat(query, "flankTimeout");
             _difficulty = ParseDifficulty(query);
             float seconds = ParseFloat(query, "perfSeconds");
@@ -177,6 +200,40 @@ namespace Survival.Core
             if (_health != null)
             {
                 _health.SetPerfInvincible(_invincible);
+            }
+
+            if (_spawner != null && _noSpawn)
+            {
+                _spawner.SetPerfSuppressSpawn(true);
+                Debug.Log("[PERF] spawn suppressed (noSpawn=1)");
+            }
+
+            if (_spawner != null && _forceMix)
+            {
+                _spawner.SetPerfForceMix(true);
+                Debug.Log("[PERF] enemyMix=1 -> late weights from t=0");
+            }
+
+            if (_spawner != null && _spawnOps > 0)
+            {
+                _spawner.SetPerfSpawnOps(_spawnOps);
+                Debug.Log($"[PERF] spawnOps skip mask = {_spawnOps}");
+            }
+
+            if (_spawner != null && _logRecycle)
+            {
+                EnemyAI.SetLogRecycle(true);
+                Debug.Log("[PERF] recycle logging on");
+            }
+
+            if (_noHud)
+            {
+                HudView hud = FindFirstObjectByType<HudView>();
+                if (hud != null)
+                {
+                    hud.SetPerfSuppressUpdates(true);
+                    Debug.Log("[PERF] HUD text updates suppressed (noHud=1)");
+                }
             }
 
             if (_spawner != null && _forcedKind.HasValue)
@@ -255,14 +312,26 @@ namespace Survival.Core
                 alloc = delta > int.MaxValue ? int.MaxValue : (int)delta;
             }
 
+            if (_walk)
+            {
+                DrivePlayer(dt);
+            }
+
             TrackEnemyMotion(dt);
-            TrackCrowdMetrics(dt);
+            if (!_quiet)
+            {
+                TrackCrowdMetrics(dt);
+            }
+
             Push(dt, _lastAlive, alloc, _frameMotion, _frameSettled);
 
             if (_elapsed >= _nextWindowAt)
             {
                 _nextWindowAt += WindowSeconds;
-                LogWindow();
+                if (!_quiet)
+                {
+                    LogWindow();
+                }
             }
 
             if (!_summaryLogged && _elapsed >= _perfSeconds)
@@ -288,6 +357,37 @@ namespace Survival.Core
             {
                 _ringCount++;
             }
+        }
+
+        /// <summary>
+        /// ?walk=1：让玩家沿 X 往返移动（仍受 PlayerController 的边界钳制约束）。
+        /// 用途：玩家跑开时敌人落到视野外，验证「进过视野后离屏 1.5s 回收」和到顶补位；
+        /// 不合成输入、不改玩家组件，只在探针里平移 transform。
+        /// </summary>
+        private void DrivePlayer(float dt)
+        {
+            if (_health == null || _manager == null || _manager.Config == null)
+            {
+                return;
+            }
+
+            GameConfig config = _manager.Config;
+            Vector3 position = _health.transform.position;
+            position.x += _walkDirection * config.PlayerSpeed * 0.85f * dt;
+
+            float half = config.MapWidth * 0.5f - 1.2f;
+            if (position.x >= half)
+            {
+                position.x = half;
+                _walkDirection = -1f;
+            }
+            else if (position.x <= -half)
+            {
+                position.x = -half;
+                _walkDirection = 1f;
+            }
+
+            _health.transform.position = position;
         }
 
         /// <summary>
@@ -736,6 +836,48 @@ namespace Survival.Core
                 fillAlloc = _collectAlloc;
             }
 
+            // 混合/补位验收：结束时按类型点数，并带上到顶被挡/补位次数（只在这一行算一次，不进热路径）。
+            int chaser = 0;
+            int charger = 0;
+            int flanker = 0;
+            int charging = 0;
+            int flanking = 0;
+            if (_spawner != null)
+            {
+                IReadOnlyList<EnemyAI> enemies = _spawner.ActiveEnemies;
+                for (int i = 0; i < enemies.Count; i++)
+                {
+                    EnemyAI enemy = enemies[i];
+                    if (enemy == null)
+                    {
+                        continue;
+                    }
+
+                    switch (enemy.Kind)
+                    {
+                        case EnemyKind.Chaser:
+                            chaser++;
+                            break;
+                        case EnemyKind.Charger:
+                            charger++;
+                            break;
+                        case EnemyKind.Flanker:
+                            flanker++;
+                            break;
+                    }
+
+                    if (enemy.IsCharging)
+                    {
+                        charging++;
+                    }
+
+                    if (enemy.IsFlanking)
+                    {
+                        flanking++;
+                    }
+                }
+            }
+
             _line.Clear();
             _line.Append("[PERF-SUMMARY] {")
                 .Append("\"limit\":").Append(_activeLimit)
@@ -756,6 +898,14 @@ namespace Survival.Core
                 .Append(",\"steadyMotionUps\":").Append(F(steadyMotion, 3))
                 .Append(",\"steadySettled\":").Append(F(steadySettled, 1))
                 .Append(",\"steadyMinPairDist\":").Append(F(steadyMinPair, 3))
+                .Append(",\"chaser\":").Append(chaser)
+                .Append(",\"charger\":").Append(charger)
+                .Append(",\"flanker\":").Append(flanker)
+                .Append(",\"charging\":").Append(charging)
+                .Append(",\"flanking\":").Append(flanking)
+                .Append(",\"capBlocked\":").Append(_spawner != null ? _spawner.CapBlockedCount : 0)
+                .Append(",\"capRecycled\":").Append(_spawner != null ? _spawner.CapRecycledCount : 0)
+                .Append(",\"recycled\":").Append(_spawner != null ? _spawner.RecycleCount : 0)
                 .Append(",\"totalAllocMB\":").Append(F(_allocTotal / 1048576f, 2))
                 .Append(",\"heapKB\":").Append(GC.GetTotalMemory(false) / 1024)
                 .Append(",\"wasmMB\":").Append(F(GetWasmHeapBytes() / 1048576f, 1))
@@ -785,7 +935,11 @@ namespace Survival.Core
                 .Append(",\"invincible\":").Append(_invincible ? "true" : "false")
                 .Append(",\"roundDuration\":").Append(F(_manager != null && _manager.Config != null ? _manager.Config.RoundDuration : 0f, 0))
                 .Append(",\"perfSeconds\":").Append(F(_perfSeconds, 0))
-                .Append(",\"autostart\":").Append(_autoStart ? "true" : "false");
+                .Append(",\"autostart\":").Append(_autoStart ? "true" : "false")
+                .Append(",\"quiet\":").Append(_quiet ? "true" : "false")
+                .Append(",\"noHud\":").Append(_noHud ? "true" : "false")
+                .Append(",\"walk\":").Append(_walk ? "true" : "false")
+                .Append(",\"spawnOps\":").Append(_spawnOps);
         }
 
         // ---------- HUD（真机） ----------
