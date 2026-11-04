@@ -19,6 +19,8 @@ namespace Survival.Enemy
         [SerializeField] private EnemyKind _kind = EnemyKind.Chaser;
         [SerializeField] private string _displayName = "追击者";
         [SerializeField] private Sprite _sprite;
+        [Tooltip("冲锋者前摇专用 sprite（同轮廓黄色）；为空时回退基图 + 黄色 tint。")]
+        [SerializeField] private Sprite _chargeWindupSprite;
         [Tooltip("SpriteRenderer.color；三种敌人各有独立轮廓素材，再叠加颜色区分。")]
         [SerializeField] private Color _tint = new Color(1f, 1f, 1f, 1f);
         [Tooltip("仅视觉缩放；碰撞半径/停距不变。")]
@@ -34,8 +36,8 @@ namespace Survival.Enemy
         [SerializeField] private float _chargeWindupSeconds = 0.45f;
         [Tooltip("冲刺距离（世界单位）；时长 = 距离 / 实际冲刺速度（含难度倍率），不再写死秒数。")]
         [SerializeField] private float _chargeDistance = 7f;
-        [Tooltip("冲刺速度；不受 EnemySpeedMax 限制，仍乘难度速度倍率。")]
-        [SerializeField] private float _chargeSpeed = 6f;
+        [Tooltip("冲刺速度回退值；难度档案有绝对速度（ChargeSpeed>0）时优先用档案，不再乘任何倍率。")]
+        [SerializeField] private float _chargeSpeed = 4.5f;
         [Tooltip("冲刺后恢复秒数（停止、恢复颜色/缩放）。")]
         [SerializeField] private float _chargeRecoverSeconds = 0.8f;
         [Tooltip("恢复后的冷却秒数；冷却中只接近，不进入前摇。")]
@@ -56,6 +58,7 @@ namespace Survival.Enemy
         public EnemyKind Kind => _kind;
         public string DisplayName => _displayName;
         public Sprite Sprite => _sprite;
+        public Sprite ChargeWindupSprite => _chargeWindupSprite;
         public Color Tint => _tint;
         public float VisualScale => _visualScale;
         public float MoveSpeed => _moveSpeed;

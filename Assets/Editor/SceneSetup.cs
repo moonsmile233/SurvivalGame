@@ -34,6 +34,7 @@ public static class SceneSetup
     private const string PlayerSpritePath = "Assets/Sprites/spr_player.png";
     private const string EnemySpritePath = "Assets/Sprites/spr_enemy.png";
     private const string ChargerSpritePath = "Assets/Sprites/spr_enemy_charger.png";
+    private const string ChargerWindupSpritePath = "Assets/Sprites/spr_enemy_charger_windup.png";
     private const string FlankerSpritePath = "Assets/Sprites/spr_enemy_flanker.png";
     private const string UiSpritePath = "Assets/Sprites/ui_white.png";
     private const string FontAssetPath = FontAssetBuilder.OutputPath;
@@ -83,9 +84,10 @@ public static class SceneSetup
         Sprite playerSprite = EnsureSprite(PlayerSpritePath, CreatePlayerTexture(), false);
         Sprite enemySprite = EnsureSprite(EnemySpritePath, CreateEnemyTexture(), false);
         Sprite chargerSprite = EnsureSprite(ChargerSpritePath, CreateChargerTexture(), false);
+        Sprite chargerWindupSprite = EnsureSprite(ChargerWindupSpritePath, CreateChargerWindupTexture(), false);
         Sprite flankerSprite = EnsureSprite(FlankerSpritePath, CreateFlankerTexture(), false);
         EnsureSprite(UiSpritePath, CreateWhiteTexture(), false);
-        EnsureEnemyDefinitions(enemySprite, chargerSprite, flankerSprite);
+        EnsureEnemyDefinitions(enemySprite, chargerSprite, chargerWindupSprite, flankerSprite);
 
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -685,17 +687,17 @@ public static class SceneSetup
 
         var profiles = new DifficultyProfile[3];
         profiles[(int)Difficulty.Easy] = EnsureDifficultyProfile(
-            DifficultyEasyPath, Difficulty.Easy, speed: 0.90f, spawn: 1.20f, damage: 0.80f, limit: 14, pressure: 1.10f, score: 1.0f,
+            DifficultyEasyPath, Difficulty.Easy, speed: 0.90f, chargeSpeed: 4.0f, spawn: 1.20f, damage: 0.80f, limit: 14, pressure: 1.10f, score: 1.0f,
             chargerUnlock: 25f, flankerUnlock: 45f,
             earlyChaser: 1.00f, midChaser: 0.85f, midCharger: 0.15f,
             lateChaser: 0.70f, lateCharger: 0.20f, lateFlanker: 0.10f);
         profiles[(int)Difficulty.Normal] = EnsureDifficultyProfile(
-            DifficultyNormalPath, Difficulty.Normal, speed: 1.00f, spawn: 1.00f, damage: 1.00f, limit: 20, pressure: 1.15f, score: 1.3f,
+            DifficultyNormalPath, Difficulty.Normal, speed: 1.00f, chargeSpeed: 4.5f, spawn: 1.00f, damage: 1.00f, limit: 20, pressure: 1.15f, score: 1.3f,
             chargerUnlock: 15f, flankerUnlock: 35f,
             earlyChaser: 1.00f, midChaser: 0.75f, midCharger: 0.25f,
             lateChaser: 0.55f, lateCharger: 0.30f, lateFlanker: 0.15f);
         profiles[(int)Difficulty.Hard] = EnsureDifficultyProfile(
-            DifficultyHardPath, Difficulty.Hard, speed: 1.10f, spawn: 0.85f, damage: 1.15f, limit: 20, pressure: 1.20f, score: 1.6f,
+            DifficultyHardPath, Difficulty.Hard, speed: 1.10f, chargeSpeed: 5.0f, spawn: 0.85f, damage: 1.15f, limit: 20, pressure: 1.20f, score: 1.6f,
             chargerUnlock: 10f, flankerUnlock: 25f,
             earlyChaser: 1.00f, midChaser: 0.65f, midCharger: 0.35f,
             lateChaser: 0.45f, lateCharger: 0.35f, lateFlanker: 0.20f);
@@ -709,6 +711,7 @@ public static class SceneSetup
         string path,
         Difficulty id,
         float speed,
+        float chargeSpeed,
         float spawn,
         float damage,
         int limit,
@@ -748,6 +751,7 @@ public static class SceneSetup
         var serialized = new SerializedObject(profile);
         serialized.FindProperty("_id").intValue = (int)id;
         serialized.FindProperty("_enemySpeedMultiplier").floatValue = speed;
+        serialized.FindProperty("_chargeSpeed").floatValue = chargeSpeed;
         serialized.FindProperty("_spawnIntervalMultiplier").floatValue = spawn;
         serialized.FindProperty("_damageMultiplier").floatValue = damage;
         serialized.FindProperty("_enemyLimit").intValue = limit;
@@ -788,17 +792,19 @@ public static class SceneSetup
     /// 已存在时只重指精灵、修正 _kind/_displayName（结构字段），不覆盖 Inspector 里调过的
     /// 速度/伤害/tint/scale 与冲锋/绕行参数。
     /// </summary>
-    private static void EnsureEnemyDefinitions(Sprite chaserSprite, Sprite chargerSprite, Sprite flankerSprite)
+    private static void EnsureEnemyDefinitions(Sprite chaserSprite, Sprite chargerSprite, Sprite chargerWindupSprite,
+        Sprite flankerSprite)
     {
         EnsureFolder(ConfigFolder);
 
-        EnsureEnemyDefinition(EnemyChaserPath, EnemyKind.Chaser, "追击者", chaserSprite);
-        EnsureEnemyDefinition(EnemyChargerPath, EnemyKind.Charger, "冲锋者", chargerSprite);
-        EnsureEnemyDefinition(EnemyFlankerPath, EnemyKind.Flanker, "绕行者", flankerSprite);
+        EnsureEnemyDefinition(EnemyChaserPath, EnemyKind.Chaser, "追击者", chaserSprite, null);
+        EnsureEnemyDefinition(EnemyChargerPath, EnemyKind.Charger, "冲锋者", chargerSprite, chargerWindupSprite);
+        EnsureEnemyDefinition(EnemyFlankerPath, EnemyKind.Flanker, "绕行者", flankerSprite, null);
         AssetDatabase.SaveAssets();
     }
 
-    private static void EnsureEnemyDefinition(string path, EnemyKind kind, string displayName, Sprite sprite)
+    private static void EnsureEnemyDefinition(string path, EnemyKind kind, string displayName, Sprite sprite,
+        Sprite chargeWindupSprite)
     {
         var definition = AssetDatabase.LoadAssetAtPath<EnemyDefinition>(path);
         bool created = false;
@@ -814,6 +820,7 @@ public static class SceneSetup
         serialized.FindProperty("_kind").intValue = (int)kind;
         serialized.FindProperty("_displayName").stringValue = displayName;
         serialized.FindProperty("_sprite").objectReferenceValue = sprite;
+        serialized.FindProperty("_chargeWindupSprite").objectReferenceValue = chargeWindupSprite;
 
         if (created)
         {
@@ -834,12 +841,12 @@ public static class SceneSetup
         {
             case EnemyKind.Charger:
                 serialized.FindProperty("_moveSpeed").floatValue = 1.5f;
-                serialized.FindProperty("_tint").colorValue = new Color(1f, 0.3f, 0.3f, 1f);
+                serialized.FindProperty("_tint").colorValue = new Color(1f, 1f, 1f, 1f);
                 serialized.FindProperty("_visualScale").floatValue = 1.05f;
                 serialized.FindProperty("_chargeTriggerDistance").floatValue = 2.8f;
                 serialized.FindProperty("_chargeWindupSeconds").floatValue = 0.45f;
                 serialized.FindProperty("_chargeDistance").floatValue = 7f;
-                serialized.FindProperty("_chargeSpeed").floatValue = 6f;
+                serialized.FindProperty("_chargeSpeed").floatValue = 4.5f;
                 serialized.FindProperty("_chargeRecoverSeconds").floatValue = 0.8f;
                 serialized.FindProperty("_chargeCooldownSeconds").floatValue = 1.5f;
                 serialized.FindProperty("_chargeDamage").intValue = 15;
@@ -847,7 +854,7 @@ public static class SceneSetup
 
             case EnemyKind.Flanker:
                 serialized.FindProperty("_moveSpeed").floatValue = 1.9f;
-                serialized.FindProperty("_tint").colorValue = new Color(0.72f, 0.4f, 1f, 1f);
+                serialized.FindProperty("_tint").colorValue = new Color(1f, 1f, 1f, 1f);
                 serialized.FindProperty("_visualScale").floatValue = 0.95f;
                 serialized.FindProperty("_flankRadius").floatValue = 2.4f;
                 serialized.FindProperty("_flankAngleDegrees").floatValue = 135f;
@@ -1014,14 +1021,12 @@ public static class SceneSetup
     }
 
     /// <summary>
-    /// 冲锋者：向上的箭头（宽三角头 + 短柄 + 两侧小翼）。白色主体 + 浅灰内芯，
-    /// 让 SpriteRenderer.color 仍能把前摇染黄、冲刺染红。
+    /// 三种敌人共用同一圆形轮廓（与 spr_enemy.png 一致），只把颜色烤进各自 PNG。
+    /// 颜色烤进图片后 SpriteRenderer.color 保持白色，避免 tint 二次相乘把颜色压暗。
     /// </summary>
-    private static Texture2D CreateChargerTexture()
+    private static Texture2D CreateEnemyCircleTexture(Color32 body, Color32 core)
     {
         const int size = 32;
-        var body = new Color32(0xFF, 0xFF, 0xFF, 0xFF);
-        var core = new Color32(0xD2, 0xD2, 0xD2, 0xFF);
         var pixels = new Color32[size * size];
 
         for (int y = 0; y < size; y++)
@@ -1030,58 +1035,46 @@ public static class SceneSetup
             {
                 float dx = x + 0.5f - 16f;
                 float dy = y + 0.5f - 16f;
+                float distance = Mathf.Sqrt(dx * dx + dy * dy);
 
-                // 箭头头部：从 y≈14 的宽底收尖到 y≈29。
-                bool head = dy >= -2f && dy <= 13f && Mathf.Abs(dx) <= 1.5f + (13f - dy) * 0.8f;
-                bool stem = Mathf.Abs(dx) <= 4f && dy >= -13f && dy <= 0f;
-                bool finLeft = dx >= -11.5f && dx <= -6f && dy >= -1f && dy <= 4f;
-                bool finRight = dx >= 6f && dx <= 11.5f && dy >= -1f && dy <= 4f;
-                bool shape = head || stem || finLeft || finRight;
-
-                if (!shape)
+                if (distance <= 6.5f)
+                {
+                    pixels[y * size + x] = core;
+                }
+                else if (distance <= 13.5f)
+                {
+                    pixels[y * size + x] = body;
+                }
+                else
                 {
                     pixels[y * size + x] = new Color32(0, 0, 0, 0);
-                    continue;
                 }
-
-                bool inner = Mathf.Abs(dx) <= 2f && dy >= -9f && dy <= 9f;
-                pixels[y * size + x] = inner ? core : body;
             }
         }
 
         return BuildTexture(size, pixels);
     }
 
-    /// <summary>
-    /// 绕行者：四角飞镖（菱形轮廓 + 内凹边）。指数 &lt;1 让边向内凹，
-    /// 在 32px 下和圆形的追击者、箭头的冲锋者轮廓明显不同。
-    /// </summary>
+    private static Texture2D CreateChargerTexture()
+    {
+        return CreateEnemyCircleTexture(
+            new Color32(0xD9, 0x3A, 0x3A, 0xFF),
+            new Color32(0xFF, 0x8A, 0x8A, 0xFF));
+    }
+
+    /// <summary>前摇专用黄色同轮廓图：颜色烤进 PNG，Windup 期间换图而不是乘 tint。</summary>
+    private static Texture2D CreateChargerWindupTexture()
+    {
+        return CreateEnemyCircleTexture(
+            new Color32(0xE6, 0xC2, 0x2E, 0xFF),
+            new Color32(0xFF, 0xF0, 0x8A, 0xFF));
+    }
+
     private static Texture2D CreateFlankerTexture()
     {
-        const int size = 32;
-        var body = new Color32(0xFF, 0xFF, 0xFF, 0xFF);
-        var core = new Color32(0xD2, 0xD2, 0xD2, 0xFF);
-        var pixels = new Color32[size * size];
-
-        for (int y = 0; y < size; y++)
-        {
-            for (int x = 0; x < size; x++)
-            {
-                float dx = x + 0.5f - 16f;
-                float dy = y + 0.5f - 16f;
-                float dart = Mathf.Pow(Mathf.Abs(dx) / 15f, 0.62f) + Mathf.Pow(Mathf.Abs(dy) / 15f, 0.62f);
-                if (dart > 1f)
-                {
-                    pixels[y * size + x] = new Color32(0, 0, 0, 0);
-                    continue;
-                }
-
-                bool inner = Mathf.Abs(dx) + Mathf.Abs(dy) <= 5.5f;
-                pixels[y * size + x] = inner ? core : body;
-            }
-        }
-
-        return BuildTexture(size, pixels);
+        return CreateEnemyCircleTexture(
+            new Color32(0x8A, 0x4A, 0xD9, 0xFF),
+            new Color32(0xC9, 0xA8, 0xFF, 0xFF));
     }
 
     private static Texture2D BuildTexture(int size, Color32[] pixels)

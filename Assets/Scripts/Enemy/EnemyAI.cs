@@ -70,6 +70,8 @@ namespace Survival.Enemy
 
         private EnemyKind _kind;
         private SpriteRenderer _spriteRenderer;
+        private Sprite _baseSprite;
+        private Sprite _chargeWindupSprite;
         private Color _baseTint = Color.white;
         private Vector3 _baseScale = Vector3.one;
 
@@ -95,7 +97,6 @@ namespace Survival.Enemy
         private static bool s_logChargerStates;
 
         private static readonly Color ChargerWindupTint = new Color(1f, 0.85f, 0.2f, 1f);
-        private static readonly Color ChargerDashTint = new Color(1f, 0.1f, 0.05f, 1f);
 
         // 绕行者进入“侧绕计时”的距离：从出生点 11.7u 赶来不算侧绕时间，否则 6s 会在半路耗尽。
         private const float FlankEngageDistance = 4.5f;
@@ -196,6 +197,8 @@ namespace Survival.Enemy
             _kind = definition != null ? definition.Kind : EnemyKind.Chaser;
             _spriteRenderer = spriteRenderer != null ? spriteRenderer : GetComponent<SpriteRenderer>();
             _baseTint = _spriteRenderer != null ? _spriteRenderer.color : Color.white;
+            _baseSprite = _spriteRenderer != null ? _spriteRenderer.sprite : null;
+            _chargeWindupSprite = definition != null ? definition.ChargeWindupSprite : null;
             _baseScale = transform.localScale;
             if (_baseScale.sqrMagnitude <= 0.000001f)
             {
@@ -222,7 +225,9 @@ namespace Survival.Enemy
                 // 也**不受 EnemySpeedMax（2.2）限制**——这是冲锋的固定路径速度。
                 _chargeTriggerDistance = definition.ChargeTriggerDistance;
                 _chargeWindupSeconds = Mathf.Max(0.05f, definition.ChargeWindupSeconds);
-                _chargeSpeed = definition.ChargeSpeed * config.EnemySpeedMultiplier;
+                // 冲刺用难度档案的绝对速度（4.0/4.5/5.0），不再乘 EnemySpeedMultiplier，避免二次缩放。
+                float profileChargeSpeed = config.ActiveProfile != null ? config.ActiveProfile.ChargeSpeed : 0f;
+                _chargeSpeed = profileChargeSpeed > 0f ? profileChargeSpeed : definition.ChargeSpeed;
                 _chargeDistance = Mathf.Max(0.1f, definition.ChargeDistance);
                 // 时长由距离/实际速度推导；三档难度都保证冲刺覆盖配置距离，不再写死 0.45s。
                 _chargeDurationSeconds = _chargeDistance / Mathf.Max(0.01f, _chargeSpeed);
@@ -502,14 +507,18 @@ namespace Survival.Enemy
             {
                 case ChargerState.Approach:
                     _chargerTimer = 0f;
-                    SetChargerVisual(_baseTint, 1f);
+                    SetChargerSprite(_baseSprite, _baseTint, 1f);
                     break;
 
                 case ChargerState.Windup:
                     _chargerTimer = _chargeWindupSeconds;
                     _velocity = Vector2.zero;
                     _emergencyVelocity = Vector2.zero;
-                    SetChargerVisual(ChargerWindupTint, 1.2f);
+                    // 前摇换黄色同轮廓图；旧资产没有 windup sprite 时回退 tint 方案。
+                    SetChargerSprite(
+                        _chargeWindupSprite != null ? _chargeWindupSprite : _baseSprite,
+                        _chargeWindupSprite != null ? Color.white : ChargerWindupTint,
+                        1.2f);
                     break;
 
                 case ChargerState.Dash:
@@ -521,19 +530,19 @@ namespace Survival.Enemy
                     _blockW = 0f;
                     _dashStartPosition = transform.position;
                     _dashElapsed = 0f;
-                    SetChargerVisual(ChargerDashTint, 1.15f);
+                    SetChargerSprite(_baseSprite, _baseTint, 1.15f);
                     break;
 
                 case ChargerState.Recover:
                     _chargerTimer = _chargeRecoverSeconds;
                     _velocity = Vector2.zero;
                     _emergencyVelocity = Vector2.zero;
-                    SetChargerVisual(_baseTint, 1f);
+                    SetChargerSprite(_baseSprite, _baseTint, 1f);
                     break;
 
                 case ChargerState.Cooldown:
                     _chargerTimer = _chargeCooldownSeconds;
-                    SetChargerVisual(_baseTint, 1f);
+                    SetChargerSprite(_baseSprite, _baseTint, 1f);
                     break;
             }
 
@@ -602,10 +611,15 @@ namespace Survival.Enemy
                       $"speed={_chargeSpeed:F2} planned={_chargeDistance:F2}");
         }
 
-        private void SetChargerVisual(Color tint, float scaleMultiplier)
+        /// <summary>
+        /// Charger 视觉：颜色已烤进 sprite，只换图 + 缩放；tint 保持白色。
+        /// Windup 用黄色专用图，Dash 用红色基图，其余恢复基图。
+        /// </summary>
+        private void SetChargerSprite(Sprite sprite, Color tint, float scaleMultiplier)
         {
             if (_spriteRenderer != null)
             {
+                _spriteRenderer.sprite = sprite != null ? sprite : _baseSprite;
                 _spriteRenderer.color = tint;
             }
 

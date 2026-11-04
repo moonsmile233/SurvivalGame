@@ -15,7 +15,8 @@ MonoBehaviour:
   _kind: 2
   _displayName: "\u7ED5\u884C\u8005"
   _sprite: {fileID: 21300000, guid: 6ad94be4666606349ae83e952ca21d4b, type: 3}
-  _tint: {r: 0.72, g: 0.4, b: 1, a: 1}
+  _chargeWindupSprite: {fileID: 0}
+  _tint: {r: 1, g: 1, b: 1, a: 1}
   _visualScale: 0.95
   _moveSpeed: 1.9
   _contactDamage: 12

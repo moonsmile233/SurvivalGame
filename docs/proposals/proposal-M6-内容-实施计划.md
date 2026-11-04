@@ -1,6 +1,6 @@
 # M6 内容扩展实施计划：冲锋者 / 绕行者 / 计分改造 / 回归
 
-> 文档版本：2026-11-04T19:50+08 · 作者：程序 · 状态：**C4.1 已按用户试玩反馈修正（独立敌人 sprite；Charger 6.0/7.0u）；C5 待放行**
+> 文档版本：2026-11-04T20:15+08 · 作者：程序 · 状态：**C4.2 已按第二轮试玩修正（同轮廓独立 PNG；Charger 4.0/4.5/5.0 绝对速度 + 7.0u）；C5 待放行**
 > 依据：`docs/tickets/M6-内容扩展.md` §3–§5、`docs/proposals/proposal-M6-重构-游戏优先-v1.2.md`、`docs/参考拆解.md` §2.6；
 > 策划 2026-11-02 跨会话指令（敌人种类 → 计分改造 → 全量回归）。
 > 基线：`main = wip = 198f1a6e`（v1.2.1 已部署线上）；`@` 空；**本计划只进 wip，不动 main、不部署、不发 Release**。
@@ -9,8 +9,8 @@
 ## 0. 摘要
 
 1. **敌人从 1 种扩到 3 种**：保留 Chaser，新增 **Charger（冲锋）** 与 **Flanker（绕行）**；全部沿用现有
-   网格邻居 / 对象生成 / 回收 / 软墙管线，不新增每帧分配；Charger/Flanker 各有独立 32×32 轮廓素材（C4.1），
-   不再是同一张 sprite 换色。
+   网格邻居 / 对象生成 / 回收 / 软墙管线，不新增每帧分配；三种敌人**同圆形轮廓、独立 32×32 PNG**
+   （Chaser 原图、Charger 红、Flanker 紫，颜色烤进图；Charger 另有黄色前摇图），不再是同一张图换色。
 2. **生成按时间解锁 + 难度权重**：权重与解锁时间进 `DifficultyProfile`，Spawner 只做查表加权；
    到同屏上限时**回收视野外最远敌人并立即补位**，不静默停刷；远处回收 3s → **1.5s**。
    上限按 D1 为 **简单 14 / 普通 30 / 困难 50**（C5 写入资产；C1–C4 仍 14/20/20）。
@@ -63,7 +63,7 @@ public enum EnemyKind { Chaser = 0, Charger = 1, Flanker = 2 }
 | 字段 | 默认 | 用途 |
 |---|---|---|
 | `_kind` | Chaser | 选择行为分支；Chaser 资产保持 0，兼容旧资产 |
-| `_tint` | 白 | SpriteRenderer.color；三种敌人各有独立轮廓素材，再叠加颜色区分 |
+| `_tint` | 白 | SpriteRenderer.color；颜色已烤进各自 PNG，tint 保持白色避免二次相乘 |
 | `_visualScale` | 1.0 | 仅视觉缩放；**碰撞半径/停距不变** |
 | `_moveSpeed` | 1.8 / 1.5 / 1.9 | 追击 / 冲锋接近 / 绕行 |
 | `_contactDamage` | 12 | 普通接触伤害（三档都乘难度伤害倍率） |
@@ -71,7 +71,7 @@ public enum EnemyKind { Chaser = 0, Charger = 1, Flanker = 2 }
 | `_chargeTriggerDistance` | 4.5 | Charger 进入前摇的距离 |
 | `_chargeWindupSeconds` | 0.45 | 前摇；≥0.4s，可读 |
 | `_chargeDistance` | 7.0 | 冲刺距离；时长 = 距离 / 实际冲刺速度（含难度倍率） |
-| `_chargeSpeed` | 6.0 | 冲刺速度；**不受 `EnemySpeedMax=2.2` 限制**，乘难度速度倍率（5.4 / 6.0 / 6.6） |
+| `_chargeSpeed` | 4.5 | 冲刺速度 fallback；难度档案 `_chargeSpeed`（4.0/4.5/5.0）优先，**不再乘任何倍率**、不受 `EnemySpeedMax=2.2` 限制 |
 | `_chargeRecoverSeconds` | 0.8 | 冲刺后恢复 |
 | `_chargeCooldownSeconds` | 1.5 | 恢复后冷却 |
 | `_chargeDamage` | 15 | 冲刺伤害；每次冲刺最多结算一次 |
@@ -112,7 +112,7 @@ public enum EnemyKind { Chaser = 0, Charger = 1, Flanker = 2 }
 |---|---|---|---|---|
 | Approach | 初始 / 冷却结束 | 1.5 × 难度速度倍率 | seek 玩家；走普通软墙/让位 | 距离 ≤ 4.5 → Windup |
 | Windup | Approach 触发 | 0.45s；速度 0 | 停止；颜色渐变到橙红、缩放 1.0→1.2 | 计时结束 → Dash |
-| Dash | Windup 结束 | 距离 7.0u（时长 = 距离 / 实际速度，约 1.30 / 1.17 / 1.06s）；6.0 × 难度速度倍率 | **方向在 Dash 开始时锁定**，直线冲刺；不转向、不受 `EnemySpeedMax` 限制 | 距离走完 / 撞地图边界 → Recover |
+| Dash | Windup 结束 | 距离 7.0u；绝对速度 4.0 / 4.5 / 5.0（时长 1.75 / 1.56 / 1.40s） | **方向在 Dash 开始时锁定**，直线冲刺；不转向、不受 `EnemySpeedMax` 限制 | 距离走完 / 撞地图边界 → Recover |
 | Recover | Dash 结束 | 0.8s；速度 0 | 停止；颜色/缩放恢复 | 计时结束 → Cooldown |
 | Cooldown | Recover 结束 | 1.5s；1.5 × 难度速度倍率 | seek 玩家 | 计时结束 → Approach |
 
@@ -122,7 +122,7 @@ public enum EnemyKind { Chaser = 0, Charger = 1, Flanker = 2 }
 - Dash 接触 = `ChargeDamage` 15 × 难度伤害倍率，四舍五入、最小 1；**同一次冲刺最多结算一次**。
 - 实现：Dash 开始时 `_chargeHitDone = false`；`OnTriggerStay2D` 在 Dash 期间首次接触就置 true（即使玩家处于无敌帧，
   本次冲刺也不再尝试第二次）；其余状态走普通接触伤害。无敌帧仍由 `PlayerHealth` 统一处理。
-- 冲刺速度不加随机扰动、不吃压力曲线：前摇/路径/速度必须稳定可读；难度速度倍率仍生效（困难 6.0×1.1=6.6）。
+- 冲刺速度不加随机扰动、不吃压力曲线：前摇/路径/速度必须稳定可读；用难度档案的绝对速度（4.0/4.5/5.0），不再乘速度倍率。
 
 **边界与拥挤**：
 
@@ -136,9 +136,9 @@ public enum EnemyKind { Chaser = 0, Charger = 1, Flanker = 2 }
 **可读性 / 公平性**：
 
 - 前摇 0.45s ≥ 0.4s；颜色 + 缩放双通道提示；冲刺方向在 Dash 开始才锁定（前摇中不锁）。
-- 冲刺 6.0 × 难度速度倍率（5.4 / 6.0 / 6.6，三档都快于玩家 3.2）；距离 7.0u（时长 = 距离 / 实际速度），
+- 冲刺绝对速度 4.0 / 4.5 / 5.0（三档都快于玩家 3.2）；距离 7.0u（时长 1.75 / 1.56 / 1.40s），
   路径固定、有边界终点；横向闪避可躲。前摇不可读就回退该敌人（M6 §8）。
-- 独立箭头 sprite（白色底 + tint）：前摇染黄、冲刺染红，视觉缩放 1.05。
+- 同圆形轮廓的独立 PNG：基图红、前摇换黄色专用图、冲刺红 + 1.15 缩放，视觉缩放 1.05。
 
 ### 2.4 Flanker（绕行）
 
@@ -161,7 +161,7 @@ public enum EnemyKind { Chaser = 0, Charger = 1, Flanker = 2 }
 
 **伤害**：始终普通接触 12 × 难度倍率；没有冲刺/远程。
 
-**可读性**：独立紫色四角飞镖 sprite（白色底 + tint）、视觉缩放 0.95；碰撞半径 0.38 不变。
+**可读性**：同圆形轮廓的独立紫色 PNG（颜色烤进图、tint 白）、视觉缩放 0.95；碰撞半径 0.38 不变。
 
 ### 2.5 与现有拥挤手感的兼容
 
@@ -359,7 +359,7 @@ Unity 结算不显示最高分；`onGameOver` 只单向传分。恢复“同难�
   不静默降回 20（D1）。
 - 无每帧托管分配：`EnemyAI.Update` / `EnemySpawner.Update` 不新增 LINQ/数组/闭包/字符串拼接；
   Charger/Flanker 的状态切换不加 `GetComponent`/`Find`。
-- 包体：仅新增两枚 32×32 PNG（<2KB）；相对 1.2.1（9,651,481 B）增长 ≤0.3MB。
+- 包体：仅新增三枚 32×32 PNG（<3KB）；相对 1.2.1（9,651,481 B）增长 ≤0.3MB。
 - 中端手机 ≥30 FPS：仍待 Honor 90 Pro 实测，本计划只记录、不宣称。
 - 探针命令（沿用现有 `PerfProbe`）：
   `?perf=1&autostart=1&enemyLimit=40&enemyMix=1&roundDuration=600&perfSeconds=90&invincible=1`

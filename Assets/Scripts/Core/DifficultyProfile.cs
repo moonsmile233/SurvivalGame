@@ -16,6 +16,10 @@ namespace Survival.Core
         [Tooltip("敌人基础速度乘区。生成时算一次，不进 AI 热路径；最终仍受 GameConfig.EnemySpeedMax 上限约束。")]
         [SerializeField] private float _enemySpeedMultiplier = 1f;
 
+        // 冲锋冲刺用绝对速度（4.0/4.5/5.0），故意不再乘 _enemySpeedMultiplier，避免二次缩放。
+        [Tooltip("冲锋者冲刺绝对速度（世界单位/秒）；≤0 时回退 EnemyDefinition._chargeSpeed。")]
+        [SerializeField] private float _chargeSpeed = -1f;
+
         [Tooltip("生成间隔乘区：>1 更慢、<1 更快；乘完再钳到 GameConfig.SpawnIntervalMin。")]
         [SerializeField] private float _spawnIntervalMultiplier = 1f;
 
@@ -55,6 +59,7 @@ namespace Survival.Core
 
         public Difficulty Id => _id;
         public float EnemySpeedMultiplier => _enemySpeedMultiplier;
+        public float ChargeSpeed => _chargeSpeed;
         public float SpawnIntervalMultiplier => _spawnIntervalMultiplier;
         public float DamageMultiplier => _damageMultiplier;
         public int EnemyLimit => _enemyLimit;

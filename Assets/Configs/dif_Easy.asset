@@ -14,6 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Survival.Core.DifficultyProfile
   _id: 0
   _enemySpeedMultiplier: 0.9
+  _chargeSpeed: 4
   _spawnIntervalMultiplier: 1.2
   _damageMultiplier: 0.8
   _enemyLimit: 14

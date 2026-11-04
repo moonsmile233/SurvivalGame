@@ -15,7 +15,8 @@ MonoBehaviour:
   _kind: 1
   _displayName: "\u51B2\u950B\u8005"
   _sprite: {fileID: 21300000, guid: b89fc95cee2fd4c45b6e37598a303683, type: 3}
-  _tint: {r: 1, g: 0.3, b: 0.3, a: 1}
+  _chargeWindupSprite: {fileID: 21300000, guid: 4f5b715034ac71044962a10874d47d37, type: 3}
+  _tint: {r: 1, g: 1, b: 1, a: 1}
   _visualScale: 1.05
   _moveSpeed: 1.5
   _contactDamage: 12
@@ -23,7 +24,7 @@ MonoBehaviour:
   _chargeTriggerDistance: 2.8
   _chargeWindupSeconds: 0.45
   _chargeDistance: 7
-  _chargeSpeed: 6
+  _chargeSpeed: 4.5
   _chargeRecoverSeconds: 0.8
   _chargeCooldownSeconds: 1.5
   _chargeDamage: 15
