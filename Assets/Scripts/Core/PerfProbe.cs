@@ -96,6 +96,7 @@ namespace Survival.Core
         private bool _invincible;
         private bool _drawHud;
         private bool _autoStart;
+        private Difficulty _difficulty = Difficulty.Normal;
         private float _perfSeconds = 90f;
 
         private float _elapsed;
@@ -141,6 +142,7 @@ namespace Survival.Core
             _autoStart = ParseInt(query, "autostart") == 1;
             _forcedKind = ParseEnemyKind(query);
             _flankTimeoutOverride = ParseFloat(query, "flankTimeout");
+            _difficulty = ParseDifficulty(query);
             float seconds = ParseFloat(query, "perfSeconds");
             if (seconds > 0f)
             {
@@ -218,7 +220,7 @@ namespace Survival.Core
                     if (_manager != null && _manager.State == GameState.Menu)
                     {
                         // 压测口径：绕过 3-2-1，直接 Playing（策划裁决 2026-11-01 B）。
-                        _manager.StartGameImmediate(Difficulty.Normal);
+                        _manager.StartGameImmediate(_difficulty);
                         Debug.Log("[PERF] autostart -> Playing (immediate)");
                     }
                 }
@@ -945,6 +947,28 @@ namespace Survival.Core
                 default:
                     Debug.LogWarning($"[PERF] 未知 enemyKind={value}，忽略。");
                     return null;
+            }
+        }
+
+        /// <summary>?difficulty=easy|normal|hard；只给探针按档验证速度/上限，非法值回退 Normal。</summary>
+        private static Difficulty ParseDifficulty(Dictionary<string, string> query)
+        {
+            if (!query.TryGetValue("difficulty", out string value) || string.IsNullOrEmpty(value))
+            {
+                return Difficulty.Normal;
+            }
+
+            switch (value.ToLowerInvariant())
+            {
+                case "easy":
+                    return Difficulty.Easy;
+                case "normal":
+                    return Difficulty.Normal;
+                case "hard":
+                    return Difficulty.Hard;
+                default:
+                    Debug.LogWarning($"[PERF] 未知 difficulty={value}，回退 Normal。");
+                    return Difficulty.Normal;
             }
         }
 

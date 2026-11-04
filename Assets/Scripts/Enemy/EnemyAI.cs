@@ -76,6 +76,7 @@ namespace Survival.Enemy
         private float _chargeTriggerDistance;
         private float _chargeWindupSeconds;
         private float _chargeDurationSeconds;
+        private float _chargeDistance;
         private float _chargeSpeed;
         private float _chargeRecoverSeconds;
         private float _chargeCooldownSeconds;
@@ -86,6 +87,9 @@ namespace Survival.Enemy
         private Vector2 _chargeDirection = Vector2.up;
         private bool _chargeHitDone;
         private bool _chargeStartedInsideMap;
+        // 冲刺探针：起终点与实际距离/时长（只在 s_logChargerStates 下写字符串）。
+        private Vector2 _dashStartPosition;
+        private float _dashElapsed;
 
         // 只由 PerfProbe 的 ?enemyKind=charger 打开：状态切换打一行 console，供 E2E 抓 Windup/Dash 截图。
         private static bool s_logChargerStates;
@@ -218,8 +222,10 @@ namespace Survival.Enemy
                 // 也**不受 EnemySpeedMax（2.2）限制**——这是冲锋的固定路径速度。
                 _chargeTriggerDistance = definition.ChargeTriggerDistance;
                 _chargeWindupSeconds = Mathf.Max(0.05f, definition.ChargeWindupSeconds);
-                _chargeDurationSeconds = Mathf.Max(0.05f, definition.ChargeDurationSeconds);
                 _chargeSpeed = definition.ChargeSpeed * config.EnemySpeedMultiplier;
+                _chargeDistance = Mathf.Max(0.1f, definition.ChargeDistance);
+                // 时长由距离/实际速度推导；三档难度都保证冲刺覆盖配置距离，不再写死 0.45s。
+                _chargeDurationSeconds = _chargeDistance / Mathf.Max(0.01f, _chargeSpeed);
                 _chargeRecoverSeconds = Mathf.Max(0f, definition.ChargeRecoverSeconds);
                 _chargeCooldownSeconds = Mathf.Max(0f, definition.ChargeCooldownSeconds);
                 _chargeDamage = Mathf.Max(1, Mathf.RoundToInt(definition.ChargeDamage * config.DamageMultiplier));
@@ -513,6 +519,8 @@ namespace Survival.Enemy
                     FrontBlock = 0f;
                     BehindBlock = 0f;
                     _blockW = 0f;
+                    _dashStartPosition = transform.position;
+                    _dashElapsed = 0f;
                     SetChargerVisual(ChargerDashTint, 1.15f);
                     break;
 
@@ -532,7 +540,10 @@ namespace Survival.Enemy
             if (s_logChargerStates)
             {
                 float elapsed = _spawner != null ? _spawner.RoundElapsed : 0f;
-                Debug.Log($"[Charger] state={next} t={elapsed:F2} pos={transform.position.x:F2},{transform.position.y:F2}");
+                string dashInfo = next == ChargerState.Dash
+                    ? $" speed={_chargeSpeed:F2} duration={_chargeDurationSeconds:F2} planned={_chargeDistance:F2}"
+                    : string.Empty;
+                Debug.Log($"[Charger] state={next} t={elapsed:F2} pos={transform.position.x:F2},{transform.position.y:F2}{dashInfo}");
             }
         }
 
@@ -543,6 +554,7 @@ namespace Survival.Enemy
         private void UpdateChargerDash(Vector2 position, float rawDelta, float delta)
         {
             _chargerTimer -= delta;
+            _dashElapsed += delta;
 
             Vector2 dashVelocity = _chargeDirection * _chargeSpeed;
 
@@ -568,8 +580,26 @@ namespace Survival.Enemy
 
             if (_chargerTimer <= 0f)
             {
+                LogDashEnd(newPosition);
                 EnterChargerState(ChargerState.Recover);
             }
+        }
+
+        /// <summary>
+        /// 冲刺结束探针：实际位移与时长。撞地图边界会提前结束，此时 dist 小于 planned；
+        /// 三档难度都应 ≥6.75（配置 7.0，留 0.25 容差）。
+        /// </summary>
+        private void LogDashEnd(Vector2 endPosition)
+        {
+            if (!s_logChargerStates)
+            {
+                return;
+            }
+
+            float elapsed = _spawner != null ? _spawner.RoundElapsed : 0f;
+            float actual = Vector2.Distance(_dashStartPosition, endPosition);
+            Debug.Log($"[Charger] dash-end t={elapsed:F2} dist={actual:F2} elapsed={_dashElapsed:F2} " +
+                      $"speed={_chargeSpeed:F2} planned={_chargeDistance:F2}");
         }
 
         private void SetChargerVisual(Color tint, float scaleMultiplier)

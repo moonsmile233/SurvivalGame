@@ -19,7 +19,7 @@ namespace Survival.Enemy
         [SerializeField] private EnemyKind _kind = EnemyKind.Chaser;
         [SerializeField] private string _displayName = "追击者";
         [SerializeField] private Sprite _sprite;
-        [Tooltip("SpriteRenderer.color；三种敌人靠颜色区分，不新增素材。")]
+        [Tooltip("SpriteRenderer.color；三种敌人各有独立轮廓素材，再叠加颜色区分。")]
         [SerializeField] private Color _tint = new Color(1f, 1f, 1f, 1f);
         [Tooltip("仅视觉缩放；碰撞半径/停距不变。")]
         [SerializeField] private float _visualScale = 1f;
@@ -32,10 +32,10 @@ namespace Survival.Enemy
         [SerializeField] private float _chargeTriggerDistance = 2.8f;
         [Tooltip("前摇秒数；≥0.4s 才能读。前摇中不锁方向。")]
         [SerializeField] private float _chargeWindupSeconds = 0.45f;
-        [Tooltip("冲刺秒数；方向在冲刺开始时锁定。")]
-        [SerializeField] private float _chargeDurationSeconds = 0.45f;
+        [Tooltip("冲刺距离（世界单位）；时长 = 距离 / 实际冲刺速度（含难度倍率），不再写死秒数。")]
+        [SerializeField] private float _chargeDistance = 7f;
         [Tooltip("冲刺速度；不受 EnemySpeedMax 限制，仍乘难度速度倍率。")]
-        [SerializeField] private float _chargeSpeed = 5f;
+        [SerializeField] private float _chargeSpeed = 6f;
         [Tooltip("冲刺后恢复秒数（停止、恢复颜色/缩放）。")]
         [SerializeField] private float _chargeRecoverSeconds = 0.8f;
         [Tooltip("恢复后的冷却秒数；冷却中只接近，不进入前摇。")]
@@ -64,7 +64,7 @@ namespace Survival.Enemy
 
         public float ChargeTriggerDistance => _chargeTriggerDistance;
         public float ChargeWindupSeconds => _chargeWindupSeconds;
-        public float ChargeDurationSeconds => _chargeDurationSeconds;
+        public float ChargeDistance => _chargeDistance;
         public float ChargeSpeed => _chargeSpeed;
         public float ChargeRecoverSeconds => _chargeRecoverSeconds;
         public float ChargeCooldownSeconds => _chargeCooldownSeconds;

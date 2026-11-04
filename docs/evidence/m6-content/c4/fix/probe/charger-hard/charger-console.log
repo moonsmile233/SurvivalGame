@@ -1,0 +1,55 @@
+[PERF] forced enemy kind = Charger
+
+[PERF] probe start {,"screen":"1280x720","dpi":96,"gpu":"ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)","cpu":"n/a","device":"Chrome 156.0.0.0","os":"Windows 10","invincible":true,"roundDuration":46,"perfSeconds":16,"autostart":true}
+
+[PERF] autostart -> Playing (immediate)
+
+[PERF] cap reached limit=1 at=3.50s
+
+[PERF] {"t":4.00,"alive":1,"avgAlive":0.3,"settled":0.0,"motionUps":0.551,"unsettledMax":11.03,"minPairDist":0.900,"playerUps":0.00,"fps":64.4,"p95ms":10.00,"p99ms":59.00,"maxms":2138.00,"allocKBps":43.0,"heapKB":2208,"wasmMB":55.4,"gc":2}
+
+[PERF] {"t":6.00,"alive":1,"avgAlive":1.0,"settled":0.0,"motionUps":1.634,"unsettledMax":10.32,"minPairDist":0.900,"playerUps":0.00,"fps":164.5,"p95ms":7.00,"p99ms":8.00,"maxms":11.00,"allocKBps":44.0,"heapKB":2296,"wasmMB":55.4,"gc":2}
+
+[PERF] {"t":8.00,"alive":1,"avgAlive":1.0,"settled":0.0,"motionUps":1.649,"unsettledMax":7.05,"minPairDist":0.900,"playerUps":0.00,"fps":164.6,"p95ms":7.00,"p99ms":8.00,"maxms":8.00,"allocKBps":53.9,"heapKB":2404,"wasmMB":55.4,"gc":2}
+
+[Charger] state=Windup t=6.78 pos=1.31,2.47
+
+[Charger] state=Dash t=7.24 pos=1.31,2.47 speed=6.60 duration=1.06 planned=7.00
+
+[PERF] {"t":10.00,"alive":1,"avgAlive":1.0,"settled":0.1,"motionUps":2.609,"unsettledMax":3.75,"minPairDist":0.900,"playerUps":0.00,"fps":164.9,"p95ms":7.00,"p99ms":7.00,"maxms":8.00,"allocKBps":52.0,"heapKB":2508,"wasmMB":55.4,"gc":2}
+
+[Charger] dash-end t=8.30 dist=7.01 elapsed=1.06 speed=6.60 planned=7.00
+
+[Charger] state=Recover t=8.30 pos=-1.97,-3.72
+
+[Charger] state=Cooldown t=9.10 pos=-1.97,-3.72
+
+[PERF] {"t":12.00,"alive":1,"avgAlive":1.0,"settled":0.0,"motionUps":2.242,"unsettledMax":3.51,"minPairDist":0.900,"playerUps":0.00,"fps":161.9,"p95ms":7.00,"p99ms":8.00,"maxms":10.00,"allocKBps":42.0,"heapKB":2232,"wasmMB":55.4,"gc":3}
+
+[Charger] state=Approach t=10.61 pos=-1.31,-2.47
+
+[Charger] state=Windup t=10.61 pos=-1.31,-2.47
+
+[Charger] state=Dash t=11.06 pos=-1.31,-2.47 speed=6.60 duration=1.06 planned=7.00
+
+[PERF] {"t":14.00,"alive":1,"avgAlive":1.0,"settled":0.1,"motionUps":2.544,"unsettledMax":2.47,"minPairDist":0.900,"playerUps":0.00,"fps":164.5,"p95ms":7.00,"p99ms":8.00,"maxms":9.00,"allocKBps":39.9,"heapKB":2312,"wasmMB":55.4,"gc":3}
+
+[Charger] dash-end t=12.13 dist=7.04 elapsed=1.07 speed=6.60 planned=7.00
+
+[Charger] state=Recover t=12.13 pos=1.99,3.75
+
+[Charger] state=Cooldown t=12.93 pos=1.99,3.75
+
+[PERF] {"t":16.00,"alive":1,"avgAlive":1.0,"settled":0.0,"motionUps":1.851,"unsettledMax":3.55,"minPairDist":0.900,"playerUps":0.00,"fps":156.6,"p95ms":7.00,"p99ms":8.00,"maxms":9.00,"allocKBps":39.9,"heapKB":2392,"wasmMB":55.4,"gc":3}
+
+[Charger] state=Approach t=14.43 pos=1.31,2.47
+
+[Charger] state=Windup t=14.43 pos=1.31,2.47
+
+[Charger] state=Dash t=14.89 pos=1.31,2.47 speed=6.60 duration=1.06 planned=7.00
+
+[PERF] {"t":18.00,"alive":1,"avgAlive":1.0,"settled":0.1,"motionUps":2.961,"unsettledMax":2.29,"minPairDist":0.900,"playerUps":0.00,"fps":154.7,"p95ms":7.00,"p99ms":8.00,"maxms":8.00,"allocKBps":43.9,"heapKB":2480,"wasmMB":55.4,"gc":3}
+
+[Charger] dash-end t=15.95 dist=7.02 elapsed=1.06 speed=6.60 planned=7.00
+
+[Charger] state=Recover t=15.95 pos=-1.97,-3.73

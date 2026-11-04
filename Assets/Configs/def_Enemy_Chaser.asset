@@ -22,7 +22,7 @@ MonoBehaviour:
   _colliderRadius: 0.38
   _chargeTriggerDistance: 4.5
   _chargeWindupSeconds: 0.45
-  _chargeDurationSeconds: 0.45
+  _chargeDistance: 7
   _chargeSpeed: 5
   _chargeRecoverSeconds: 0.8
   _chargeCooldownSeconds: 1.5

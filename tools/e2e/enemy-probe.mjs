@@ -30,6 +30,8 @@ const RUN_SECONDS = Number(process.env.RUN_SECONDS || (HEADED ? 45 : 120));
 const MOVE = (process.env.MOVE || '').toLowerCase();
 // FLANK_TIMEOUT：perf-only 覆盖侧绕超时（秒），黑盒压不到 6s 时用来验证 Direct 分支。
 const FLANK_TIMEOUT = (process.env.FLANK_TIMEOUT || '').trim();
+// DIFFICULTY=easy|normal|hard：perf 探针按档验证速度/上限（默认 Normal）。
+const DIFFICULTY = (process.env.DIFFICULTY || '').trim();
 const OUT = process.env.OUT || path.join(repoRoot, 'review', `m6-c3-${KIND}`);
 
 fs.mkdirSync(OUT, { recursive: true });
@@ -48,8 +50,9 @@ const pendingShots = [];
 const seenStateShots = new Set();
 let shotIndex = 0;
 let sawState = false;
-let flankLogCount = 0;
 let sawFlankEngage = false;
+let sawFlankSide = false;
+let sawFlankBack = false;
 
 async function shot(tag) {
   const index = String(shotIndex++).padStart(2, '0');
@@ -70,11 +73,11 @@ page.on('console', (message) => {
     console.log('[console] ' + text);
   }
 
-  // 每个状态只拍首帧；Flank 的每 0.5s 轨迹日志不能每次都拍（否则几十张）。
+  // 每个状态只拍首帧；Flank 出生点通常在视野外不拍，改按 dist/bearing 拍可见的侧翼/背后。
   for (const tag of ['Windup', 'Dash', 'Recover', 'Flank', 'Pounce', 'Direct']) {
     if (text.includes(`state=${tag}`)) {
       sawState = true;
-      if (!seenStateShots.has(tag)) {
+      if (tag !== 'Flank' && !seenStateShots.has(tag)) {
         seenStateShots.add(tag);
         pendingShots.push(shot(tag.toLowerCase()));
       }
@@ -82,16 +85,27 @@ page.on('console', (message) => {
   }
 
   if (text.includes('state=Flank')) {
-    flankLogCount++;
-    if (flankLogCount === 5) {
-      pendingShots.push(shot('flank-mid'));
-    }
-
-    // 第一次进入 4.5 交战距离时补一张，此时才真正能看到“侧后接近”而不是出生点远景。
+    // 第一次进入 4.5 交战距离时补一张（此时敌人才进画面）。
     const distanceMatch = text.match(/dist=([\d.]+)/);
     if (!sawFlankEngage && distanceMatch && Number(distanceMatch[1]) <= 4.5) {
       sawFlankEngage = true;
       pendingShots.push(shot('flank-engage'));
+    }
+
+    // 可见的侧后证据：dist<2.5 且 |bearing| 50~90° 拍侧翼、>110° 拍背后。
+    const bearingMatch = text.match(/bearing=(-?[\d.]+)/);
+    if (distanceMatch && bearingMatch) {
+      const distance = Number(distanceMatch[1]);
+      const bearing = Math.abs(Number(bearingMatch[1]));
+      if (!sawFlankSide && distance < 2.5 && bearing >= 50 && bearing <= 90) {
+        sawFlankSide = true;
+        pendingShots.push(shot('flank-side'));
+      }
+
+      if (!sawFlankBack && distance < 2.5 && bearing > 110) {
+        sawFlankBack = true;
+        pendingShots.push(shot('flank-back'));
+      }
     }
   }
 });
@@ -102,7 +116,8 @@ await openGame(
   `http://127.0.0.1:${PORT}`,
   `?perf=1&autostart=1&enemyKind=${KIND}&enemyLimit=1&roundDuration=${RUN_SECONDS + 30}` +
     `&invincible=${INVINCIBLE ? 1 : 0}&perfSeconds=${RUN_SECONDS}` +
-    (FLANK_TIMEOUT ? `&flankTimeout=${FLANK_TIMEOUT}` : ''),
+    (FLANK_TIMEOUT ? `&flankTimeout=${FLANK_TIMEOUT}` : '') +
+    (DIFFICULTY ? `&difficulty=${DIFFICULTY}` : ''),
 );
 
 // 黑盒驱动玩家：按住 W/D/S/A 循环绕圈，让 Flanker 的 side-back 目标点持续移动，

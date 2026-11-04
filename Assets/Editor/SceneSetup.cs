@@ -33,6 +33,8 @@ public static class SceneSetup
     private const string BackgroundSpritePath = "Assets/Sprites/spr_background_grid.png";
     private const string PlayerSpritePath = "Assets/Sprites/spr_player.png";
     private const string EnemySpritePath = "Assets/Sprites/spr_enemy.png";
+    private const string ChargerSpritePath = "Assets/Sprites/spr_enemy_charger.png";
+    private const string FlankerSpritePath = "Assets/Sprites/spr_enemy_flanker.png";
     private const string UiSpritePath = "Assets/Sprites/ui_white.png";
     private const string FontAssetPath = FontAssetBuilder.OutputPath;
 
@@ -80,8 +82,10 @@ public static class SceneSetup
         Sprite backgroundSprite = EnsureSprite(BackgroundSpritePath, CreateGridTexture(), true);
         Sprite playerSprite = EnsureSprite(PlayerSpritePath, CreatePlayerTexture(), false);
         Sprite enemySprite = EnsureSprite(EnemySpritePath, CreateEnemyTexture(), false);
+        Sprite chargerSprite = EnsureSprite(ChargerSpritePath, CreateChargerTexture(), false);
+        Sprite flankerSprite = EnsureSprite(FlankerSpritePath, CreateFlankerTexture(), false);
         EnsureSprite(UiSpritePath, CreateWhiteTexture(), false);
-        EnsureEnemyDefinitions(enemySprite);
+        EnsureEnemyDefinitions(enemySprite, chargerSprite, flankerSprite);
 
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
@@ -784,13 +788,13 @@ public static class SceneSetup
     /// 已存在时只重指精灵、修正 _kind/_displayName（结构字段），不覆盖 Inspector 里调过的
     /// 速度/伤害/tint/scale 与冲锋/绕行参数。
     /// </summary>
-    private static void EnsureEnemyDefinitions(Sprite enemySprite)
+    private static void EnsureEnemyDefinitions(Sprite chaserSprite, Sprite chargerSprite, Sprite flankerSprite)
     {
         EnsureFolder(ConfigFolder);
 
-        EnsureEnemyDefinition(EnemyChaserPath, EnemyKind.Chaser, "追击者", enemySprite);
-        EnsureEnemyDefinition(EnemyChargerPath, EnemyKind.Charger, "冲锋者", enemySprite);
-        EnsureEnemyDefinition(EnemyFlankerPath, EnemyKind.Flanker, "绕行者", enemySprite);
+        EnsureEnemyDefinition(EnemyChaserPath, EnemyKind.Chaser, "追击者", chaserSprite);
+        EnsureEnemyDefinition(EnemyChargerPath, EnemyKind.Charger, "冲锋者", chargerSprite);
+        EnsureEnemyDefinition(EnemyFlankerPath, EnemyKind.Flanker, "绕行者", flankerSprite);
         AssetDatabase.SaveAssets();
     }
 
@@ -830,12 +834,12 @@ public static class SceneSetup
         {
             case EnemyKind.Charger:
                 serialized.FindProperty("_moveSpeed").floatValue = 1.5f;
-                serialized.FindProperty("_tint").colorValue = new Color(1f, 0.55f, 0.2f, 1f);
+                serialized.FindProperty("_tint").colorValue = new Color(1f, 0.3f, 0.3f, 1f);
                 serialized.FindProperty("_visualScale").floatValue = 1.05f;
                 serialized.FindProperty("_chargeTriggerDistance").floatValue = 2.8f;
                 serialized.FindProperty("_chargeWindupSeconds").floatValue = 0.45f;
-                serialized.FindProperty("_chargeDurationSeconds").floatValue = 0.45f;
-                serialized.FindProperty("_chargeSpeed").floatValue = 5f;
+                serialized.FindProperty("_chargeDistance").floatValue = 7f;
+                serialized.FindProperty("_chargeSpeed").floatValue = 6f;
                 serialized.FindProperty("_chargeRecoverSeconds").floatValue = 0.8f;
                 serialized.FindProperty("_chargeCooldownSeconds").floatValue = 1.5f;
                 serialized.FindProperty("_chargeDamage").intValue = 15;
@@ -843,7 +847,7 @@ public static class SceneSetup
 
             case EnemyKind.Flanker:
                 serialized.FindProperty("_moveSpeed").floatValue = 1.9f;
-                serialized.FindProperty("_tint").colorValue = new Color(0.45f, 0.8f, 1f, 1f);
+                serialized.FindProperty("_tint").colorValue = new Color(0.72f, 0.4f, 1f, 1f);
                 serialized.FindProperty("_visualScale").floatValue = 0.95f;
                 serialized.FindProperty("_flankRadius").floatValue = 2.4f;
                 serialized.FindProperty("_flankAngleDegrees").floatValue = 135f;
@@ -1003,6 +1007,77 @@ public static class SceneSetup
                 {
                     pixels[y * size + x] = new Color32(0, 0, 0, 0);
                 }
+            }
+        }
+
+        return BuildTexture(size, pixels);
+    }
+
+    /// <summary>
+    /// 冲锋者：向上的箭头（宽三角头 + 短柄 + 两侧小翼）。白色主体 + 浅灰内芯，
+    /// 让 SpriteRenderer.color 仍能把前摇染黄、冲刺染红。
+    /// </summary>
+    private static Texture2D CreateChargerTexture()
+    {
+        const int size = 32;
+        var body = new Color32(0xFF, 0xFF, 0xFF, 0xFF);
+        var core = new Color32(0xD2, 0xD2, 0xD2, 0xFF);
+        var pixels = new Color32[size * size];
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float dx = x + 0.5f - 16f;
+                float dy = y + 0.5f - 16f;
+
+                // 箭头头部：从 y≈14 的宽底收尖到 y≈29。
+                bool head = dy >= -2f && dy <= 13f && Mathf.Abs(dx) <= 1.5f + (13f - dy) * 0.8f;
+                bool stem = Mathf.Abs(dx) <= 4f && dy >= -13f && dy <= 0f;
+                bool finLeft = dx >= -11.5f && dx <= -6f && dy >= -1f && dy <= 4f;
+                bool finRight = dx >= 6f && dx <= 11.5f && dy >= -1f && dy <= 4f;
+                bool shape = head || stem || finLeft || finRight;
+
+                if (!shape)
+                {
+                    pixels[y * size + x] = new Color32(0, 0, 0, 0);
+                    continue;
+                }
+
+                bool inner = Mathf.Abs(dx) <= 2f && dy >= -9f && dy <= 9f;
+                pixels[y * size + x] = inner ? core : body;
+            }
+        }
+
+        return BuildTexture(size, pixels);
+    }
+
+    /// <summary>
+    /// 绕行者：四角飞镖（菱形轮廓 + 内凹边）。指数 &lt;1 让边向内凹，
+    /// 在 32px 下和圆形的追击者、箭头的冲锋者轮廓明显不同。
+    /// </summary>
+    private static Texture2D CreateFlankerTexture()
+    {
+        const int size = 32;
+        var body = new Color32(0xFF, 0xFF, 0xFF, 0xFF);
+        var core = new Color32(0xD2, 0xD2, 0xD2, 0xFF);
+        var pixels = new Color32[size * size];
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float dx = x + 0.5f - 16f;
+                float dy = y + 0.5f - 16f;
+                float dart = Mathf.Pow(Mathf.Abs(dx) / 15f, 0.62f) + Mathf.Pow(Mathf.Abs(dy) / 15f, 0.62f);
+                if (dart > 1f)
+                {
+                    pixels[y * size + x] = new Color32(0, 0, 0, 0);
+                    continue;
+                }
+
+                bool inner = Mathf.Abs(dx) + Mathf.Abs(dy) <= 5.5f;
+                pixels[y * size + x] = inner ? core : body;
             }
         }
 
