@@ -86,6 +86,15 @@ namespace Survival.Enemy
         /// </summary>
         public float MinPairDistance { get; private set; }
 
+        /// <summary>
+        /// 全场最小中心距（**包含**正在 Dash 的 Charger 参与的 pair）。冲刺按设计穿阵，
+        /// 这个值会被刻意压得很低；验收看 <see cref="MinPairDistance"/>（非冲刺 pair）。
+        /// </summary>
+        public float MinPairDistanceAll { get; private set; }
+
+        /// <summary>最近一次刷新时「含冲刺 Charger」的 pair 数（每对计一次）；证明指标没把数据做没。</summary>
+        public int DashPairCount { get; private set; }
+
         /// <summary>只读列表，供压测探针读取；调用方不得增删。</summary>
         public IReadOnlyList<EnemyAI> ActiveEnemies => _enemies;
 
@@ -114,6 +123,11 @@ namespace Survival.Enemy
         /// <summary>本局所有登记后回收（销毁）的敌人总数，含到顶补位；探针只读。
         /// 视野超时回收 = RecycleCount − CapRecycledCount。</summary>
         public int RecycleCount { get; private set; }
+
+        /// <summary>本局累计生成数量（按类型）；探针只读，用来验证权重而不是只看存活快照。</summary>
+        public int SpawnedChaserCount { get; private set; }
+        public int SpawnedChargerCount { get; private set; }
+        public int SpawnedFlankerCount { get; private set; }
 
         private void Awake()
         {
@@ -231,6 +245,8 @@ namespace Survival.Enemy
             if (count == 0)
             {
                 MinPairDistance = _config.EnemySeparationRadius;
+                MinPairDistanceAll = _config.EnemySeparationRadius;
+                DashPairCount = 0;
                 return;
             }
 
@@ -240,6 +256,8 @@ namespace Survival.Enemy
             float radius = _config.EnemySeparationRadius;
             float radiusSqr = radius * radius;
             float minSqr = float.MaxValue;
+            float minSqrAll = float.MaxValue;
+            int dashPairs = 0;
 
             for (int i = 0; i < count; i++)
             {
@@ -286,7 +304,21 @@ namespace Survival.Enemy
                                 continue;
                             }
 
-                            if (sqr < minSqr)
+                            if (sqr < minSqrAll)
+                            {
+                                minSqrAll = sqr;
+                            }
+
+                            // 冲刺中的 Charger 按设计穿阵：这些 pair 不计入验收指标 minPairDist，
+                            // 但单独计数，避免把指标“做没”。i < j 保证同一对只计一次。
+                            if (enemy.IsCharging || other.IsCharging)
+                            {
+                                if (i < j)
+                                {
+                                    dashPairs++;
+                                }
+                            }
+                            else if (sqr < minSqr)
                             {
                                 minSqr = sqr;
                             }
@@ -300,6 +332,8 @@ namespace Survival.Enemy
             }
 
             MinPairDistance = minSqr < float.MaxValue ? Mathf.Sqrt(minSqr) : radius;
+            MinPairDistanceAll = minSqrAll < float.MaxValue ? Mathf.Sqrt(minSqrAll) : radius;
+            DashPairCount = dashPairs;
         }
 
         /// <summary>把候选按距离插入最近 MaxNeighbors 个（小数组插入排序，无分配）。</summary>
@@ -371,6 +405,9 @@ namespace Survival.Enemy
             CapBlockedCount = 0;
             CapRecycledCount = 0;
             RecycleCount = 0;
+            SpawnedChaserCount = 0;
+            SpawnedChargerCount = 0;
+            SpawnedFlankerCount = 0;
             MinPairDistance = _config != null ? _config.EnemySeparationRadius : 1f;
             _running = true;
 
@@ -480,6 +517,19 @@ namespace Survival.Enemy
             var ai = go.AddComponent<EnemyAI>();
             ai.Initialize(_config, definition, _playerTarget, _playerHealth, this, _camera, stopRadius,
                 (_perfSpawnOpsMask & 4) != 0 ? null : renderer);
+
+            switch (definition.Kind)
+            {
+                case EnemyKind.Chaser:
+                    SpawnedChaserCount++;
+                    break;
+                case EnemyKind.Charger:
+                    SpawnedChargerCount++;
+                    break;
+                case EnemyKind.Flanker:
+                    SpawnedFlankerCount++;
+                    break;
+            }
 
             Register(ai);
         }

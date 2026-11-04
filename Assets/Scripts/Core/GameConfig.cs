@@ -44,7 +44,7 @@ namespace Survival.Core
         [SerializeField] private float _enemySideMargin = 0.15f;
         [Tooltip("玩家移动穿过人群时的侧向闪避强度（×玩家接近速度）。")]
         [SerializeField] private float _enemyPlayerDodgeFactor = 0.5f;
-        [Tooltip("防重合兜底触发距离：正常软墙 0.70 就停，只有出生重叠等异常才进这个区间。")]
+        [Tooltip("防重合硬下限：中心距低于它持续外推；软墙 0.70 负责正常停距，40~50 只的密集人群会稳定压到这个下限附近（C5 实测）。")]
         [SerializeField] private float _enemyEmergencyDistance = 0.5f;
         [Tooltip("兜底最大外推速度（u/s）。")]
         [SerializeField] private float _enemyEmergencyStrength = 2.0f;

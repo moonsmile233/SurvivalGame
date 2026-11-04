@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Survival.Core;
 using Survival.Player;
 using UnityEngine;
@@ -57,6 +58,7 @@ namespace Survival.Enemy
 
         private Vector2 _velocity;
         private Vector2 _emergencyVelocity;
+
         private Vector2 _lastDirection = Vector2.up;
         private float _sideSign;
         private Rigidbody2D _playerBody;
@@ -97,6 +99,7 @@ namespace Survival.Enemy
         private static bool s_logChargerStates;
 
         private static readonly Color ChargerWindupTint = new Color(1f, 0.85f, 0.2f, 1f);
+        private static readonly Color ChargerDashGhostTint = new Color(1f, 1f, 1f, 0.72f);
 
         // 绕行者进入“侧绕计时”的距离：从出生点 11.7u 赶来不算侧绕时间，否则 6s 会在半路耗尽。
         private const float FlankEngageDistance = 4.5f;
@@ -416,8 +419,9 @@ namespace Survival.Enemy
 
         /// <summary>
         /// 冲锋者状态机。Approach/Cooldown 走普通 seek + 人群管线；Windup/Recover 原地
-        /// （只保留软墙/防重合，不跟随玩家侧闪）；Dash 走锁定方向直线，跳过软墙/让位，
-        /// 只保留 &lt;0.5 的横向防重合。时间用 delta（已钳到 MaxDeltaTime）；暂停时 Update 提前返回。
+        /// （只保留软墙/防重合，不跟随玩家侧闪）；Dash 走锁定方向直线，**完全跳过敌人-敌人分离/防重合**
+        /// （软墙、让位、ComputeEmergency 都不参与，也不被别人推开），靠视觉提示 + 人工看片验收“穿阵”。
+        /// 时间用 delta（已钳到 MaxDeltaTime）；暂停时 Update 提前返回。
         /// </summary>
         private void UpdateCharger(Vector2 position, Vector2 direction, float distance, float speed,
             float rawDelta, float delta)
@@ -458,6 +462,7 @@ namespace Survival.Enemy
 
                 case ChargerState.Windup:
                     _chargerTimer -= delta;
+
                     if (_chargerTimer <= 0f)
                     {
                         // 方向只在 Dash 开始锁定；前摇中玩家仍可横向拉开。
@@ -469,7 +474,7 @@ namespace Survival.Enemy
                     }
 
                     MoveChargerWithCrowd(position, direction, distance, speed, rawDelta, delta,
-                        allowDodge: false, allowSidestep: false);
+                        allowDodge: false, allowSidestep: true);
                     return;
 
                 case ChargerState.Dash:
@@ -484,7 +489,7 @@ namespace Survival.Enemy
                     }
 
                     MoveChargerWithCrowd(position, direction, distance, speed, rawDelta, delta,
-                        allowDodge: false, allowSidestep: false);
+                        allowDodge: false, allowSidestep: true);
                     return;
             }
         }
@@ -542,7 +547,9 @@ namespace Survival.Enemy
                     _blockW = 0f;
                     _dashStartPosition = transform.position;
                     _dashElapsed = 0f;
-                    SetChargerSprite(_baseSprite, _baseTint, 1.15f);
+                    // 冲刺视觉：半透明 + 1.15 缩放，给出“此刻会穿过人群”的可读信号。
+                    // 只改 SpriteRenderer 颜色/缩放，不新增组件、不每帧分配（50 只也不掉帧）。
+                    SetChargerSprite(_baseSprite, ChargerDashGhostTint, 1.15f);
                     break;
 
                 case ChargerState.Recover:
@@ -579,11 +586,10 @@ namespace Survival.Enemy
 
             Vector2 dashVelocity = _chargeDirection * _chargeSpeed;
 
-            Vector2 emergency = ComputeEmergency(position);
-            Vector2 lateral = emergency - Vector2.Dot(emergency, _chargeDirection) * _chargeDirection;
-            lateral = Vector2.ClampMagnitude(lateral, _config.EnemyEmergencyStrength);
-
-            Vector2 newPosition = position + (dashVelocity + lateral) * delta;
+            // 冲刺期间「穿阵」：不参与敌人-敌人分离/防重合，也不被别人推开（等价于冲刺中的质量无限大），
+            // 方向/速度/距离/撞边界全部保持不变。玩家伤害 Trigger 不变（碰撞体没有关闭）。
+            // 其他敌人仍把这里当邻居，用软墙/让位自然让开；冲刺 pair 由人工看片判断，不计入 minPairDist。
+            Vector2 newPosition = position + dashVelocity * delta;
 
             if (_chargeStartedInsideMap && !IsInsideMap(newPosition))
             {

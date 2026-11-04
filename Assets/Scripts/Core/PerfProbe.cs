@@ -51,6 +51,8 @@ namespace Survival.Core
         private readonly float[] _ringMotion = new float[MaxSamples];
         private readonly int[] _ringSettled = new int[MaxSamples];
         private readonly float[] _ringMinPair = new float[MaxSamples];
+        private readonly float[] _ringMinPairAll = new float[MaxSamples];
+        private readonly int[] _ringDashPairs = new int[MaxSamples];
         private readonly float[] _scratch = new float[MaxSamples];
         private readonly StringBuilder _line = new StringBuilder(384);
 
@@ -92,6 +94,8 @@ namespace Survival.Core
         private int _collectSettled;
         private int _collectCount;
         private float _collectMinPair;
+        private float _collectMinPairAll;
+        private long _collectDashPairs;
 
         private GameManager _manager;
         private EnemySpawner _spawner;
@@ -295,6 +299,17 @@ namespace Survival.Core
                 _peakAlive = _lastAlive;
             }
 
+            // 难度在 autostart 之后才生效，Start 时读到的上限可能是 Normal 的 30；
+            // 每帧同步一次，保证 summary.limit 和「到顶」判定用的是本局真实上限。
+            if (_manager.Config != null)
+            {
+                int liveLimit = _manager.Config.EnemyLimit;
+                if (liveLimit > 0)
+                {
+                    _activeLimit = liveLimit;
+                }
+            }
+
             if (_capReachedAt < 0f && _activeLimit > 0 && _lastAlive >= _activeLimit)
             {
                 _capReachedAt = _elapsed;
@@ -352,6 +367,8 @@ namespace Survival.Core
             _ringMotion[_ringHead] = motion;
             _ringSettled[_ringHead] = settled;
             _ringMinPair[_ringHead] = _spawner != null ? _spawner.MinPairDistance : 0f;
+            _ringMinPairAll[_ringHead] = _spawner != null ? _spawner.MinPairDistanceAll : 0f;
+            _ringDashPairs[_ringHead] = _spawner != null ? _spawner.DashPairCount : 0;
             _ringHead = (_ringHead + 1) % MaxSamples;
             if (_ringCount < MaxSamples)
             {
@@ -710,6 +727,8 @@ namespace Survival.Core
             float motionSum = 0f;
             int settledSum = 0;
             float minPair = float.MaxValue;
+            float minPairAll = float.MaxValue;
+            long dashPairSum = 0;
 
             for (int k = 0; k < _ringCount; k++)
             {
@@ -730,6 +749,14 @@ namespace Survival.Core
                 {
                     minPair = pair;
                 }
+
+                float pairAll = _ringMinPairAll[index];
+                if (pairAll > 0f && pairAll < minPairAll)
+                {
+                    minPairAll = pairAll;
+                }
+
+                dashPairSum += _ringDashPairs[index];
             }
 
             _collectCount = count;
@@ -738,6 +765,8 @@ namespace Survival.Core
             _collectMotion = motionSum;
             _collectSettled = settledSum;
             _collectMinPair = minPair < float.MaxValue ? minPair : 0f;
+            _collectMinPairAll = minPairAll < float.MaxValue ? minPairAll : 0f;
+            _collectDashPairs = dashPairSum;
             return count;
         }
 
@@ -787,6 +816,8 @@ namespace Survival.Core
                 .Append(",\"motionUps\":").Append(F(motionUps, 3))
                 .Append(",\"unsettledMax\":").Append(F(_windowUnsettledMax, 2))
                 .Append(",\"minPairDist\":").Append(F(_collectMinPair, 3))
+                .Append(",\"minPairAll\":").Append(F(_collectMinPairAll, 3))
+                .Append(",\"dashPairs\":").Append(F(count > 0 ? (float)_collectDashPairs / count : 0f, 2))
                 .Append(",\"playerUps\":").Append(F(_windowPlayerPeakUps, 2))
                 .Append(",\"fps\":").Append(F(seconds > 0f ? count / seconds : 0f, 1))
                 .Append(",\"p95ms\":").Append(F(PercentileSorted(_scratch, count, 0.95f) * 1000f, 2))
@@ -824,6 +855,8 @@ namespace Survival.Core
                 : 0f;
             float steadySettled = steadyCount > 0 ? (float)_collectSettled / steadyCount : 0f;
             float steadyMinPair = _collectMinPair;
+            float steadyMinPairAll = _collectMinPairAll;
+            float steadyDashPairs = steadyCount > 0 ? (float)_collectDashPairs / steadyCount : 0f;
 
             float fillSeconds = 0f;
             float fillFps = 0f;
@@ -898,6 +931,8 @@ namespace Survival.Core
                 .Append(",\"steadyMotionUps\":").Append(F(steadyMotion, 3))
                 .Append(",\"steadySettled\":").Append(F(steadySettled, 1))
                 .Append(",\"steadyMinPairDist\":").Append(F(steadyMinPair, 3))
+                .Append(",\"steadyMinPairDistAll\":").Append(F(steadyMinPairAll, 3))
+                .Append(",\"steadyDashPairs\":").Append(F(steadyDashPairs, 2))
                 .Append(",\"chaser\":").Append(chaser)
                 .Append(",\"charger\":").Append(charger)
                 .Append(",\"flanker\":").Append(flanker)
@@ -906,6 +941,9 @@ namespace Survival.Core
                 .Append(",\"capBlocked\":").Append(_spawner != null ? _spawner.CapBlockedCount : 0)
                 .Append(",\"capRecycled\":").Append(_spawner != null ? _spawner.CapRecycledCount : 0)
                 .Append(",\"recycled\":").Append(_spawner != null ? _spawner.RecycleCount : 0)
+                .Append(",\"spawnedChaser\":").Append(_spawner != null ? _spawner.SpawnedChaserCount : 0)
+                .Append(",\"spawnedCharger\":").Append(_spawner != null ? _spawner.SpawnedChargerCount : 0)
+                .Append(",\"spawnedFlanker\":").Append(_spawner != null ? _spawner.SpawnedFlankerCount : 0)
                 .Append(",\"totalAllocMB\":").Append(F(_allocTotal / 1048576f, 2))
                 .Append(",\"heapKB\":").Append(GC.GetTotalMemory(false) / 1024)
                 .Append(",\"wasmMB\":").Append(F(GetWasmHeapBytes() / 1048576f, 1))
