@@ -843,7 +843,7 @@ public static class SceneSetup
                 serialized.FindProperty("_moveSpeed").floatValue = 1.5f;
                 serialized.FindProperty("_tint").colorValue = new Color(1f, 1f, 1f, 1f);
                 serialized.FindProperty("_visualScale").floatValue = 1.05f;
-                serialized.FindProperty("_chargeTriggerDistance").floatValue = 2.8f;
+                serialized.FindProperty("_chargeTriggerDistance").floatValue = 4.2f;
                 serialized.FindProperty("_chargeWindupSeconds").floatValue = 0.45f;
                 serialized.FindProperty("_chargeDistance").floatValue = 7f;
                 serialized.FindProperty("_chargeSpeed").floatValue = 4.5f;
@@ -856,9 +856,14 @@ public static class SceneSetup
                 serialized.FindProperty("_moveSpeed").floatValue = 1.9f;
                 serialized.FindProperty("_tint").colorValue = new Color(1f, 1f, 1f, 1f);
                 serialized.FindProperty("_visualScale").floatValue = 0.95f;
-                serialized.FindProperty("_flankRadius").floatValue = 2.4f;
+                serialized.FindProperty("_flankRadius").floatValue = 3f;
                 serialized.FindProperty("_flankAngleDegrees").floatValue = 135f;
-                serialized.FindProperty("_flankPounceDistance").floatValue = 1.2f;
+                serialized.FindProperty("_flankPounceDistance").floatValue = 1.6f;
+                serialized.FindProperty("_flankPounceSpeed").floatValue = 4f;
+                serialized.FindProperty("_flankPounceSeconds").floatValue = 0.3f;
+                serialized.FindProperty("_flankDisengageDistance").floatValue = 2.5f;
+                serialized.FindProperty("_flankDisengageSeconds").floatValue = 0.4f;
+                serialized.FindProperty("_flankPounceCooldown").floatValue = 1.2f;
                 serialized.FindProperty("_flankTimeoutSeconds").floatValue = 6f;
                 break;
 

@@ -28,7 +28,12 @@ MonoBehaviour:
   _chargeRecoverSeconds: 0.8
   _chargeCooldownSeconds: 1.5
   _chargeDamage: 15
-  _flankRadius: 2.4
+  _flankRadius: 3
   _flankAngleDegrees: 135
-  _flankPounceDistance: 1.2
+  _flankPounceDistance: 1.6
+  _flankPounceSpeed: 4
+  _flankPounceSeconds: 0.3
+  _flankDisengageDistance: 2.5
+  _flankDisengageSeconds: 0.4
+  _flankPounceCooldown: 1.2
   _flankTimeoutSeconds: 6

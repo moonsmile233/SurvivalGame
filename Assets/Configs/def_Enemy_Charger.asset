@@ -21,7 +21,7 @@ MonoBehaviour:
   _moveSpeed: 1.5
   _contactDamage: 12
   _colliderRadius: 0.38
-  _chargeTriggerDistance: 2.8
+  _chargeTriggerDistance: 4.2
   _chargeWindupSeconds: 0.45
   _chargeDistance: 7
   _chargeSpeed: 4.5
@@ -31,4 +31,9 @@ MonoBehaviour:
   _flankRadius: 2.4
   _flankAngleDegrees: 135
   _flankPounceDistance: 1.2
+  _flankPounceSpeed: 4
+  _flankPounceSeconds: 0.3
+  _flankDisengageDistance: 2.5
+  _flankDisengageSeconds: 0.4
+  _flankPounceCooldown: 1.2
   _flankTimeoutSeconds: 6

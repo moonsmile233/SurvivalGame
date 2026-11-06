@@ -52,6 +52,11 @@ namespace Survival.Enemy
         private bool _perfSuppressSpawn;
         private int _perfSpawnOpsMask;
 
+        // 5-tick 生成袋（C5.2）：2 追击 + 2 绕行 + 1 冲锋；每轮洗牌，未解锁类型用追击补位。
+        private const int SpawnBagSize = 5;
+        private readonly EnemyKind[] _spawnBag = new EnemyKind[SpawnBagSize];
+        private int _spawnBagIndex = SpawnBagSize;
+
         // 三类定义按 Kind 缓存（Awake 解析一次），加权选择不每帧扫数组。
         private EnemyDefinition _chaserDefinition;
         private EnemyDefinition _chargerDefinition;
@@ -535,10 +540,10 @@ namespace Survival.Enemy
         }
 
         /// <summary>
-        /// 按 DifficultyProfile 的解锁时间与阶段权重选类型（M6 §3.1）：
-        /// t &lt; chargerUnlock 只有 Chaser；t &lt; flankerUnlock 用中期权重；之后晚期权重。
-        /// 权重全部来自资产，代码不写字面量；缺失的类别权重按 0 处理。
-        /// PerfProbe 的 enemyKind 强制单类型优先；enemyMix=1 从 0s 起用晚期权重（仅压测）。
+        /// 每 tick 出一只，类型按 5-tick 袋轮换：2 追击 + 2 绕行 + 1 冲锋（全解锁后 40/40/20）。
+        /// 未解锁的类型用追击补位；每轮 Fisher–Yates 洗牌避免固定顺序。
+        /// 权重字段仍保留在 DifficultyProfile 里，但不再参与自然生成。
+        /// PerfProbe 的 enemyKind 强制单类型优先；enemyMix=1 从 0s 起按同一袋强制三类参与（仅压测）。
         /// </summary>
         private EnemyDefinition PickDefinition()
         {
@@ -565,69 +570,50 @@ namespace Survival.Enemy
             DifficultyProfile profile = _config != null ? _config.ActiveProfile : null;
             if (profile == null || profile.NeedsSpawnWeightMigration)
             {
-                // 旧资产没迁移过权重时保持 v1.2 行为（只生成 Chaser），不让 -1 哨兵变成负权重。
+                // 没挂难度档案或旧资产没迁移：保持 v1.2 行为（只生成 Chaser）。
                 return FallbackDefinition();
             }
 
-            if (_perfForceMix)
+            if (_spawnBagIndex >= SpawnBagSize)
             {
-                // 压测口径：无视解锁时间，从 0s 起就按晚期权重混三种（正常游玩不会带这个参数）。
-                return PickWeighted(profile.LateChaserWeight, profile.LateChargerWeight, profile.LateFlankerWeight);
+                RefillSpawnBag(profile, _elapsed);
             }
 
-            float time = _elapsed;
-            if (time < profile.ChargerUnlockSeconds)
+            switch (_spawnBag[_spawnBagIndex++])
             {
-                return PickWeighted(profile.EarlyChaserWeight, 0f, 0f);
+                case EnemyKind.Flanker:
+                    return _flankerDefinition != null ? _flankerDefinition : FallbackDefinition();
+                case EnemyKind.Charger:
+                    return _chargerDefinition != null ? _chargerDefinition : FallbackDefinition();
+                default:
+                    return _chaserDefinition != null ? _chaserDefinition : FallbackDefinition();
             }
-
-            if (time < profile.FlankerUnlockSeconds)
-            {
-                return PickWeighted(profile.MidChaserWeight, profile.MidChargerWeight, 0f);
-            }
-
-            return PickWeighted(profile.LateChaserWeight, profile.LateChargerWeight, profile.LateFlankerWeight);
         }
 
-        /// <summary>加权随机（无分配）：total 累加已解锁且有权重的类型，再逐项扣减。</summary>
-        private EnemyDefinition PickWeighted(float chaserWeight, float chargerWeight, float flankerWeight)
+        /// <summary>
+        /// 重填 5-tick 袋：2 追击 + 2 绕行 + 1 冲锋；未解锁位置用追击补位。
+        /// 洗牌用原地交换（无分配）；袋只在重填时按当前局内时间判断解锁，轮内不跳变。
+        /// </summary>
+        private void RefillSpawnBag(DifficultyProfile profile, float time)
         {
-            float wChaser = _chaserDefinition != null ? Mathf.Max(0f, chaserWeight) : 0f;
-            float wCharger = _chargerDefinition != null ? Mathf.Max(0f, chargerWeight) : 0f;
-            float wFlanker = _flankerDefinition != null ? Mathf.Max(0f, flankerWeight) : 0f;
+            bool chargerUnlocked = _perfForceMix || time >= profile.ChargerUnlockSeconds;
+            bool flankerUnlocked = _perfForceMix || time >= profile.FlankerUnlockSeconds;
 
-            float total = wChaser + wCharger + wFlanker;
-            if (total <= 0f)
+            _spawnBag[0] = EnemyKind.Chaser;
+            _spawnBag[1] = EnemyKind.Chaser;
+            _spawnBag[2] = flankerUnlocked ? EnemyKind.Flanker : EnemyKind.Chaser;
+            _spawnBag[3] = flankerUnlocked ? EnemyKind.Flanker : EnemyKind.Chaser;
+            _spawnBag[4] = chargerUnlocked ? EnemyKind.Charger : EnemyKind.Chaser;
+
+            for (int i = SpawnBagSize - 1; i > 0; i--)
             {
-                return FallbackDefinition();
+                int j = Random.Range(0, i + 1);
+                EnemyKind swap = _spawnBag[i];
+                _spawnBag[i] = _spawnBag[j];
+                _spawnBag[j] = swap;
             }
 
-            float r = Random.value * total;
-            if (wChaser > 0f)
-            {
-                r -= wChaser;
-                if (r <= 0f)
-                {
-                    return _chaserDefinition;
-                }
-            }
-
-            if (wCharger > 0f)
-            {
-                r -= wCharger;
-                if (r <= 0f)
-                {
-                    return _chargerDefinition;
-                }
-            }
-
-            if (wFlanker > 0f)
-            {
-                return _flankerDefinition;
-            }
-
-            // 浮点扣减后 r 仍 > 0（极端边界）：返回最后一个有权重的类型。
-            return wCharger > 0f ? _chargerDefinition : _chaserDefinition;
+            _spawnBagIndex = 0;
         }
 
         private EnemyDefinition FallbackDefinition()

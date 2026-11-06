@@ -28,6 +28,7 @@ namespace Survival.Core
     /// - <c>spawnOps=7</c>：生成时跳过 tint/scale/传 renderer 的位掩码（C5 alloc 归因；7=三项都跳过）
     /// - <c>walk=1</c>：让玩家自动往返移动（回收 1.5s/到顶补位的黑盒验证；玩家仍无敌）
     /// - <c>logRecycle=1</c>：打前 20 条视野超时回收日志（验证 1.5s 口径）
+    /// - <c>logStates=1</c>：强制类型探针打开状态日志（多只同类也能看到 Flank→Pounce→Chase 序列）
     ///
     /// 输出：每 2 秒一行 <c>[PERF] {json}</c>，结束时一行 <c>[PERF-SUMMARY] {json}</c>，都进浏览器 console，
     /// 由 tools/e2e/perf.mjs 收集；真机看屏幕上的 hud。
@@ -110,6 +111,7 @@ namespace Survival.Core
         private bool _noHud;
         private bool _walk;
         private bool _logRecycle;
+        private bool _logStates;
         private int _spawnOps;
         private float _walkDirection = 1f;
         private float _flankTimeoutOverride;
@@ -167,6 +169,7 @@ namespace Survival.Core
             _noHud = ParseInt(query, "noHud") == 1;
             _walk = ParseInt(query, "walk") == 1;
             _logRecycle = ParseInt(query, "logRecycle") == 1;
+            _logStates = ParseInt(query, "logStates") == 1;
             _spawnOps = ParseInt(query, "spawnOps");
             _flankTimeoutOverride = ParseFloat(query, "flankTimeout");
             _difficulty = ParseDifficulty(query);
@@ -244,7 +247,7 @@ namespace Survival.Core
             {
                 _spawner.SetPerfForcedKind(_forcedKind.Value);
                 // 单类型视觉探针（enemyLimit=1）才打状态日志；40 只压测不打，避免日志分配污染采样。
-                if (_forcedKind.Value == EnemyKind.Charger && _limitOverride > 0 && _limitOverride <= 2)
+                if (_logStates || (_forcedKind.Value == EnemyKind.Charger && _limitOverride > 0 && _limitOverride <= 2))
                 {
                     EnemyAI.SetLogChargerStates(true);
                 }
@@ -253,7 +256,7 @@ namespace Survival.Core
                 {
                     // perf-only 覆盖：把 6s 侧绕超时压短，用于黑盒验证 Direct 分支；正常游玩不设此参数。
                     EnemyAI.SetPerfFlankTimeoutOverride(_flankTimeoutOverride);
-                    if (_limitOverride > 0 && _limitOverride <= 2)
+                    if (_logStates || (_limitOverride > 0 && _limitOverride <= 2))
                     {
                         EnemyAI.SetLogFlankerStates(true);
                     }

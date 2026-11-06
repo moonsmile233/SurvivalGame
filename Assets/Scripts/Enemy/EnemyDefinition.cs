@@ -30,8 +30,8 @@ namespace Survival.Enemy
         [SerializeField] private float _colliderRadius = 0.38f;
 
         [Header("冲锋 Charger（仅 _kind=Charger 使用）")]
-        [Tooltip("距离玩家 ≤ 该值进入前摇；必须 ≤ 冲刺速度×冲刺时长，否则会停在射程外打空。")]
-        [SerializeField] private float _chargeTriggerDistance = 2.8f;
+        [Tooltip("距离玩家 ≤ 该值进入前摇；必须 ≤ 冲刺速度×冲刺时长，否则会停在射程外打空。C5.2 起 4.2。")]
+        [SerializeField] private float _chargeTriggerDistance = 4.2f;
         [Tooltip("前摇秒数；≥0.4s 才能读。前摇中不锁方向。")]
         [SerializeField] private float _chargeWindupSeconds = 0.45f;
         [Tooltip("冲刺距离（世界单位）；时长 = 距离 / 实际冲刺速度（含难度倍率），不再写死秒数。")]
@@ -46,12 +46,22 @@ namespace Survival.Enemy
         [SerializeField] private int _chargeDamage = 15;
 
         [Header("绕行 Flanker（仅 _kind=Flanker 使用）")]
-        [Tooltip("侧后方目标点半径。")]
-        [SerializeField] private float _flankRadius = 2.4f;
+        [Tooltip("侧后方目标点半径。C5.2 起 3.0（2.4 时玩家看不出和普通敌人的区别）。")]
+        [SerializeField] private float _flankRadius = 3f;
         [Tooltip("目标点相对玩家朝向的侧后方角度（度）。")]
         [SerializeField] private float _flankAngleDegrees = 135f;
-        [Tooltip("距玩家 ≤ 该值直接扑。")]
-        [SerializeField] private float _flankPounceDistance = 1.2f;
+        [Tooltip("距玩家 ≤ 该值进入扑击（短突进）。C5.2 起 1.6。")]
+        [SerializeField] private float _flankPounceDistance = 1.6f;
+        [Tooltip("扑击突进速度（绝对速度，不乘难度倍率）：短促一次，不能变成第二次冲刺。")]
+        [SerializeField] private float _flankPounceSpeed = 4f;
+        [Tooltip("扑击突进秒数；0.3s × 4.0u/s ≈ 1.2u，扑空后回到追击。")]
+        [SerializeField] private float _flankPounceSeconds = 0.3f;
+        [Tooltip("追离距离：追击中离玩家超过它并持续一段时间，就回到侧绕重新起手。")]
+        [SerializeField] private float _flankDisengageDistance = 2.5f;
+        [Tooltip("追离持续时间（秒）；到点回 Flank 并重置 6s 计时与目标点到达标记。")]
+        [SerializeField] private float _flankDisengageSeconds = 0.4f;
+        [Tooltip("两次扑击之间的最短间隔：扑完要正常追击一段，不能贴身连扑。")]
+        [SerializeField] private float _flankPounceCooldown = 1.2f;
         [Tooltip("侧绕超时秒数；超时转直追，避免无限绕圈。")]
         [SerializeField] private float _flankTimeoutSeconds = 6f;
 
@@ -76,6 +86,11 @@ namespace Survival.Enemy
         public float FlankRadius => _flankRadius;
         public float FlankAngleDegrees => _flankAngleDegrees;
         public float FlankPounceDistance => _flankPounceDistance;
+        public float FlankPounceSpeed => _flankPounceSpeed;
+        public float FlankPounceSeconds => _flankPounceSeconds;
+        public float FlankDisengageDistance => _flankDisengageDistance;
+        public float FlankDisengageSeconds => _flankDisengageSeconds;
+        public float FlankPounceCooldown => _flankPounceCooldown;
         public float FlankTimeoutSeconds => _flankTimeoutSeconds;
     }
 }

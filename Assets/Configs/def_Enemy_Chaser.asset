@@ -31,4 +31,9 @@ MonoBehaviour:
   _flankRadius: 2.4
   _flankAngleDegrees: 135
   _flankPounceDistance: 1.2
+  _flankPounceSpeed: 4
+  _flankPounceSeconds: 0.3
+  _flankDisengageDistance: 2.5
+  _flankDisengageSeconds: 0.4
+  _flankPounceCooldown: 1.2
   _flankTimeoutSeconds: 6

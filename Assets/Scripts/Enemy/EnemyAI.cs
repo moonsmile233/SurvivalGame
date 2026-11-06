@@ -110,9 +110,24 @@ namespace Survival.Enemy
         private float _flankRadius;
         private float _flankAngleDegrees;
         private float _flankPounceDistance;
+        private float _flankPounceSpeed;
+        private float _flankPounceSeconds;
+        private float _flankDisengageDistance;
+        private float _flankDisengageSeconds;
+        private float _flankPounceCooldown;
         private float _flankTimeoutSeconds;
         private float _flankTimer;
         private float _flankLogTimer;
+
+        // 扑击是一次短突进：进入 Pounce 时锁定朝玩家，走完就回 Chase（不是第二次冲刺）。
+        private Vector2 _pounceDirection = Vector2.up;
+        private float _pounceTimer;
+
+        // 追离计时：玩家拉开 >2.5u 持续 0.4s，就回 Flank 重新起手（用户要能看出“绕→扑→再绕”）。
+        private float _disengageTimer;
+
+        // 两次扑击的最短间隔：贴身时不能 Chase→Pounce 每 0.3s 连扑。
+        private float _pounceCooldownTimer;
         // 出生时“玩家→自己”的方位；玩家静止时用它当固定基准，否则每帧用自身方位会让 bearing 恒为 0。
         private Vector2 _flankReferenceBearing = Vector2.up;
         // 到达侧后点后闩锁为 true，之后一路 seek 玩家；否则每帧在“追目标点/追玩家”间切换会在 2.4-0.6 处抖动不扑。
@@ -136,6 +151,7 @@ namespace Survival.Enemy
             Flank = 0,
             Pounce = 1,
             Direct = 2,
+            Chase = 3,
         }
 
         /// <summary>已在前环（离停距 ≤0.15）。不是“钉住”——软墙/让位仍然生效。</summary>
@@ -256,6 +272,11 @@ namespace Survival.Enemy
                 _flankRadius = Mathf.Max(0.1f, definition.FlankRadius);
                 _flankAngleDegrees = definition.FlankAngleDegrees;
                 _flankPounceDistance = Mathf.Max(0.1f, definition.FlankPounceDistance);
+                _flankPounceSpeed = Mathf.Max(0.1f, definition.FlankPounceSpeed);
+                _flankPounceSeconds = Mathf.Max(0.05f, definition.FlankPounceSeconds);
+                _flankDisengageDistance = Mathf.Max(_flankPounceDistance, definition.FlankDisengageDistance);
+                _flankDisengageSeconds = Mathf.Max(0.05f, definition.FlankDisengageSeconds);
+                _flankPounceCooldown = Mathf.Max(0f, definition.FlankPounceCooldown);
                 _flankTimeoutSeconds = s_perfFlankTimeoutOverride > 0f
                     ? s_perfFlankTimeoutOverride
                     : Mathf.Max(0.1f, definition.FlankTimeoutSeconds);
@@ -356,7 +377,8 @@ namespace Survival.Enemy
             Vector2 seekVelocity,
             float delta,
             bool allowPlayerDodge = true,
-            bool allowSidestep = true)
+            bool allowSidestep = true,
+            float maxSpeedOverride = 0f)
         {
             // 2) 两个“被压”来源：
             //    - 前面有人挡住径向追击（frontBlock）→ 外圈侧移找空位；
@@ -402,7 +424,9 @@ namespace Survival.Enemy
                 _emergencyVelocity, emergency, _config.EnemyEmergencyAccel * delta);
 
             Vector2 finalVelocity = _velocity + _emergencyVelocity;
-            finalVelocity = Vector2.ClampMagnitude(finalVelocity, _config.EnemyMaxVelocity);
+            // 默认仍受“必须慢于玩家”的上限约束；短突进/冲刺类动作可显式传更高上限。
+            float maxSpeed = maxSpeedOverride > 0f ? maxSpeedOverride : _config.EnemyMaxVelocity;
+            finalVelocity = Vector2.ClampMagnitude(finalVelocity, maxSpeed);
 
             Vector2 newPosition = position + finalVelocity * delta;
             transform.position = newPosition;
@@ -662,12 +686,19 @@ namespace Survival.Enemy
         }
 
         /// <summary>
-        /// 绕行者：侧后方目标点 2.4（相对玩家速度方向；玩家静止时相对自身方位），
-        /// 距玩家 ≤1.2 直接扑；进入 4.5 后侧绕 6s 未切入则转直追。
+        /// 绕行者：侧后方目标点 3.0（相对玩家速度方向；玩家静止时相对自身方位），
+        /// 距玩家 ≤1.6 进入 0.3s 短突进（Pounce），扑完转 Chase；
+        /// Chase 中玩家拉开 >2.5u 持续 0.4s → 回 Flank 重新侧绕（重置 6s 计时与目标点标记）；
+        /// 进入 4.5 交战距离后侧绕满 6s 仍未切入 → Direct 直追。
         /// </summary>
         private void UpdateFlanker(Vector2 position, Vector2 direction, float distance, float speed,
             float rawDelta, float delta)
         {
+            if (_pounceCooldownTimer > 0f)
+            {
+                _pounceCooldownTimer -= delta;
+            }
+
             switch (_flankerState)
             {
                 case FlankerState.Flank:
@@ -713,6 +744,47 @@ namespace Survival.Enemy
                     return;
 
                 case FlankerState.Pounce:
+                    // 短突进：方向在进入 Pounce 时锁定，走 _flankPounceSeconds 就回 Chase；
+                    // 伤害仍是普通接触（OnTriggerStay2D），不新增冲刺伤害。
+                    _pounceTimer -= delta;
+                    Vector2 lunge = _pounceDirection * _flankPounceSpeed;
+                    // 突进用 4.0u/s 的显式上限（EnemyMaxVelocity=2.64 会把它压回普通追击，看不出“扑”）。
+                    MoveFlankerWithCrowd(position, _pounceDirection, distance, speed, lunge, rawDelta, delta,
+                        maxSpeedOverride: _flankPounceSpeed);
+                    if (_pounceTimer <= 0f)
+                    {
+                        EnterFlankerState(FlankerState.Chase);
+                    }
+
+                    return;
+
+                case FlankerState.Chase:
+                    // 扑完先正常追；玩家拉开超过追离距离并持续一段时间，就回 Flank 重新侧绕
+                    // （重置 6s 计时和目标点标记）。近距离会再次扑，形成“绕→扑→再绕”。
+                    if (distance <= _flankPounceDistance && _pounceCooldownTimer <= 0f)
+                    {
+                        EnterFlankerState(FlankerState.Pounce);
+                        return;
+                    }
+
+                    if (distance > _flankDisengageDistance)
+                    {
+                        _disengageTimer += delta;
+                        if (_disengageTimer >= _flankDisengageSeconds)
+                        {
+                            EnterFlankerState(FlankerState.Flank);
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        _disengageTimer = 0f;
+                    }
+
+                    Vector2 chaseSeek = ComputeSeekVelocity(direction, distance, speed);
+                    MoveFlankerWithCrowd(position, direction, distance, speed, chaseSeek, rawDelta, delta);
+                    return;
+
                 case FlankerState.Direct:
                     Vector2 seekPlayer = ComputeSeekVelocity(direction, distance, speed);
                     MoveFlankerWithCrowd(position, direction, distance, speed, seekPlayer, rawDelta, delta);
@@ -721,9 +793,10 @@ namespace Survival.Enemy
         }
 
         private void MoveFlankerWithCrowd(Vector2 position, Vector2 direction, float distance, float speed,
-            Vector2 seekVelocity, float rawDelta, float delta)
+            Vector2 seekVelocity, float rawDelta, float delta, float maxSpeedOverride = 0f)
         {
-            Vector2 moved = ApplyCrowdMovement(position, direction, distance, speed, seekVelocity, delta);
+            Vector2 moved = ApplyCrowdMovement(position, direction, distance, speed, seekVelocity, delta,
+                maxSpeedOverride: maxSpeedOverride);
             UpdateRecycle(moved, rawDelta);
         }
 
@@ -762,15 +835,33 @@ namespace Survival.Enemy
         {
             _flankerState = next;
             _flankLogTimer = 0f;
-            if (next == FlankerState.Flank)
+
+            switch (next)
             {
-                _flankPointReached = false;
+                case FlankerState.Flank:
+                    // 重新起手：清目标点 + 重置 6s 侧绕计时（否则扑空回来只剩残余时间，立刻转 Direct）。
+                    _flankPointReached = false;
+                    _flankTimer = _flankTimeoutSeconds;
+                    _disengageTimer = 0f;
+                    break;
+
+                case FlankerState.Pounce:
+                    // 锁定“此刻朝玩家”的方向；_lastDirection 每帧在 Update 里按最新位置更新。
+                    // 同时开始冷却：扑完要正常追一段，不能贴身连扑。
+                    _pounceDirection = _lastDirection;
+                    _pounceTimer = _flankPounceSeconds;
+                    _pounceCooldownTimer = _flankPounceCooldown;
+                    break;
+
+                case FlankerState.Chase:
+                    _disengageTimer = 0f;
+                    break;
             }
 
             if (s_logFlankerStates)
             {
                 float elapsed = _spawner != null ? _spawner.RoundElapsed : 0f;
-                Debug.Log($"[Flanker] state={next} t={elapsed:F2} pos={transform.position.x:F2},{transform.position.y:F2}");
+                Debug.Log($"[Flanker] state={next} id={GetInstanceID()} t={elapsed:F2} pos={transform.position.x:F2},{transform.position.y:F2}");
             }
         }
 

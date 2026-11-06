@@ -1,6 +1,6 @@
 # M6 内容扩展实施计划：冲锋者 / 绕行者 / 计分改造 / 回归
 
-> 文档版本：2026-11-05T00:10+08 · 作者：程序 · 状态：**C5/C5.1 已完成（上限 14/30/50、权重解锁、回收 1.5s、到顶补位；Charger Dash 按 D4' 穿阵不参与敌人分离；30/40/50 混合 165FPS/p95 7ms，非 Dash minPair p50 0.77~0.82；alloc 基线 41~48KB/s 非敌人代码，见 `docs/evidence/m6-content/c5/c5-notes.md`）；C6 待放行**
+> 文档版本：2026-11-06T22:40+08 · 作者：程序 · 状态：**C5.2 已实装（4.2 触发 / 3.0 侧绕 + 扑击短突进 + 追离回绕 / 5-tick 袋 2:2:1 生成；待用户验收）；C5/C5.1 已完成（上限 14/30/50、权重解锁、回收 1.5s、到顶补位；Charger Dash 按 D4' 穿阵不参与敌人分离；30/40/50 混合 165FPS/p95 7ms，非 Dash minPair p50 0.77~0.82；alloc 基线 41~48KB/s 非敌人代码，见 `docs/evidence/m6-content/c5/c5-notes.md`）；C6 待放行**
 > 依据：`docs/tickets/M6-内容扩展.md` §3–§5、`docs/proposals/proposal-M6-重构-游戏优先-v1.2.md`、`docs/参考拆解.md` §2.6；
 > 策划 2026-11-02 跨会话指令（敌人种类 → 计分改造 → 全量回归）。
 > 基线：`main = wip = 198f1a6e`（v1.2.1 已部署线上）；`@` 空；**本计划只进 wip，不动 main、不部署、不发 Release**。
@@ -68,16 +68,21 @@ public enum EnemyKind { Chaser = 0, Charger = 1, Flanker = 2 }
 | `_moveSpeed` | 1.8 / 1.5 / 1.9 | 追击 / 冲锋接近 / 绕行 |
 | `_contactDamage` | 12 | 普通接触伤害（三档都乘难度伤害倍率） |
 | `_colliderRadius` | 0.38 | 三档保持一致，避免停距/拥挤手感变化 |
-| `_chargeTriggerDistance` | 4.5 | Charger 进入前摇的距离 |
+| `_chargeTriggerDistance` | **4.2**（C5.2） | Charger 进入前摇的距离（原 2.8 太近，玩家看不出提前量） |
 | `_chargeWindupSeconds` | 0.45 | 前摇；≥0.4s，可读 |
 | `_chargeDistance` | 7.0 | 冲刺距离；时长 = 距离 / 实际冲刺速度（含难度倍率） |
 | `_chargeSpeed` | 4.5 | 冲刺速度 fallback；难度档案 `_chargeSpeed`（4.0/4.5/5.0）优先，**不再乘任何倍率**、不受 `EnemySpeedMax=2.2` 限制 |
 | `_chargeRecoverSeconds` | 0.8 | 冲刺后恢复 |
 | `_chargeCooldownSeconds` | 1.5 | 恢复后冷却 |
 | `_chargeDamage` | 15 | 冲刺伤害；每次冲刺最多结算一次 |
-| `_flankRadius` | 2.4 | 绕行目标点半径 |
+| `_flankRadius` | **3.0**（C5.2） | 绕行目标点半径（2.4 时玩家看不出与普通敌人的区别） |
 | `_flankAngleDegrees` | 135 | 目标点相对玩家朝向的侧后方角度 |
-| `_flankPounceDistance` | 1.2 | 距玩家 ≤ 该值直接扑 |
+| `_flankPounceDistance` | **1.6**（C5.2） | 距玩家 ≤ 该值进入扑击 |
+| `_flankPounceSpeed` | **4.0**（C5.2） | 扑击短突进的绝对速度（不乘倍率，上限显式放开） |
+| `_flankPounceSeconds` | **0.3**（C5.2） | 一次突进时长；0.3×4.0 ≈ 1.2u |
+| `_flankPounceCooldown` | **1.2**（C5.2） | 两次扑击最短间隔，避免贴身连扑 |
+| `_flankDisengageDistance` | **2.5**（C5.2） | 追离距离：玩家拉开超过它并持续一段时间 |
+| `_flankDisengageSeconds` | **0.4**（C5.2） | 追离持续时间；到点回 Flank 重绕 |
 | `_flankTimeoutSeconds` | 6 | 侧绕超时转直追 |
 
 > 资产由 `SceneSetup` 生成：`def_Enemy_Chaser.asset`（已有）、新增 `def_Enemy_Charger.asset`、
@@ -94,9 +99,9 @@ public enum EnemyKind { Chaser = 0, Charger = 1, Flanker = 2 }
 | `_midChaserWeight` / `_midChargerWeight` | 0.85 / 0.15 | 0.75 / 0.25 | 0.65 / 0.35 |
 | `_lateChaserWeight` / `_lateChargerWeight` / `_lateFlankerWeight` | 0.70 / 0.20 / 0.10 | 0.55 / 0.30 / 0.15 | 0.45 / 0.35 / 0.20 |
 
-- 阶段定义：`t < chargerUnlock` 早期（只有 Chaser）；`t < flankerUnlock` 中期；之后晚期。
-- 简单/困难的具体权重 M6 只写了“更低/更高”，上表是本计划的建议值；策划可在资产里直接调，不改代码。
-- 权重进资产、代码只读；Spawner 不写死 0.75/0.25 之类的字面量。
+- **C5.2 起自然生成不再用早/中/晚权重**（字段保留、不再参与生成），改为 5-tick 袋：
+  **2 普通 + 2 绕行 + 1 冲锋**（每轮洗牌；未解锁类型用普通补位），全解锁后约 40/40/20，
+  满足“绕行者数量与普通敌人相当”。解锁时间仍是表中 25/45/15/35/10/25 秒。
 - `_enemyLimit`：C1–C4 保持 14/20/20；C5 写 14/30/50（D1）。
 
 ### 2.2 Chaser（追击，保持不变）
@@ -110,7 +115,7 @@ public enum EnemyKind { Chaser = 0, Charger = 1, Flanker = 2 }
 
 | 状态 | 进入 | 时长 / 速度 | 行为 | 退出 |
 |---|---|---|---|---|
-| Approach | 初始 / 冷却结束 | 1.5 × 难度速度倍率 | seek 玩家；走普通软墙/让位 | 距离 ≤ 4.5 → Windup |
+| Approach | 初始 / 冷却结束 | 1.5 × 难度速度倍率 | seek 玩家；走普通软墙/让位 | 距离 ≤ **4.2**（C5.2） → Windup |
 | Windup | Approach 触发 | 0.45s；速度 0 | 停止；颜色渐变到橙红、缩放 1.0→1.2 | 计时结束 → Dash |
 | Dash | Windup 结束 | 距离 7.0u；绝对速度 4.0 / 4.5 / 5.0（时长 1.75 / 1.56 / 1.40s） | **方向在 Dash 开始时锁定**，直线冲刺；不转向、不受 `EnemySpeedMax` 限制 | 距离走完 / 撞地图边界 → Recover |
 | Recover | Dash 结束 | 0.8s；速度 0 | 停止；颜色/缩放恢复 | 计时结束 → Cooldown |
@@ -146,20 +151,23 @@ public enum EnemyKind { Chaser = 0, Charger = 1, Flanker = 2 }
 
 | 状态 | 进入 | 行为 | 退出 |
 |---|---|---|---|
-| Flank | 初始（距玩家 >1.2） | 目标点 = 玩家侧后方 2.4；seek 目标点，走软墙；到目标点 0.6 内后改为 seek 玩家（仍算 Flank） | 距玩家 ≤1.2 → Pounce；持续 6s → Direct |
-| Pounce | 距玩家 ≤1.2 | 直接 seek 玩家，普通停距 0.70 | 持续 |
-| Direct | Flank 超时 6s | 与 Chaser 相同 | 持续 |
+| Flank | 初始 / Chase 追离后重回 | 目标点 = 玩家侧后方 **3.0**；seek 目标点，走软墙；到目标点 0.6 内后改为 seek 玩家（仍算 Flank） | 距玩家 ≤**1.6** → Pounce；在交战距离内持续 6s → Direct |
+| Pounce | 距玩家 ≤1.6 且冷却已过 | **短突进**：进入时锁定朝玩家方向，**0.3s × 4.0u/s ≈ 1.2u**，之后回 Chase；伤害仍是普通接触 12 | 计时结束 → Chase |
+| Chase | Pounce 结束 | 正常 seek 玩家（普通追击）；冷却 1.2s 内不再扑 | 距离 ≤1.6 且冷却结束 → Pounce；离玩家 >2.5 持续 0.4s → Flank（重置 6s 与目标点标记） |
+| Direct | Flank 超时 6s | 与 Chaser 相同（不再回 Flank） | 持续 |
 
 **目标点几何**：
 
 - `playerVel = _playerBody.linearVelocity`；`|playerVel| > 0.3` 时 `forward = playerVel.normalized`，
   否则用**出生时的固定参考方位**（`_flankReferenceBearing`）；若用每帧实时方位，目标点会跟着自己转，
   实际只是轻微内旋、近似正面直冲。
-- `side = rotate(forward, ±135°)`，符号取生成时随机的 `_sideSign`；`target = playerPos + side * 2.4`。
+- `side = rotate(forward, ±135°)`，符号取生成时随机的 `_sideSign`；`target = playerPos + side * 3.0`。
 - 目标点钳制在地图边界内；目标点与玩家重合等退化情况直接转 Direct。
 - 玩家移动时每帧更新目标点；静止时目标点固定在出生参考方位上，避免退化成正面直冲；6s 超时防止无限绕圈。
 
-**伤害**：始终普通接触 12 × 难度倍率；没有冲刺/远程。
+**伤害**：始终普通接触 12 × 难度倍率；扑击只是位移，没有独立的冲刺伤害/远程。
+**可读性（C5.2）**：用户明确不要拖尾/半透明等新提示（Charger 有 `trial` 水印的构建除外）；
+“绕到侧后 → 扑 → 再绕”靠行为本身可读，探针记录 `Flank→Pounce→Chase→Flank` 循环次数。
 
 **可读性**：同圆形轮廓的独立紫色 PNG（颜色烤进图、tint 白）、视觉缩放 0.95；碰撞半径 0.38 不变。
 
@@ -173,24 +181,25 @@ public enum EnemyKind { Chaser = 0, Charger = 1, Flanker = 2 }
 
 ## 3. 生成与上限
 
-### 3.1 解锁与权重
+### 3.1 解锁与独立节拍（C5.2）
 
-- 使用 §2.1 的 `DifficultyProfile` 表；Spawner 在每次生成时按 `RoundElapsed` 选阶段，再按权重随机。
-- 默认权重（普通）：0–15s 追击 100%；15–35s 追击 75% / 冲锋 25%；35–60s 追击 55% / 冲锋 30% / 绕行 15%。
-- 简单/困难用 §2.1 的建议值；三档都是 60 秒胜利条件，不因难度改变。
+- 保留原 tick：1.5s 起、每 10s −0.15、下限 0.5s、×难度倍率；**每个 tick 只出 1 只**。
+- 类型用 **5-tick 袋**：2 普通 + 2 绕行 + 1 冲锋，每轮 Fisher–Yates 洗牌；未解锁的类型用普通补位。
+  全解锁后约 **40/40/20**，绕行者数量 ≈ 普通敌人（用户要求）。
+- 解锁时间不变：Charger 25/15/10s、Flanker 45/35/25s（Easy/Normal/Hard）。
+- 早/中/晚权重字段保留在资产里，但**不再参与自然生成**。
+- `PerfProbe`：`enemyKind=charger|flanker|chaser` 强制单类型；`enemyMix=1` 从 0s 起按同一袋强制三类参与
+  （仅压测/证据用，正常游玩不生效）。
 
-### 3.2 加权选择（无分配）
+### 3.2 选型实现（无分配）
 
 ```text
-total = sum(weight[i])                    // 只累加已解锁且 >0 的类型
-r = Random.value * total
-for each unlocked kind: r -= weight; if (r <= 0) return kind
-fallback = last unlocked kind
+if (bagIndex >= 5) refill();      // 解锁判定 + 补位 + 原地洗牌
+kind = bag[bagIndex++];
+return definition(kind) ?? chaser;
 ```
 
-- 不建数组/闭包；三个 float 直接比较即可（最多 3 种）。
-- `PerfProbe` 提供测试覆盖：`enemyKind=charger|flanker|chaser` 强制生成；`enemyMix=1` 从 0s 起用晚期权重
-  （仅压测/证据用，正常游玩不生效）。
+- 袋是 `EnemyKind[5]` 字段，洗牌用原地交换；不建数组/闭包/字符串。
 
 ### 3.3 同屏上限与回收补位（M6 §3.4 口径）
 

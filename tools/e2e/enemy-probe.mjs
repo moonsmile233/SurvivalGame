@@ -26,6 +26,8 @@ const PORT = Number(process.env.PORT || 8131);
 const HEADED = process.env.HEADED === '1';
 const INVINCIBLE = process.env.INVINCIBLE !== '0';
 const RUN_SECONDS = Number(process.env.RUN_SECONDS || (HEADED ? 45 : 120));
+// LIMIT=4：多只同类一起跑（Flanker 侧绕/扑击循环验证）；默认 1 = 单只表现探针。
+const LIMIT = Number(process.env.LIMIT || 1);
 // MOVE=circle：每 0.9s 换一个方向（W→D→S→A）绕圈，用于黑盒触发 Flanker 的 6s Direct 超时。
 // MOVE=straight：按住 D 12 秒再按住 A 12 秒往复，把敌人甩出视野，用于验证「离屏 1.5s 回收」。
 const MOVE = (process.env.MOVE || '').toLowerCase();
@@ -75,7 +77,7 @@ page.on('console', (message) => {
   }
 
   // 每个状态只拍首帧；Flank 出生点通常在视野外不拍，改按 dist/bearing 拍可见的侧翼/背后。
-  for (const tag of ['Windup', 'Dash', 'Recover', 'Flank', 'Pounce', 'Direct']) {
+  for (const tag of ['Windup', 'Dash', 'Recover', 'Flank', 'Pounce', 'Chase', 'Direct']) {
     if (text.includes(`state=${tag}`)) {
       sawState = true;
       if (tag !== 'Flank' && !seenStateShots.has(tag)) {
@@ -115,8 +117,8 @@ console.log(`[enemy-probe] kind=${KIND} port=${PORT} headed=${HEADED} out=${OUT}
 await openGame(
   page,
   `http://127.0.0.1:${PORT}`,
-  `?perf=1&autostart=1&enemyKind=${KIND}&enemyLimit=1&roundDuration=${RUN_SECONDS + 30}` +
-    `&invincible=${INVINCIBLE ? 1 : 0}&perfSeconds=${RUN_SECONDS}&logRecycle=1` +
+  `?perf=1&autostart=1&enemyKind=${KIND}&enemyLimit=${LIMIT}&roundDuration=${RUN_SECONDS + 30}` +
+    `&invincible=${INVINCIBLE ? 1 : 0}&perfSeconds=${RUN_SECONDS}&logRecycle=1&logStates=1` +
     (FLANK_TIMEOUT ? `&flankTimeout=${FLANK_TIMEOUT}` : '') +
     (DIFFICULTY ? `&difficulty=${DIFFICULTY}` : ''),
 );
@@ -157,10 +159,43 @@ if (moveTask) {
 await shot('final');
 await Promise.all(pendingShots);
 
+// C5.2：按实例统计 Flanker 状态序列，数 Flank→Pounce→Flank 循环（证明“绕→扑→再绕”）。
+const flankerSequences = new Map();
+let flankPounceFlankCycles = 0;
+const pouncedSinceFlank = new Set();
+if (KIND === 'flanker') {
+  for (const line of logs) {
+    const match = line.match(/^\[Flanker\] state=(\w+) id=(-?\d+)/);
+    if (!match) continue;
+    const [, state, id] = match;
+    if (!flankerSequences.has(id)) flankerSequences.set(id, []);
+    const seq = flankerSequences.get(id);
+    seq.push(state);
+    // 一个循环 = 扑击后重新回到 Flank（中间可能经过 Chase）；只看连续三态会漏掉 Chase。
+    if (state === 'Pounce') {
+      pouncedSinceFlank.add(id);
+    } else if (state === 'Flank' && pouncedSinceFlank.has(id)) {
+      pouncedSinceFlank.delete(id);
+      flankPounceFlankCycles++;
+    }
+  }
+}
+
 fs.writeFileSync(path.join(OUT, `${KIND}-console.log`), logs.join('\n'));
 fs.writeFileSync(
   path.join(OUT, `${KIND}-summary.json`),
-  JSON.stringify({ kind: KIND, headed: HEADED, invincible: INVINCIBLE, move: MOVE, runSeconds: RUN_SECONDS, sawState, logs }, null, 2),
+  JSON.stringify({
+    kind: KIND,
+    limit: LIMIT,
+    headed: HEADED,
+    invincible: INVINCIBLE,
+    move: MOVE,
+    runSeconds: RUN_SECONDS,
+    sawState,
+    flankPounceFlankCycles,
+    flankerSequences: Object.fromEntries(flankerSequences),
+    logs,
+  }, null, 2),
 );
 
 await context.close();
@@ -173,3 +208,6 @@ if (!sawState) {
 }
 
 console.log(`[enemy-probe] PASS: ${logs.length} log lines, ${shotIndex} screenshots -> ${OUT}`);
+if (KIND === 'flanker') {
+  console.log(`[enemy-probe] Flank→Pounce→Flank cycles: ${flankPounceFlankCycles}（${flankerSequences.size} 只）`);
+}
