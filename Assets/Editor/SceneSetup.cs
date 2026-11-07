@@ -398,6 +398,14 @@ public static class SceneSetup
         // 窄窗口（390 直立）允许折成两行；16:9 下仍是一行。
         resultInfo.textWrappingMode = TextWrappingModes.Normal;
 
+        // C6 / D3：明细小字“存活分 · 血量分 · 受击”，在信息行与按钮之间的空档；窄屏允许折行。
+        TMP_Text resultBreakdown = CreateText("BreakdownText", resultPanel,
+            $"{UiStrings.SurvivalScoreLabel} 0{UiStrings.InfoSeparator}{UiStrings.HealthScoreLabel} 0" +
+            $"{UiStrings.InfoSeparator}{UiStrings.HitLabel} 0", 18f,
+            TextAlignmentOptions.Center);
+        SetBand(resultBreakdown.rectTransform, 0.06f, 0.94f, 0.425f, 26f);
+        resultBreakdown.textWrappingMode = TextWrappingModes.Normal;
+
         Button againButton = CreateButtonBand("AgainButton", resultPanel, 0.16f, 0.48f, 0.23f, 76f,
             UiStrings.PlayAgainButton, 24f);
         Button resultMenuButton = CreateButtonBand("MenuButton", resultPanel, 0.52f, 0.84f, 0.23f, 76f,
@@ -458,6 +466,8 @@ public static class SceneSetup
         SetObjectReference(resultController, "_titleText", resultTitle);
         SetObjectReference(resultController, "_scoreText", resultScore);
         SetObjectReference(resultController, "_infoText", resultInfo);
+        SetObjectReference(resultController, "_breakdownText", resultBreakdown);
+        SetObjectReference(resultController, "_playerHealth", playerHealth);
         SetObjectReference(resultController, "_againButton", againButton);
         SetObjectReference(resultController, "_menuButton", resultMenuButton);
 
@@ -688,17 +698,17 @@ public static class SceneSetup
         var profiles = new DifficultyProfile[3];
         profiles[(int)Difficulty.Easy] = EnsureDifficultyProfile(
             DifficultyEasyPath, Difficulty.Easy, speed: 0.90f, chargeSpeed: 4.0f, spawn: 1.20f, damage: 0.80f, limit: 14, pressure: 1.10f, score: 1.0f,
-            chargerUnlock: 25f, flankerUnlock: 45f,
+            chargerUnlock: 25f, flankerUnlock: 0f,
             earlyChaser: 1.00f, midChaser: 0.85f, midCharger: 0.15f,
             lateChaser: 0.70f, lateCharger: 0.20f, lateFlanker: 0.10f);
         profiles[(int)Difficulty.Normal] = EnsureDifficultyProfile(
             DifficultyNormalPath, Difficulty.Normal, speed: 1.00f, chargeSpeed: 4.5f, spawn: 1.00f, damage: 1.00f, limit: 30, pressure: 1.15f, score: 1.3f,
-            chargerUnlock: 15f, flankerUnlock: 35f,
+            chargerUnlock: 15f, flankerUnlock: 0f,
             earlyChaser: 1.00f, midChaser: 0.75f, midCharger: 0.25f,
             lateChaser: 0.55f, lateCharger: 0.30f, lateFlanker: 0.15f);
         profiles[(int)Difficulty.Hard] = EnsureDifficultyProfile(
             DifficultyHardPath, Difficulty.Hard, speed: 1.10f, chargeSpeed: 5.0f, spawn: 0.85f, damage: 1.15f, limit: 50, pressure: 1.20f, score: 1.6f,
-            chargerUnlock: 10f, flankerUnlock: 25f,
+            chargerUnlock: 10f, flankerUnlock: 0f,
             earlyChaser: 1.00f, midChaser: 0.65f, midCharger: 0.35f,
             lateChaser: 0.45f, lateCharger: 0.35f, lateFlanker: 0.20f);
 
@@ -843,7 +853,7 @@ public static class SceneSetup
                 serialized.FindProperty("_moveSpeed").floatValue = 1.5f;
                 serialized.FindProperty("_tint").colorValue = new Color(1f, 1f, 1f, 1f);
                 serialized.FindProperty("_visualScale").floatValue = 1.05f;
-                serialized.FindProperty("_chargeTriggerDistance").floatValue = 4.2f;
+                serialized.FindProperty("_chargeTriggerDistance").floatValue = 7f;
                 serialized.FindProperty("_chargeWindupSeconds").floatValue = 0.45f;
                 serialized.FindProperty("_chargeDistance").floatValue = 7f;
                 serialized.FindProperty("_chargeSpeed").floatValue = 4.5f;

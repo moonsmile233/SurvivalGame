@@ -21,7 +21,7 @@ MonoBehaviour:
   _pressureMaxMultiplier: 1.2
   _scoreMultiplier: 1.6
   _chargerUnlockSeconds: 10
-  _flankerUnlockSeconds: 25
+  _flankerUnlockSeconds: 0
   _earlyChaserWeight: 1
   _midChaserWeight: 0.65
   _midChargerWeight: 0.35

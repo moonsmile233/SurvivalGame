@@ -1,6 +1,6 @@
 # M6 内容扩展实施计划：冲锋者 / 绕行者 / 计分改造 / 回归
 
-> 文档版本：2026-11-06T22:40+08 · 作者：程序 · 状态：**C5.2 已实装（4.2 触发 / 3.0 侧绕 + 扑击短突进 + 追离回绕 / 5-tick 袋 2:2:1 生成；待用户验收）；C5/C5.1 已完成（上限 14/30/50、权重解锁、回收 1.5s、到顶补位；Charger Dash 按 D4' 穿阵不参与敌人分离；30/40/50 混合 165FPS/p95 7ms，非 Dash minPair p50 0.77~0.82；alloc 基线 41~48KB/s 非敌人代码，见 `docs/evidence/m6-content/c5/c5-notes.md`）；C6 待放行**
+> 文档版本：2026-11-07T10:20+08 · 作者：程序 · 状态：**C5.3 已实装（Charger 触发 4.2→7.0；Flanker 三档 0s 解锁，开局袋 2 普通 + 2 绕行，Charger 解锁后 2/2/1）；C5.2 已完成（3.0 侧绕 + 扑击短突进 + 追离回绕 / 5-tick 袋）；C5/C5.1 已完成（上限 14/30/50、权重解锁、回收 1.5s、到顶补位；Charger Dash 按 D4' 穿阵不参与敌人分离；30/40/50 混合 165FPS/p95 7ms，非 Dash minPair p50 0.77~0.82；alloc 基线 41~48KB/s 非敌人代码，见 `docs/evidence/m6-content/c5/c5-notes.md`）；C6 待放行**
 > 依据：`docs/tickets/M6-内容扩展.md` §3–§5、`docs/proposals/proposal-M6-重构-游戏优先-v1.2.md`、`docs/参考拆解.md` §2.6；
 > 策划 2026-11-02 跨会话指令（敌人种类 → 计分改造 → 全量回归）。
 > 基线：`main = wip = 198f1a6e`（v1.2.1 已部署线上）；`@` 空；**本计划只进 wip，不动 main、不部署、不发 Release**。
@@ -68,7 +68,7 @@ public enum EnemyKind { Chaser = 0, Charger = 1, Flanker = 2 }
 | `_moveSpeed` | 1.8 / 1.5 / 1.9 | 追击 / 冲锋接近 / 绕行 |
 | `_contactDamage` | 12 | 普通接触伤害（三档都乘难度伤害倍率） |
 | `_colliderRadius` | 0.38 | 三档保持一致，避免停距/拥挤手感变化 |
-| `_chargeTriggerDistance` | **4.2**（C5.2） | Charger 进入前摇的距离（原 2.8 太近，玩家看不出提前量） |
+| `_chargeTriggerDistance` | **7.0**（C5.3） | Charger 进入前摇的距离（4.2 仍太近，玩家来不及读前摇；7.0 = 冲刺距离，起手即满射程） |
 | `_chargeWindupSeconds` | 0.45 | 前摇；≥0.4s，可读 |
 | `_chargeDistance` | 7.0 | 冲刺距离；时长 = 距离 / 实际冲刺速度（含难度倍率） |
 | `_chargeSpeed` | 4.5 | 冲刺速度 fallback；难度档案 `_chargeSpeed`（4.0/4.5/5.0）优先，**不再乘任何倍率**、不受 `EnemySpeedMax=2.2` 限制 |
@@ -115,7 +115,7 @@ public enum EnemyKind { Chaser = 0, Charger = 1, Flanker = 2 }
 
 | 状态 | 进入 | 时长 / 速度 | 行为 | 退出 |
 |---|---|---|---|---|
-| Approach | 初始 / 冷却结束 | 1.5 × 难度速度倍率 | seek 玩家；走普通软墙/让位 | 距离 ≤ **4.2**（C5.2） → Windup |
+| Approach | 初始 / 冷却结束 | 1.5 × 难度速度倍率 | seek 玩家；走普通软墙/让位 | 距离 ≤ **7.0**（C5.3） → Windup |
 | Windup | Approach 触发 | 0.45s；速度 0 | 停止；颜色渐变到橙红、缩放 1.0→1.2 | 计时结束 → Dash |
 | Dash | Windup 结束 | 距离 7.0u；绝对速度 4.0 / 4.5 / 5.0（时长 1.75 / 1.56 / 1.40s） | **方向在 Dash 开始时锁定**，直线冲刺；不转向、不受 `EnemySpeedMax` 限制 | 距离走完 / 撞地图边界 → Recover |
 | Recover | Dash 结束 | 0.8s；速度 0 | 停止；颜色/缩放恢复 | 计时结束 → Cooldown |
@@ -186,7 +186,8 @@ public enum EnemyKind { Chaser = 0, Charger = 1, Flanker = 2 }
 - 保留原 tick：1.5s 起、每 10s −0.15、下限 0.5s、×难度倍率；**每个 tick 只出 1 只**。
 - 类型用 **5-tick 袋**：2 普通 + 2 绕行 + 1 冲锋，每轮 Fisher–Yates 洗牌；未解锁的类型用普通补位。
   全解锁后约 **40/40/20**，绕行者数量 ≈ 普通敌人（用户要求）。
-- 解锁时间不变：Charger 25/15/10s、Flanker 45/35/25s（Easy/Normal/Hard）。
+- 解锁时间：Charger 25/15/10s；**Flanker 三档均为 0s（C5.3）**，从开局就和普通敌人一起出。
+  所以开局袋是 2 普通 + 2 绕行 + 0 冲锋（Charger 位用普通补位），Charger 解锁后为 2/2/1。
 - 早/中/晚权重字段保留在资产里，但**不再参与自然生成**。
 - `PerfProbe`：`enemyKind=charger|flanker|chaser` 强制单类型；`enemyMix=1` 从 0s 起按同一袋强制三类参与
   （仅压测/证据用，正常游玩不生效）。
@@ -454,6 +455,7 @@ Unity 结算不显示最高分；`onGameOver` 只单向传分。恢复“同难�
 | C3 | Charger 行为 + 前摇 + 伤害 + 边界 | `EnemyAI.cs`、`EnemyDefinition.cs`（资产值） | 构建 #3：`enemyKind=charger` 20s 探针；**前摇→Dash 截图/录屏先给用户看**；伤害日志；40 只 charger 压测 |
 | C4 | Flanker 行为 + 绕行超时 | `EnemyAI.cs`、`EnemyDefinition.cs` | 构建 #4：`enemyKind=flanker` 探针；**侧绕→扑截图/录屏先给用户看**；40 只 flanker 压测 |
 | C5 | 生成权重/解锁 + 上限补位 + 回收 1.5s | `EnemySpawner.cs`、`DifficultyProfile.cs`、`GameConfig.cs`、`PerfProbe.cs`、`Assets/Configs/dif_*.asset` | 构建 #5（临时）：写入 14/30/50；60s 自然混合；**30/40/50 混合压测**；capBlocked/capRecycled；1.5s 回收；50 不达标停报 |
+| C5.3 | 触发距离 + 绕行解锁微调（用户 2026-11-05 口径） | `dif_*.asset`、`def_Enemy_Charger.asset`、`EnemyDefinition.cs`、`SceneSetup.cs` | 与 C6 同一个构建：开局袋 2 普通 + 2 绕行、Charger 0；解锁后 2/2/1；Charger 7.0 起手 |
 | C6 | 计分重写 + HUD/结算/协议 + 字体 | `ScoreService.cs`、`GameManager.cs`、`PlayerHealth.cs`、`HudView.cs`、`ResultPanel.cs`、`UiStrings.cs`、`WebGLBridge.cs`、`SceneSetup.cs`、`ScoreSelfCheck.cs`、字体资产 | 构建 #6：ScoreSelfCheck；`score.mjs` 2/15/30/45/60；E2E 断言更新；6 视口 |
 | C7 | 全量回归 + 文档 + 1.3.0 最终构建 | E2E、`docs/实现总览.md`、`architecture.md`、`bridge-protocol.md`、`acceptance.md`、`遗留问题.md`、`README.md`、`docs/M6-内容扩展-执行记录.md`、`web/index.html`、`web/unity/**` | 构建 #7（**唯一入 `web/unity` 的构建**，1.3.0）：17 条 + standalone/h5-shell/smoke/6 视口 + 30/40/50 混合；`check-version` PASS |
 
@@ -469,9 +471,9 @@ Unity 结算不显示最高分；`onGameOver` 只单向传分。恢复“同难�
 ### 9.1 玩法
 
 - [ ] 三种敌人同屏可分辨（颜色/尺寸/前摇）；Charger 前摇可读、玩家能侧步躲开；Flanker 不长期贴脸。
-- [ ] Charger：4.5 触发、0.45s 前摇、0.45s 冲刺、0.8s 恢复、1.5s 冷却；Dash 锁向、撞边界提前结束；
+- [ ] Charger：7.0 触发、0.45s 前摇、7.0u 冲刺（4.0/4.5/5.0）、0.8s 恢复、1.5s 冷却；Dash 锁向、撞边界提前结束；
       一次冲刺最多一次伤害；普通接触 12、冲刺 15（均乘难度倍率）。
-- [ ] Flanker：侧后方 2.4、距 ≤1.2 直接扑、6s 超时转直追；地图内目标点；玩家静止时仍会侧绕。
+- [ ] Flanker：侧后方 3.0、距 ≤1.6 直接扑（0.3s × 4.0）、6s 超时转直追；地图内目标点；玩家静止时仍会侧绕。
 - [ ] Chaser 行为与 v1.2 一致（抽取前后对比）。
 
 ### 9.2 生成 / 性能
