@@ -14,7 +14,7 @@ public static class BuildScript
     private const string ScenePath = "Assets/Scenes/Game.unity";
     private const string CompanyName = "Demo";
     private const string ProductName = "SurvivalGame";
-    private const string BundleVersion = "1.2.1";
+    private const string BundleVersion = "1.3.0";
 
     private static string ProjectRoot => Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
     private static string WebGLOutputDir => Path.Combine(ProjectRoot, "web", "unity");

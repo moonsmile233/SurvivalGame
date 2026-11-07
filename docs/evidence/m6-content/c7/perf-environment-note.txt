@@ -1,0 +1,1 @@
+rAF baseline (blank canvas, offscreen Chrome): 128 FPS; uncapped 40-enemy: 2154 FPS / p95 1ms (perf-40-uncapped-diagnostic.json)

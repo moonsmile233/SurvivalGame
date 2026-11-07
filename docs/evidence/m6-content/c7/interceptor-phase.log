@@ -1,0 +1,23 @@
+[Interceptor] phase=Decel t=4.35 dist=6.68 pos=21.95,-2.34
+
+[Interceptor] phase=Arrive t=16.88 dist=6.55 pos=-8.77,1.10
+
+[Interceptor] phase=Decel t=18.92 dist=1.59 pos=-9.14,1.49
+
+[Interceptor] phase=Approach t=19.79 dist=1.47 pos=-7.52,1.45
+
+[Interceptor] phase=Decel t=21.24 dist=1.23 pos=-3.15,1.21
+
+[Interceptor] phase=Approach t=21.92 dist=1.20 pos=-1.71,1.18
+
+[Interceptor] phase=Decel t=23.42 dist=1.15 pos=2.76,1.13
+
+[Interceptor] phase=Approach t=24.08 dist=1.14 pos=4.16,1.12
+
+[Interceptor] phase=Decel t=25.52 dist=1.13 pos=8.48,1.11
+
+[Interceptor] phase=Approach t=26.20 dist=1.13 pos=9.92,1.11
+
+[Interceptor] phase=Decel t=27.67 dist=1.13 pos=14.33,1.11
+
+[Interceptor] phase=Approach t=28.08 dist=1.13 pos=15.04,1.11

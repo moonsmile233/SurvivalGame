@@ -32,6 +32,9 @@ namespace Survival.Enemy
         // 出生点与现有敌人的最小中心距：太小会一出生就重合（防重合兜底只应是异常路径）。
         private const float SpawnMinEnemyDistance = 0.45f;
 
+        // 方向退化阈值（与 EnemyAI 同一口径）。
+        private const float DirectionEpsilon = 0.0001f;
+
         // 内圈停距留的缝隙：玩家半径 + 敌人半径 − 0.08，刚好让 Trigger 接触。
         private const float StopDistancePadding = 0.08f;
 
@@ -70,6 +73,14 @@ namespace Survival.Enemy
         private bool _running;
         private float _separationAccumulator;
         private float _playerRadius = 0.4f;
+
+        // C7.5 围堵：玩家最近一次真实移动方向（前向出生锥用）。静止时保留上次方向，首次随机。
+        private Vector2 _lastPlayerPosition;
+        private Vector2 _lastPlayerForward;
+        private bool _hasPlayerPosition;
+
+        // Chaser 槽的拦截者分配：小数累加，share=0.5 时约一半（不新增敌人类型/颜色）。
+        private float _interceptorDebt;
 
         // 均匀网格（选邻居用）：cell ≈ 软分离半径，只查相邻 9 格；字典与 bucket 列表复用，稳态无分配。
         private readonly Dictionary<long, List<int>> _grid = new Dictionary<long, List<int>>(256);
@@ -134,6 +145,15 @@ namespace Survival.Enemy
         public int SpawnedChargerCount { get; private set; }
         public int SpawnedFlankerCount { get; private set; }
 
+        /// <summary>本局生成过的拦截者数量（Chaser 槽的一半）；探针只读。</summary>
+        public int SpawnedInterceptorCount { get; private set; }
+
+        /// <summary>
+        /// 玩家最近一次真实移动方向（单位向量，未移动过时为随机方向）。
+        /// C7.5 前向出生与拦截点共用；玩家静止时保持上一次方向，不会退化成 0。
+        /// </summary>
+        public Vector2 PlayerForward => _lastPlayerForward.sqrMagnitude > DirectionEpsilon ? _lastPlayerForward : Vector2.up;
+
         private void Awake()
         {
             _root = new GameObject("Enemies").transform;
@@ -147,6 +167,41 @@ namespace Survival.Enemy
             CachePlayerRadius();
             CacheDefinitions();
             MinPairDistance = _config != null ? _config.EnemySeparationRadius : 1f;
+
+            if (_playerTarget != null)
+            {
+                _lastPlayerPosition = _playerTarget.position;
+                _hasPlayerPosition = true;
+            }
+        }
+
+        /// <summary>
+        /// C7.5：记录玩家最近一次“真实移动”的方向（前向出生锥/拦截点共用）。
+        /// 只接受单帧内合理位移（&lt;1u），避免 ResetToStart 瞬移被当成方向；静止时保留上一次方向。
+        /// </summary>
+        private void TrackPlayerForward()
+        {
+            if (_playerTarget == null)
+            {
+                return;
+            }
+
+            Vector2 position = _playerTarget.position;
+            if (!_hasPlayerPosition)
+            {
+                _lastPlayerPosition = position;
+                _hasPlayerPosition = true;
+                return;
+            }
+
+            Vector2 delta = position - _lastPlayerPosition;
+            float sqr = delta.sqrMagnitude;
+            if (sqr > 0.0004f && sqr < 1f)
+            {
+                _lastPlayerForward = delta / Mathf.Sqrt(sqr);
+            }
+
+            _lastPlayerPosition = position;
         }
 
         /// <summary>按 Kind 缓存定义；缺失的类别权重按 0 处理（旧场景只有 Chaser 也能跑）。</summary>
@@ -194,6 +249,9 @@ namespace Survival.Enemy
 
         private void Update()
         {
+            // 即使不在生成（菜单/暂停）也记录方向；暂停时 delta≈0，不会误更新。
+            TrackPlayerForward();
+
             if (!_running || _config == null || Time.deltaTime <= 0f)
             {
                 return;
@@ -413,7 +471,23 @@ namespace Survival.Enemy
             SpawnedChaserCount = 0;
             SpawnedChargerCount = 0;
             SpawnedFlankerCount = 0;
+            SpawnedInterceptorCount = 0;
+            _interceptorDebt = 0f;
             MinPairDistance = _config != null ? _config.EnemySeparationRadius : 1f;
+
+            // 方向跟踪从本局出生点重新起算；没有历史移动时随机一个方向（不固定朝上）。
+            if (_playerTarget != null)
+            {
+                _lastPlayerPosition = _playerTarget.position;
+                _hasPlayerPosition = true;
+            }
+
+            if (_lastPlayerForward.sqrMagnitude <= DirectionEpsilon)
+            {
+                Vector2 random = Random.insideUnitCircle;
+                _lastPlayerForward = random.sqrMagnitude > DirectionEpsilon ? random.normalized : Vector2.up;
+            }
+
             _running = true;
 
             // 每局一行，方便核对档位是否真的生效（间隔/上限是难度最容易配错的两项）。
@@ -519,9 +593,26 @@ namespace Survival.Enemy
             float enemyRadius = definition.ColliderRadius > 0f ? definition.ColliderRadius : 0.38f;
             float stopRadius = _playerRadius + enemyRadius - StopDistancePadding;
 
+            // C7.5：Chaser 槽约一半变成拦截者（同一类型/颜色，只改目标点与追击方式）。
+            bool interceptor = false;
+            if (definition.Kind == EnemyKind.Chaser)
+            {
+                _interceptorDebt += _config != null ? _config.InterceptorShare : 0f;
+                interceptor = _interceptorDebt >= 1f;
+                if (interceptor)
+                {
+                    _interceptorDebt -= 1f;
+                }
+            }
+
             var ai = go.AddComponent<EnemyAI>();
             ai.Initialize(_config, definition, _playerTarget, _playerHealth, this, _camera, stopRadius,
-                (_perfSpawnOpsMask & 4) != 0 ? null : renderer);
+                (_perfSpawnOpsMask & 4) != 0 ? null : renderer, interceptor, _lastPlayerForward);
+
+            if (interceptor)
+            {
+                SpawnedInterceptorCount++;
+            }
 
             switch (definition.Kind)
             {
@@ -714,12 +805,22 @@ namespace Survival.Enemy
 
             Vector3 center = _playerTarget.position;
             float radius = GetSpawnRadius();
+            float minForwardDistanceSqr = radius * radius * 0.81f;
+
+            // C7.5：每次生成掷一次；约 ForwardSpawnChance 的敌人前一半尝试落在前进方向 ±半角 的锥形内。
+            // 锥内点必须仍在地图内、离玩家保持原离屏距离；找不到就退回原来的随机方向，不让偏置造成停刷。
+            bool forwardBias = _config != null
+                               && _lastPlayerForward.sqrMagnitude > DirectionEpsilon
+                               && Random.value < _config.ForwardSpawnChance;
+            int forwardAttempts = forwardBias ? SpawnAttempts / 2 : 0;
+
             Vector3 fallback = center;
             float fallbackScore = -1f;
 
             for (int attempt = 0; attempt < SpawnAttempts; attempt++)
             {
-                Vector2 direction = Random.insideUnitCircle;
+                bool useForward = attempt < forwardAttempts;
+                Vector2 direction = useForward ? RandomForwardDirection() : Random.insideUnitCircle;
                 if (direction.sqrMagnitude < 0.0001f)
                 {
                     direction = Vector2.up;
@@ -727,6 +828,17 @@ namespace Survival.Enemy
 
                 Vector3 candidate = center + (Vector3)(direction.normalized * radius);
                 candidate.z = 0f;
+
+                if (useForward)
+                {
+                    candidate = ClampToSpawnMap(candidate);
+
+                    // 钳回地图后不能离玩家太近（否则等于“脸上刷怪”）。
+                    if ((candidate - center).sqrMagnitude < minForwardDistanceSqr)
+                    {
+                        continue;
+                    }
+                }
 
                 if (!IsInsideView(candidate) && IsSpawnPositionClear(candidate))
                 {
@@ -743,6 +855,30 @@ namespace Survival.Enemy
             }
 
             return fallback;
+        }
+
+        /// <summary>前进方向 ±半角 内的随机单位向量（锥形出生用）。</summary>
+        private Vector2 RandomForwardDirection()
+        {
+            float halfAngle = _config != null ? _config.ForwardSpawnHalfAngleDegrees : 60f;
+            float radians = Random.Range(-halfAngle, halfAngle) * Mathf.Deg2Rad;
+            float cos = Mathf.Cos(radians);
+            float sin = Mathf.Sin(radians);
+            Vector2 forward = _lastPlayerForward;
+            return new Vector2(
+                forward.x * cos - forward.y * sin,
+                forward.x * sin + forward.y * cos);
+        }
+
+        /// <summary>把前向出生点钳回地图内（留 ForwardSpawnMapMargin 内缩）。</summary>
+        private Vector3 ClampToSpawnMap(Vector3 candidate)
+        {
+            float margin = _config != null ? _config.ForwardSpawnMapMargin : 0.5f;
+            float halfWidth = Mathf.Max(0f, (_config != null ? _config.MapWidth : 36f) * 0.5f - margin);
+            float halfHeight = Mathf.Max(0f, (_config != null ? _config.MapHeight : 20f) * 0.5f - margin);
+            candidate.x = Mathf.Clamp(candidate.x, -halfWidth, halfWidth);
+            candidate.y = Mathf.Clamp(candidate.y, -halfHeight, halfHeight);
+            return candidate;
         }
 
         private bool IsSpawnPositionClear(Vector3 candidate)

@@ -115,6 +115,8 @@ namespace Survival.Core
         private int _spawnOps;
         private float _walkDirection = 1f;
         private float _flankTimeoutOverride;
+        private float _interceptorShareOverride = -1f;
+        private float _forwardSpawnOverride = -1f;
         private bool _invincible;
         private bool _drawHud;
         private bool _autoStart;
@@ -172,6 +174,19 @@ namespace Survival.Core
             _logStates = ParseInt(query, "logStates") == 1;
             _spawnOps = ParseInt(query, "spawnOps");
             _flankTimeoutOverride = ParseFloat(query, "flankTimeout");
+            // C7.5 归因（可选参数）：缺省不动；0 = 关闭对应行为。
+            if (query.TryGetValue("interceptorShare", out string shareRaw)
+                && float.TryParse(shareRaw, NumberStyles.Float, CultureInfo.InvariantCulture, out float shareValue))
+            {
+                _interceptorShareOverride = Mathf.Clamp01(shareValue);
+            }
+
+            if (query.TryGetValue("forwardSpawn", out string forwardRaw)
+                && float.TryParse(forwardRaw, NumberStyles.Float, CultureInfo.InvariantCulture, out float forwardValue))
+            {
+                _forwardSpawnOverride = Mathf.Clamp01(forwardValue);
+            }
+
             _difficulty = ParseDifficulty(query);
             float seconds = ParseFloat(query, "perfSeconds");
             if (seconds > 0f)
@@ -202,6 +217,16 @@ namespace Survival.Core
             if (_roundOverride > 0f)
             {
                 config.SetPerfRoundDurationOverride(_roundOverride);
+            }
+
+            if (_interceptorShareOverride >= 0f)
+            {
+                config.SetPerfInterceptorShareOverride(_interceptorShareOverride);
+            }
+
+            if (_forwardSpawnOverride >= 0f)
+            {
+                config.SetPerfForwardSpawnChanceOverride(_forwardSpawnOverride);
             }
 
             if (_health != null)
@@ -263,6 +288,12 @@ namespace Survival.Core
                 }
 
                 Debug.Log($"[PERF] forced enemy kind = {_forcedKind.Value}");
+            }
+
+            if (_logStates)
+            {
+                // 拦截者是 Chaser 槽的行为变体，只有 ?logStates=1 才打阶段切换，避免 40 只压测刷日志。
+                EnemyAI.SetLogInterceptorStates(true);
             }
 
             _activeLimit = config.EnemyLimit;
@@ -878,6 +909,17 @@ namespace Survival.Core
             int flanker = 0;
             int charging = 0;
             int flanking = 0;
+            // C7.5 围堵：拦截者数量 + 相对玩家前进方向的前/侧/后分布（只在 summary 时算一次）。
+            int interceptors = 0;
+            int interceptorApproach = 0;
+            int interceptorDecel = 0;
+            int interceptorArrive = 0;
+            int interceptorCrowded = 0;
+            int front = 0;
+            int side = 0;
+            int back = 0;
+            Vector3 playerPosition = _health != null ? _health.transform.position : Vector3.zero;
+            Vector2 playerForward = _spawner != null ? _spawner.PlayerForward : Vector2.up;
             if (_spawner != null)
             {
                 IReadOnlyList<EnemyAI> enemies = _spawner.ActiveEnemies;
@@ -911,6 +953,51 @@ namespace Survival.Core
                     {
                         flanking++;
                     }
+
+                    if (enemy.IsInterceptor)
+                    {
+                        interceptors++;
+                        if (enemy.IsInterceptorApproaching)
+                        {
+                            interceptorApproach++;
+                        }
+                        else if (enemy.IsInterceptorDecelerating)
+                        {
+                            interceptorDecel++;
+                        }
+                        else if (enemy.IsInterceptorArriving)
+                        {
+                            interceptorArrive++;
+                        }
+
+                        if (enemy.IsInterceptorCrowdLimited)
+                        {
+                            interceptorCrowded++;
+                        }
+                    }
+
+                    Vector2 toEnemy = (Vector2)enemy.transform.position - (Vector2)playerPosition;
+                    float sqr = toEnemy.sqrMagnitude;
+                    if (sqr <= 0.0001f)
+                    {
+                        side++;
+                    }
+                    else
+                    {
+                        float dot = Vector2.Dot(toEnemy / Mathf.Sqrt(sqr), playerForward);
+                        if (dot >= 0.5f)
+                        {
+                            front++;
+                        }
+                        else if (dot <= -0.5f)
+                        {
+                            back++;
+                        }
+                        else
+                        {
+                            side++;
+                        }
+                    }
                 }
             }
 
@@ -939,6 +1026,14 @@ namespace Survival.Core
                 .Append(",\"chaser\":").Append(chaser)
                 .Append(",\"charger\":").Append(charger)
                 .Append(",\"flanker\":").Append(flanker)
+                .Append(",\"interceptors\":").Append(interceptors)
+                .Append(",\"interceptorApproach\":").Append(interceptorApproach)
+                .Append(",\"interceptorDecel\":").Append(interceptorDecel)
+                .Append(",\"interceptorArrive\":").Append(interceptorArrive)
+                .Append(",\"interceptorCrowded\":").Append(interceptorCrowded)
+                .Append(",\"front\":").Append(front)
+                .Append(",\"side\":").Append(side)
+                .Append(",\"back\":").Append(back)
                 .Append(",\"charging\":").Append(charging)
                 .Append(",\"flanking\":").Append(flanking)
                 .Append(",\"capBlocked\":").Append(_spawner != null ? _spawner.CapBlockedCount : 0)
@@ -947,6 +1042,7 @@ namespace Survival.Core
                 .Append(",\"spawnedChaser\":").Append(_spawner != null ? _spawner.SpawnedChaserCount : 0)
                 .Append(",\"spawnedCharger\":").Append(_spawner != null ? _spawner.SpawnedChargerCount : 0)
                 .Append(",\"spawnedFlanker\":").Append(_spawner != null ? _spawner.SpawnedFlankerCount : 0)
+                .Append(",\"spawnedInterceptor\":").Append(_spawner != null ? _spawner.SpawnedInterceptorCount : 0)
                 .Append(",\"totalAllocMB\":").Append(F(_allocTotal / 1048576f, 2))
                 .Append(",\"heapKB\":").Append(GC.GetTotalMemory(false) / 1024)
                 .Append(",\"wasmMB\":").Append(F(GetWasmHeapBytes() / 1048576f, 1))

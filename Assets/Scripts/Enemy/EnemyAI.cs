@@ -63,6 +63,28 @@ namespace Survival.Enemy
         private float _sideSign;
         private Rigidbody2D _playerBody;
 
+        // C7.5 围堵：Chaser 槽里的拦截者（不新增类型/颜色），追“玩家前方 5u”的拦截点。
+        private bool _isInterceptor;
+        private Vector2 _lastPlayerForward = Vector2.up;
+        private float _interceptSideSign = 1f;
+        private float _interceptorLead;
+        private float _interceptorSide;
+        private float _interceptorMaxSpeed;
+        private float _interceptorArriveSpeed;
+        private float _interceptorTurnRate;
+        private float _interceptorReactionDelay;
+        private float _interceptorUpdateInterval;
+        private float _interceptorPredictionMax;
+        private float _interceptorVelocitySmoothing;
+        private float _interceptorArriveRadius;
+        private Vector2 _smoothedPlayerVelocity;
+        private Vector2 _interceptTarget;
+        private Vector2 _interceptorHeading = Vector2.up;
+        private float _interceptRefreshTimer;
+        private InterceptorPhase _interceptorPhase = InterceptorPhase.Approach;
+        private bool _interceptorCrowdLimited;
+        private bool _interceptorAhead;
+
         private readonly EnemyAI[] _neighbors = new EnemyAI[MaxNeighbors];
         private int _neighborCount;
 
@@ -154,11 +176,41 @@ namespace Survival.Enemy
             Chase = 3,
         }
 
+        // 拦截者阶段只用于“加速/减速/绕点”的可读与探针；不改类型/外观。
+        private enum InterceptorPhase
+        {
+            Approach = 0, // 全速前往提前点
+            Decel = 1,    // 进入减速带
+            Arrive = 2,   // 提前点附近低速绕点（不急停）
+            Hold = 3,     // 其它退化情况（目标点被边界钳住等）
+        }
+
         /// <summary>已在前环（离停距 ≤0.15）。不是“钉住”——软墙/让位仍然生效。</summary>
         public bool IsAtFront => _isAtFront;
 
         /// <summary>本敌类型；PerfProbe / Spawner 统计用。</summary>
         public EnemyKind Kind => _kind;
+
+        /// <summary>是否为 Chaser 槽里的拦截者（C7.5；外观/类型不变，只改目标点）。</summary>
+        public bool IsInterceptor => _isInterceptor;
+
+        /// <summary>拦截者探针：全速前往提前点。</summary>
+        public bool IsInterceptorApproaching => _isInterceptor && _interceptorPhase == InterceptorPhase.Approach;
+
+        /// <summary>拦截者探针：进入减速带（离提前点 2×ArriveRadius 内、尚未到达 Arrive）。</summary>
+        public bool IsInterceptorDecelerating => _isInterceptor && _interceptorPhase == InterceptorPhase.Decel;
+
+        /// <summary>拦截者探针：已在提前点附近低速绕点（不再急停）。</summary>
+        public bool IsInterceptorArriving =>
+            _isInterceptor && (_interceptorPhase == InterceptorPhase.Arrive || _interceptorPhase == InterceptorPhase.Hold);
+
+        /// <summary>拦截者探针：因附近有人而压回普通速度（3.0 只在开阔地生效）。</summary>
+        public bool IsInterceptorCrowdLimited => _isInterceptor && _interceptorCrowdLimited;
+
+        /// <summary>只给 PerfProbe 的 ?logStates=1：打印拦截者阶段切换（不复述每帧位置）。</summary>
+        public static void SetLogInterceptorStates(bool value) => s_logInterceptorStates = value;
+
+        private static bool s_logInterceptorStates;
 
         /// <summary>Charger 是否处于冲刺帧（只读探针）。</summary>
         public bool IsCharging => _kind == EnemyKind.Charger && _chargerState == ChargerState.Dash;
@@ -213,7 +265,9 @@ namespace Survival.Enemy
             EnemySpawner spawner,
             Camera camera,
             float stopRadius,
-            SpriteRenderer spriteRenderer = null)
+            SpriteRenderer spriteRenderer = null,
+            bool interceptor = false,
+            Vector2 playerForward = default)
         {
             _config = config;
             _definition = definition;
@@ -238,10 +292,52 @@ namespace Survival.Enemy
 
             // 让位/侧闪的稳定侧：生成时随机，只在左右压力接近时使用（压力差大时按实际分布换边）。
             _sideSign = Random.value < 0.5f ? -1f : 1f;
+            _interceptSideSign = _sideSign;
+            _isInterceptor = interceptor && _kind == EnemyKind.Chaser;
 
             if (definition == null || config == null)
             {
                 return;
+            }
+
+            if (_isInterceptor)
+            {
+                // 每只拦截者的个体差异：提前距离、侧偏、速度、转向、反应延迟都各自随机，
+                // 避免整群在同一帧整齐划一（“反遥控感”）。
+                _interceptorLead = config.InterceptorLeadDistance
+                                   + Random.Range(-config.InterceptorLeadJitter, config.InterceptorLeadJitter);
+                _interceptorSide = Mathf.Max(0.1f, config.InterceptorSideOffset
+                                                    + Random.Range(-config.InterceptorSideJitter, config.InterceptorSideJitter));
+                _interceptorMaxSpeed = Random.Range(config.InterceptorSpeedMin, config.InterceptorSpeedMax);
+                _interceptorArriveSpeed = Random.Range(config.InterceptorArriveSpeedMin, config.InterceptorArriveSpeedMax);
+                _interceptorTurnRate = Random.Range(config.InterceptorTurnRateMin, config.InterceptorTurnRateMax);
+                _interceptorReactionDelay = Random.Range(config.InterceptorReactionMin, config.InterceptorReactionMax);
+                _interceptorUpdateInterval = config.InterceptorTargetUpdateSeconds;
+                _interceptorPredictionMax = config.InterceptorPredictionMaxSeconds;
+                _interceptorVelocitySmoothing = config.InterceptorVelocitySmoothingSeconds;
+                _interceptorArriveRadius = config.InterceptorArriveRadius;
+                _smoothedPlayerVelocity = _playerBody != null ? _playerBody.linearVelocity : Vector2.zero;
+
+                // 静止玩家用 Spawner 记录的“最近真实移动方向”（首次为随机方向）；
+                // 极端情况下才回落到“玩家→自己”的出生方位。
+                Vector2 spawnBearing = _target != null
+                    ? (Vector2)transform.position - (Vector2)_target.position
+                    : Vector2.zero;
+                _lastPlayerForward = playerForward.sqrMagnitude > DirectionEpsilon
+                    ? playerForward.normalized
+                    : spawnBearing.sqrMagnitude > DirectionEpsilon
+                        ? spawnBearing.normalized
+                        : Vector2.up;
+                _interceptRefreshTimer = _interceptorReactionDelay;
+
+                Vector2 side = new Vector2(-_lastPlayerForward.y, _lastPlayerForward.x)
+                               * _interceptSideSign * _interceptorSide;
+                Vector2 playerPosition = _target != null ? (Vector2)_target.position : (Vector2)transform.position;
+                _interceptTarget = ClampToMap(playerPosition + _lastPlayerForward * _interceptorLead + side);
+                Vector2 toInitialTarget = _interceptTarget - (Vector2)transform.position;
+                _interceptorHeading = toInitialTarget.sqrMagnitude > DirectionEpsilon
+                    ? toInitialTarget.normalized
+                    : _lastPlayerForward;
             }
 
             // 难度在生成时结算一次（局内锁定，见协议 v2 §2.2）：不要放进 Update，
@@ -355,6 +451,12 @@ namespace Survival.Enemy
                 return;
             }
 
+            if (_isInterceptor)
+            {
+                UpdateInterceptor(position, direction, distance, speed, rawDelta, delta);
+                return;
+            }
+
             // 1) 径向：比例控制（到停距为 0；玩家压进来时最多以 backOutRatio 退开）。
             Vector2 seekVelocity = ComputeSeekVelocity(direction, distance, speed);
 
@@ -431,6 +533,153 @@ namespace Survival.Enemy
             Vector2 newPosition = position + finalVelocity * delta;
             transform.position = newPosition;
             return newPosition;
+        }
+
+        /// <summary>
+        /// C7.5 拦截者：目标点 = 玩家 + 前进方向 × 5.0 + 侧向偏移（按固定侧号），钳在地图内。
+        /// 在玩家后方时按 offset pursuit 追未来点；已在前方且到位时原地保持/靠切向让位横移挡路。
+        /// 人群管线完全复用 <see cref="ApplyCrowdMovement"/>（软墙/让位/防重合不变）。
+        /// </summary>
+        private void UpdateInterceptor(Vector2 position, Vector2 direction, float distance, float speed,
+            float rawDelta, float delta)
+        {
+            Vector2 playerPosition = _target.position;
+
+            // 3.0 只在开阔地生效：附近有人时压回普通速度，避免高速冲进人群把软墙压穿。
+            _interceptorCrowdLimited = HasNeighborWithin(_config.EnemySeparationRadius);
+
+            // 0.25s 平滑玩家速度：不直接吃每帧输入方向；玩家停下后平滑衰减，保留最后一次朝向。
+            Vector2 rawVelocity = _playerBody != null ? _playerBody.linearVelocity : Vector2.zero;
+            float blend = 1f - Mathf.Exp(-delta / _interceptorVelocitySmoothing);
+            _smoothedPlayerVelocity = Vector2.Lerp(_smoothedPlayerVelocity, rawVelocity, blend);
+            float smoothedSpeed = _smoothedPlayerVelocity.magnitude;
+            if (smoothedSpeed > 0.3f)
+            {
+                _lastPlayerForward = _smoothedPlayerVelocity / smoothedSpeed;
+            }
+
+            // 提前点每 0.25s 更新一次（每只出生时带 0.15~0.3s 反应延迟，更新相位天然错开），
+            // 中间保持旧目标，避免“每帧跟玩家输入”的遥控感。
+            _interceptRefreshTimer -= delta;
+            if (_interceptRefreshTimer <= 0f)
+            {
+                float lead = _interceptorLead;
+                if (smoothedSpeed > 0.3f)
+                {
+                    // 预测时间上限 1.2s：玩家再快也不会把提前量无限拉长。
+                    lead = Mathf.Min(lead, smoothedSpeed * _interceptorPredictionMax);
+                }
+
+                Vector2 side = new Vector2(-_lastPlayerForward.y, _lastPlayerForward.x)
+                               * _interceptSideSign * _interceptorSide;
+                _interceptTarget = ClampToMap(playerPosition + _lastPlayerForward * lead + side);
+                _interceptRefreshTimer = _interceptorUpdateInterval;
+            }
+
+            Vector2 toTarget = _interceptTarget - position;
+            float targetDistance = toTarget.magnitude;
+
+            // “已在前方”用滞回判定：越过前方后允许再滑回一点，避免在玩家轴线上每帧翻转。
+            float aheadDot = Vector2.Dot(position - playerPosition, _lastPlayerForward);
+            _interceptorAhead = _interceptorAhead ? aheadDot > -0.2f : aheadDot > 0.2f;
+            bool aheadOfPlayer = _interceptorAhead;
+            bool wasArriving = _interceptorPhase == InterceptorPhase.Arrive || _interceptorPhase == InterceptorPhase.Hold;
+            float arriveLimit = wasArriving ? _interceptorArriveRadius * 1.35f : _interceptorArriveRadius;
+            bool arriving = aheadOfPlayer && targetDistance <= arriveLimit;
+
+            // 期望方向 + 目标速度：只有“已经到玩家前方”才减速/绕点；
+            // 还在后方时全速追提前点，否则会被减速带卡在玩家身后永远追不上（C7.5c 实测）。
+            Vector2 desiredDirection;
+            float targetSpeed;
+            if (arriving && !_interceptorCrowdLimited)
+            {
+                // 单独到达提前点：低速绕点，不急停。
+                Vector2 toTargetDir = targetDistance > DirectionEpsilon ? toTarget / targetDistance : _interceptorHeading;
+                Vector2 tangent = new Vector2(-toTargetDir.y, toTargetDir.x) * _interceptSideSign;
+                desiredDirection = (toTargetDir * 0.55f + tangent * 0.45f).normalized;
+                targetSpeed = _interceptorArriveSpeed;
+                SetInterceptorPhase(InterceptorPhase.Arrive, distance);
+            }
+            else if (arriving)
+            {
+                // 到达点附近已经有人：回到普通追击，避免十几只绕着同一点堆成一团。
+                desiredDirection = direction;
+                targetSpeed = speed;
+                SetInterceptorPhase(InterceptorPhase.Decel, distance);
+            }
+            else
+            {
+                desiredDirection = targetDistance > DirectionEpsilon ? toTarget / targetDistance : _interceptorHeading;
+                if (!aheadOfPlayer)
+                {
+                    targetSpeed = _interceptorMaxSpeed;
+                    SetInterceptorPhase(InterceptorPhase.Approach, distance);
+                }
+                else
+                {
+                    float ramp = Mathf.Clamp01((targetDistance - _interceptorArriveRadius) / _interceptorArriveRadius);
+                    targetSpeed = Mathf.Lerp(_interceptorArriveSpeed, _interceptorMaxSpeed, ramp);
+                    SetInterceptorPhase(
+                        targetDistance <= _interceptorArriveRadius * 2.1f
+                            ? InterceptorPhase.Decel
+                            : InterceptorPhase.Approach,
+                        distance);
+                }
+            }
+
+            // 转向限制：180~240°/s，按 delta 夹住角度差，避免瞬间掉头/像被遥控。
+            float maxTurn = _interceptorTurnRate * Mathf.Deg2Rad * delta;
+            float currentAngle = Mathf.Atan2(_interceptorHeading.y, _interceptorHeading.x);
+            float desiredAngle = Mathf.Atan2(desiredDirection.y, desiredDirection.x);
+            float turn = Mathf.DeltaAngle(currentAngle * Mathf.Rad2Deg, desiredAngle * Mathf.Rad2Deg) * Mathf.Deg2Rad;
+            float nextAngle = currentAngle + Mathf.Clamp(turn, -maxTurn, maxTurn);
+            _interceptorHeading = new Vector2(Mathf.Cos(nextAngle), Mathf.Sin(nextAngle));
+
+            float moveSpeed = _interceptorCrowdLimited ? Mathf.Min(targetSpeed, speed) : targetSpeed;
+            Vector2 seek = _interceptorHeading * moveSpeed;
+            float maxSpeed = _interceptorCrowdLimited ? 0f : _interceptorMaxSpeed;
+
+            Vector2 moved = ApplyCrowdMovement(position, direction, distance, speed, seek, delta,
+                maxSpeedOverride: maxSpeed);
+            UpdateRecycle(moved, rawDelta);
+        }
+
+        /// <summary>近邻缓冲里是否有一只已在半径内（≤8 个引用，O(8)，无分配）。</summary>
+        private bool HasNeighborWithin(float radius)
+        {
+            float radiusSqr = radius * radius;
+            for (int i = 0; i < _neighborCount; i++)
+            {
+                EnemyAI neighbor = _neighbors[i];
+                if (neighbor == null || neighbor == this)
+                {
+                    continue;
+                }
+
+                Vector2 offset = (Vector2)neighbor.transform.position - (Vector2)transform.position;
+                if (offset.sqrMagnitude < radiusSqr)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void SetInterceptorPhase(InterceptorPhase next, float distance)
+        {
+            if (_interceptorPhase == next)
+            {
+                return;
+            }
+
+            _interceptorPhase = next;
+            if (s_logInterceptorStates)
+            {
+                float elapsed = _spawner != null ? _spawner.RoundElapsed : 0f;
+                Debug.Log($"[Interceptor] phase={next} t={elapsed:F2} dist={distance:F2} " +
+                          $"pos={transform.position.x:F2},{transform.position.y:F2}");
+            }
         }
 
         /// <summary>径向 seek：到停距为 0；玩家压进来时最多以 backOutRatio 退开。</summary>

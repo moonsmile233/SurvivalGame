@@ -37,6 +37,26 @@ MonoBehaviour:
   _enemyMaxVelocityRatio: 1.2
   _enemyRecycleSeconds: 1.5
   _enemyPressureMaxMultiplier: 1.15
+  _forwardSpawnChance: 0.35
+  _forwardSpawnHalfAngleDegrees: 60
+  _forwardSpawnMapMargin: 0.5
+  _interceptorShare: 0.5
+  _interceptorLeadDistance: 5
+  _interceptorLeadJitter: 0.8
+  _interceptorSideOffset: 0.8
+  _interceptorSideJitter: 0.4
+  _interceptorSpeedMin: 2.8
+  _interceptorSpeedMax: 3.1
+  _interceptorArriveSpeedMin: 0.5
+  _interceptorArriveSpeedMax: 0.8
+  _interceptorTurnRateMin: 180
+  _interceptorTurnRateMax: 240
+  _interceptorReactionMin: 0.15
+  _interceptorReactionMax: 0.3
+  _interceptorTargetUpdateSeconds: 0.25
+  _interceptorPredictionMaxSeconds: 1.2
+  _interceptorVelocitySmoothingSeconds: 0.25
+  _interceptorArriveRadius: 2.5
   _mapWidth: 36
   _mapHeight: 20
   _difficulties:

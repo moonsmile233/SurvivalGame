@@ -1,10 +1,10 @@
 # SurvivalGame
 
-2D 生存挑战：Unity WebGL 渲染、原生 H5 承载，玩家在 36×20 地图上躲开追踪敌人，存活 60 秒获胜。
-**Unity 是完整游戏**：主菜单、三档难度、开局 3-2-1、暂停/重开/返回、结算都在画布内；H5 只做昵称、
-进入游戏、数据面板（共享最高分/最近一局）、localStorage 与全屏入口。
-线上/Release 版本 **1.0.0**（旧版 H5 与旧 UI）；仓库当前是 **v1.2 薄壳**（`web/unity` 已入库
-`productVersion 1.2.1`，`builtAt 2026-11-02T13:05:32Z`），已部署 Netlify、**未发 Release**；版本以
+2D 生存挑战：Unity WebGL 渲染、原生 H5 承载，玩家在 36×20 地图上躲开三种敌人（追击 / 冲锋 / 绕行），
+存活 60 秒获胜。**Unity 是完整游戏**：主菜单、三档难度、开局 3-2-1、暂停/重开/返回、结算都在画布内；
+H5 只做昵称、进入游戏、数据面板（共享最高分/最近一局）、localStorage 与全屏入口。
+仓库当前是 **v1.3 内容扩展**（`web/unity` 已入库 `productVersion 1.3.0`，
+`builtAt 2026-11-07T13:46:43Z`），**未部署**（线上仍是 1.2.1）、**未发 Release**；版本以
 `web/unity/build-info.json` 为准。
 
 ## 试玩 / 下载
@@ -36,11 +36,11 @@
 
 ## 难度
 
-| 档位 | 敌人 | 同屏上限 | 计分倍率（只乘存活分） | 60 秒胜利分数 |
+| 档位 | 敌人 | 同屏上限 | 计分倍率（乘存活分 + 血量分） | 60 秒满血胜利分数 |
 |---|---|---|---|---|
-| 简单 | 更慢、生成更稀 | 14 | ×1.0 | 800 |
-| 普通 | 标准（默认） | 20 | ×1.3 | 980 |
-| 困难 | 更快、生成更密、伤害 14 | 20 | ×1.6 | 1160 |
+| 简单 | 更慢、生成更稀 | 14 | ×1.0 | 1155 |
+| 普通 | 标准（默认） | 30 | ×1.3 | 1442 |
+| 困难 | 更快、生成更密、伤害更高 | 50 | ×1.6 | 1728 |
 
 - 难度在 **Unity 主菜单**选；暂停重开、结算「再来一局」、返回菜单都沿用当前档，不弹选择。
 - 开始、继续、重新开始、再来一局都先走 3 秒倒计时。
@@ -62,9 +62,9 @@ python serve.py 8000
 需要 Python 3 或 Node；**直接双击 `index.html` 会失败**（`file://` 无法加载 Unity WebGL）。
 首次加载约 9 MB，页面有进度条。
 
-> **v1.2 版本**：仓库内 `web/unity` 已是 1.2.1（protocol 3），本地按上面的方式启动即可直接玩；
-> `node tools/check-version.mjs` 校验 H5 `?v=` 与构建版本一致。线上 v1.0.0 已被 1.2.1 覆盖（Netlify），
-> Release 仍是 v1.0.0（回滚用）。
+> **v1.3 版本**：仓库内 `web/unity` 已是 1.3.0（protocol 3），本地按上面的方式启动即可直接玩；
+> `node tools/check-version.mjs` 校验 H5 `?v=` 与构建版本一致。线上仍是 1.2.1（Netlify），
+> 1.3.0 **未部署**；Release 仍是 v1.0.0（回滚用）。
 
 > **改了 H5 看不到变化？** 浏览器可能缓存了旧的 `app.js`/`style.css`。
 > 用无痕窗口或 `Ctrl+F5` 硬刷新；开发时请用 `serve.py`（`start-local` 默认）——它发 `no-store`。
@@ -74,8 +74,7 @@ python serve.py 8000
 
 Unity `6000.3.22f1`，Built-in Render Pipeline，WebGL + IL2CPP，Brotli + Decompression Fallback。
 
-- 编辑器打开时：菜单 `Survival/Build WebGL`。
-- 编辑器关闭时：
+- **常规路径**：编辑器打开时菜单 `Survival/Build WebGL`（本工程 batchmode 会撞工程锁，不保证可用）。
 
   ```bash
   "D:/unity hub/Editor/Unity.exe" -batchmode -quit \
@@ -109,7 +108,7 @@ docs/              文档地图、规范、ticket、执行记录、验收、evid
 | 2 | 玩家移动（WASD/方向键，不出界） | 已验收 | 2026-10-30 Editor/Chromium | `docs/evidence/m3-move-before.png` |
 | 3 | 敌人定时生成并追踪 | 已验收 | 2026-10-30 Chromium | `docs/evidence/m3-hud-enemies.png` |
 | 4 | HP、受击掉血、无敌帧 | 已验收 | 2026-10-30 Editor | `docs/M1-执行记录.md` |
-| 5 | 生存 60 秒胜利 | 已实现（自动化 60.0s / 800 分）；**人工 60 秒：未测** | 2026-10-31 Chrome（脚本走位） | `docs/evidence/m4-win-automated-local.png` |
+| 5 | 生存 60 秒胜利 | 已实现；**用户确认人工 60 秒已完成**（具体难度/胜负/设备待补） | 2026-11-07 用户实测（细节待补） | `docs/evidence/m6-content/c7/` |
 | 6 | 失败 | 已验收 | 2026-10-30 线上 Chromium | `docs/evidence/m3-online-result.png` |
 | 7 | 重新开始（全量重置） | 已验收 | 2026-10-30 Chromium | `docs/evidence/m3-restarted.png` |
 | 8 | 暂停（按钮 / Esc / P / 失焦，恢复 3-2-1） | 已验收 | 2026-11-01 Chrome 桌面/移动视口 | `docs/evidence/e2e-local-chrome-desktop-focus-return-paused.png` |
@@ -121,9 +120,9 @@ docs/              文档地图、规范、ticket、执行记录、验收、evid
 | 14 | Unity → H5 传分 | 已验收 | 2026-10-30 线上 | `docs/evidence/m3-online-result.png` |
 | 15 | 最高分 localStorage，刷新仍在 | 已验收 | 2026-10-30 线上 | `docs/evidence/e2e-local-chrome-desktop-summary.json` |
 | 16 | 页面适配电脑和手机宽度 | 已实现（320～1920 视口）；**真机安全区：未测** | 2026-11-01 Chrome 视口 | `docs/evidence/resp-320x568-playing.png` |
-| 17 | 源码 + WebGL 构建文件 + README | 已验收 | 2026-11-01 build `f19fcb79` + Release `v1.0.0` + 干净克隆 | `docs/M5-执行记录.md` |
+| 17 | 源码 + WebGL 构建文件 + README | 已实现：1.3.0 构建已入库；Release 仍是 v1.0.0 | 2026-11-07 build `13:46:43Z` | `docs/M6-内容扩展-执行记录.md` |
 
-未测项：人工 60 秒胜利、5 局平衡基线、Honor 90 Pro / iPhone 真机（触控/HUD/安全区/帧率）。
+未测项：Honor 90 Pro / iPhone 真机（触控/HUD/安全区/帧率）；人工 60 秒/5 局由用户确认完成，具体数据待补。
 设备矩阵与逐条证据见 `docs/acceptance.md`。
 
 ## 已知限制
@@ -132,7 +131,8 @@ docs/              文档地图、规范、ticket、执行记录、验收、evid
 - iPhone Safari 对网页全屏支持有限，会提示「横屏或添加到主屏幕」。
 - Netlify 在国内访问不稳定；国内托管未上线。
 - 暂停恢复需要 3-2-1 是刻意设计（手机切回时需要把手移回屏幕），不是 bug。
-- 没有攻击/击杀手段，分数 = 存活分 × 难度倍率 + 胜利奖励（60 秒无伤胜利：简单 800 / 普通 980 / 困难 1160）。
+- 没有攻击/击杀手段：分数 = round((分段存活分 + 剩余 HP) × 难度倍率) + 胜利 200
+  （60 秒满血胜利：简单 1155 / 普通 1442 / 困难 1728）。
 
 ## 更多文档
 

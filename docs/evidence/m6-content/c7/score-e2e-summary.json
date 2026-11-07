@@ -1,0 +1,103 @@
+{
+  "finishedAt": "2026-11-07T14:48:56.044Z",
+  "results": [
+    {
+      "label": "easy-60s",
+      "difficulty": "easy",
+      "seconds": 60,
+      "score": 1155,
+      "breakdown": {
+        "survival": 855,
+        "health": 100,
+        "kills": 0,
+        "winBonus": 200,
+        "multiplier": 1
+      },
+      "hitCount": 0
+    },
+    {
+      "label": "normal-2s",
+      "difficulty": "normal",
+      "seconds": 2,
+      "score": 356,
+      "breakdown": {
+        "survival": 26,
+        "health": 130,
+        "kills": 0,
+        "winBonus": 200,
+        "multiplier": 1.2999999523162842
+      },
+      "hitCount": 0
+    },
+    {
+      "label": "normal-15s",
+      "difficulty": "normal",
+      "seconds": 15,
+      "score": 525,
+      "breakdown": {
+        "survival": 195,
+        "health": 130,
+        "kills": 0,
+        "winBonus": 200,
+        "multiplier": 1.2999999523162842
+      },
+      "hitCount": 0
+    },
+    {
+      "label": "normal-30s",
+      "difficulty": "normal",
+      "seconds": 30,
+      "score": 759,
+      "breakdown": {
+        "survival": 429,
+        "health": 130,
+        "kills": 0,
+        "winBonus": 200,
+        "multiplier": 1.2999999523162842
+      },
+      "hitCount": 0
+    },
+    {
+      "label": "normal-45s",
+      "difficulty": "normal",
+      "seconds": 45,
+      "score": 1052,
+      "breakdown": {
+        "survival": 722,
+        "health": 130,
+        "kills": 0,
+        "winBonus": 200,
+        "multiplier": 1.2999999523162842
+      },
+      "hitCount": 0
+    },
+    {
+      "label": "normal-60s",
+      "difficulty": "normal",
+      "seconds": 60,
+      "score": 1442,
+      "breakdown": {
+        "survival": 1112,
+        "health": 130,
+        "kills": 0,
+        "winBonus": 200,
+        "multiplier": 1.2999999523162842
+      },
+      "hitCount": 0
+    },
+    {
+      "label": "hard-60s",
+      "difficulty": "hard",
+      "seconds": 60,
+      "score": 1728,
+      "breakdown": {
+        "survival": 1368,
+        "health": 160,
+        "kills": 0,
+        "winBonus": 200,
+        "multiplier": 1.600000023841858
+      },
+      "hitCount": 0
+    }
+  ]
+}

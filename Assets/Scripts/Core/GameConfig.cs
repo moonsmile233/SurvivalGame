@@ -57,6 +57,43 @@ namespace Survival.Core
         [Tooltip("压力曲线终值：敌人速度随局内时间从 1.0 倍升到该倍率，作用于已存在的敌人（M4-B1）。")]
         [SerializeField] private float _enemyPressureMaxMultiplier = 1.15f;
 
+        [Header("Spawn / Intercept（M6 C7.5 围堵）")]
+        [Tooltip("前向出生偏置概率：约该比例的出生点落在玩家前进方向 ±半角的视野外锥形内；其余照旧随机。")]
+        [SerializeField] private float _forwardSpawnChance = 0.35f;
+        [Tooltip("前向出生锥的半角（度）。")]
+        [SerializeField] private float _forwardSpawnHalfAngleDegrees = 60f;
+        [Tooltip("前向出生点距地图边缘的内缩（世界单位）：前向出生必须仍在地图内。")]
+        [SerializeField] private float _forwardSpawnMapMargin = 0.5f;
+        [Tooltip("Chaser 槽中拦截者（Interceptor）的比例，约一半；不新增敌人类型/颜色。")]
+        [SerializeField] private float _interceptorShare = 0.5f;
+        [Tooltip("提前点基准距离 = 玩家 + 平滑前进方向 × 该距离（每只再 ±LeadJitter）。")]
+        [SerializeField] private float _interceptorLeadDistance = 5f;
+        [Tooltip("每只拦截者的提前距离抖动（4.2~5.8 = 5 ±0.8），避免整齐划一。")]
+        [SerializeField] private float _interceptorLeadJitter = 0.8f;
+        [Tooltip("提前点相对前进轴的侧偏基准；每只再 ±SideJitter（0.4~1.2 = 0.8 ±0.4）。")]
+        [SerializeField] private float _interceptorSideOffset = 0.8f;
+        [SerializeField] private float _interceptorSideJitter = 0.4f;
+        [Tooltip("每只拦截者的前往速度范围（u/s）：显式超速，不受 EnemyMaxVelocity 限制。")]
+        [SerializeField] private float _interceptorSpeedMin = 2.8f;
+        [SerializeField] private float _interceptorSpeedMax = 3.1f;
+        [Tooltip("到提前点附近的最低巡航速度（u/s）：只减速、不急停到 0，并轻微绕点。")]
+        [SerializeField] private float _interceptorArriveSpeedMin = 0.5f;
+        [SerializeField] private float _interceptorArriveSpeedMax = 0.8f;
+        [Tooltip("每只拦截者的最大转向角速度（度/秒），180~240，避免像被遥控一样瞬间掉头。")]
+        [SerializeField] private float _interceptorTurnRateMin = 180f;
+        [SerializeField] private float _interceptorTurnRateMax = 240f;
+        [Tooltip("出生时的反应延迟范围（秒）：第一目标更新前的停顿，每只随机。")]
+        [SerializeField] private float _interceptorReactionMin = 0.15f;
+        [SerializeField] private float _interceptorReactionMax = 0.3f;
+        [Tooltip("提前点更新间隔（秒）：中间保持旧目标，不吃每帧玩家输入。")]
+        [SerializeField] private float _interceptorTargetUpdateSeconds = 0.25f;
+        [Tooltip("提前量预测时间上限（秒）：lead = min(配置距离, 平滑玩家速度 × 该值)。")]
+        [SerializeField] private float _interceptorPredictionMaxSeconds = 1.2f;
+        [Tooltip("玩家速度平滑时间常数（秒），约 0.25s 的滞后。")]
+        [SerializeField] private float _interceptorVelocitySmoothingSeconds = 0.25f;
+        [Tooltip("到提前点该距离内进入 Arrive：速度压到 ArriveSpeed 并轻微绕点，不站定。")]
+        [SerializeField] private float _interceptorArriveRadius = 2.5f;
+
         [Header("World")]
         [Tooltip("地图尺寸（世界单位）：大于视野，相机跟随并钳制在地图内（M4-B0）。")]
         [SerializeField] private float _mapWidth = 36f;
@@ -85,6 +122,9 @@ namespace Survival.Core
         // 放运行时字段而不是改资产：同一个构建能用 enemyLimit=20/30/40 跑完，不必为每个上限重建。
         private int _perfEnemyLimitOverride;
         private float _perfRoundDurationOverride;
+        // C7.5 压测归因：-1 = 用资产值；0 = 关闭对应行为（只给 ?interceptorShare= / ?forwardSpawn=）。
+        private float _perfInterceptorShareOverride = -1f;
+        private float _perfForwardSpawnOverride = -1f;
 
         // 活动难度（M6 §7.2）：同样是运行时字段，**不加 [SerializeField]、不写回资产**。
         // 只在 GameManager.StartGame 时设置一次、局内锁定（RestartGame 沿用）；Editor 试玩不会弄脏 cfg_GameConfig.asset。
@@ -128,6 +168,30 @@ namespace Survival.Core
         public float EnemyMaxVelocityRatio => _enemyMaxVelocityRatio;
         public float EnemyMaxVelocity => _enemySpeedMax * _enemyMaxVelocityRatio;
         public float EnemyRecycleSeconds => _enemyRecycleSeconds;
+
+        public float ForwardSpawnChance =>
+            _perfForwardSpawnOverride >= 0f ? _perfForwardSpawnOverride : Mathf.Clamp01(_forwardSpawnChance);
+
+        public float ForwardSpawnHalfAngleDegrees => Mathf.Clamp(_forwardSpawnHalfAngleDegrees, 0f, 180f);
+        public float ForwardSpawnMapMargin => Mathf.Max(0f, _forwardSpawnMapMargin);
+        public float InterceptorShare =>
+            _perfInterceptorShareOverride >= 0f ? _perfInterceptorShareOverride : Mathf.Clamp01(_interceptorShare);
+        public float InterceptorLeadDistance => Mathf.Max(0.5f, _interceptorLeadDistance);
+        public float InterceptorLeadJitter => Mathf.Max(0f, _interceptorLeadJitter);
+        public float InterceptorSideOffset => Mathf.Max(0f, _interceptorSideOffset);
+        public float InterceptorSideJitter => Mathf.Max(0f, _interceptorSideJitter);
+        public float InterceptorSpeedMin => Mathf.Max(0.1f, Mathf.Min(_interceptorSpeedMin, _interceptorSpeedMax));
+        public float InterceptorSpeedMax => Mathf.Max(InterceptorSpeedMin, _interceptorSpeedMax);
+        public float InterceptorArriveSpeedMin => Mathf.Max(0.1f, Mathf.Min(_interceptorArriveSpeedMin, _interceptorArriveSpeedMax));
+        public float InterceptorArriveSpeedMax => Mathf.Max(InterceptorArriveSpeedMin, _interceptorArriveSpeedMax);
+        public float InterceptorTurnRateMin => Mathf.Max(1f, Mathf.Min(_interceptorTurnRateMin, _interceptorTurnRateMax));
+        public float InterceptorTurnRateMax => Mathf.Max(InterceptorTurnRateMin, _interceptorTurnRateMax);
+        public float InterceptorReactionMin => Mathf.Max(0f, Mathf.Min(_interceptorReactionMin, _interceptorReactionMax));
+        public float InterceptorReactionMax => Mathf.Max(InterceptorReactionMin, _interceptorReactionMax);
+        public float InterceptorTargetUpdateSeconds => Mathf.Max(0.05f, _interceptorTargetUpdateSeconds);
+        public float InterceptorPredictionMaxSeconds => Mathf.Max(0.1f, _interceptorPredictionMaxSeconds);
+        public float InterceptorVelocitySmoothingSeconds => Mathf.Max(0.01f, _interceptorVelocitySmoothingSeconds);
+        public float InterceptorArriveRadius => Mathf.Max(0.1f, _interceptorArriveRadius);
 
         public float EnemyPressureMaxMultiplier
         {
@@ -201,6 +265,12 @@ namespace Survival.Core
 
         /// <summary>只给压测探针用（M6 §3.4）：覆盖同屏上限，不改资产默认值。</summary>
         public void SetPerfEnemyLimitOverride(int value) => _perfEnemyLimitOverride = Mathf.Max(0, value);
+
+        /// <summary>只给压测探针用（C7.5 归因）：覆盖拦截者比例；0 = 关闭拦截者。</summary>
+        public void SetPerfInterceptorShareOverride(float value) => _perfInterceptorShareOverride = Mathf.Clamp01(value);
+
+        /// <summary>只给压测探针用（C7.5 归因）：覆盖前向出生概率；0 = 关闭前向偏置。</summary>
+        public void SetPerfForwardSpawnChanceOverride(float value) => _perfForwardSpawnOverride = Mathf.Clamp01(value);
 
         /// <summary>
         /// 只给压测探针用：覆盖回合时长，让压测能长时间维持同屏上限。
