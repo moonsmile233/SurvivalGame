@@ -45,6 +45,11 @@ namespace Survival.UI
         public const string MultiplierLabel = "倍率";
         public const string TimesSign = "×";
 
+        // M6 C6 结算明细行（决策 D3）；新增字符 血/量/受/击 必须同步 ui-chars.txt 并重裁 OTF。
+        public const string SurvivalScoreLabel = "存活分";
+        public const string HealthScoreLabel = "血量分";
+        public const string HitLabel = "受击";
+
         /// <summary>结算信息行的分隔符；与 `×` 一起必须进字体子集。</summary>
         public const string InfoSeparator = " · ";
 
@@ -57,6 +62,7 @@ namespace Survival.UI
             TagEasy + TagNormal + TagHard +
             BackToMenuButton + PlayAgainButton +
             RoundScoreLabel + DifficultyLabel + SurvivedLabel + SecondsSuffix + MultiplierLabel +
+            SurvivalScoreLabel + HealthScoreLabel + HitLabel +
             TimesSign + InfoSeparator +
             " %-./0123456789:×";
     }

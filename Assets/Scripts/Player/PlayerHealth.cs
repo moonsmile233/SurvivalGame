@@ -19,6 +19,10 @@ namespace Survival.Player
         private bool _perfInvincible;
 
         public int CurrentHealth { get; private set; }
+
+        /// <summary>本局真正扣血的次数（无敌期忽略的不计），供结算“受击”与协议 hitCount。</summary>
+        public int HitCount { get; private set; }
+
         public int MaxHealth => _config != null ? _config.PlayerMaxHealth : 0;
 
         public event Action<int, int> OnHealthChanged;
@@ -52,6 +56,7 @@ namespace Survival.Player
 
             _invulnerableUntil = Time.time + _config.InvincibleDuration;
             CurrentHealth = Mathf.Max(0, CurrentHealth - damage);
+            HitCount++;
             OnDamaged?.Invoke();
             OnHealthChanged?.Invoke(CurrentHealth, MaxHealth);
 
@@ -66,10 +71,11 @@ namespace Survival.Player
         /// <summary>只给压测探针用（M6 §3.4）：打开后 TakeDamage 直接忽略，不扣血、不触发受击表现。</summary>
         public void SetPerfInvincible(bool value) => _perfInvincible = value;
 
-        /// <summary>重开用：满血、清无敌计时。</summary>
+        /// <summary>重开用：满血、清无敌计时、受击计数归零。</summary>
         public void ResetHealth()
         {
             CurrentHealth = MaxHealth;
+            HitCount = 0;
             _invulnerableUntil = 0f;
             OnHealthChanged?.Invoke(CurrentHealth, MaxHealth);
         }

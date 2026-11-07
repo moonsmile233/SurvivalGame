@@ -58,7 +58,7 @@ namespace Survival.UI
             // 主动读一次当前值，避免晚于事件源初始化时显示空白。
             HandleStateChanged(_gameManager.State);
             HandleHealthChanged(_playerHealth.CurrentHealth, _playerHealth.MaxHealth);
-            HandleScoreChanged(_gameManager.Score.Score);
+            HandleScoreChanged(_gameManager.Score.DisplayScore);
             HandleTimeChanged(_gameManager.RemainingTime);
         }
 

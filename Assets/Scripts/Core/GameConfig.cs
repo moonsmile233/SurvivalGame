@@ -70,8 +70,15 @@ namespace Survival.Core
         [SerializeField] private float _roundDuration = 60f;
 
         [Header("Score")]
-        [SerializeField] private int _scorePerSurvivedSecond = 10;
-        [SerializeField] private int _scorePerKill = 20;
+        // M6 §5（C6）：分段存活分（0.1s 粒度）+ 剩余血量分 + 难度倍率 + 固定胜利奖励。
+        // 无击杀、无擦身：kills 只在协议里保留恒 0，不参与任何公式。
+        [Tooltip("每个存活分段的秒数：15 → 0-15 / 15-30 / 30-45 / 45-60。")]
+        [SerializeField] private float _survivalSegmentSeconds = 15f;
+        [Tooltip("每段每秒得分，按段顺序（10/12/15/20 = 满 60 秒 855）。防御旧资产：数组为空时按 10/秒。")]
+        [SerializeField] private float[] _survivalRatesPerSecond = { 10f, 12f, 15f, 20f };
+        [Tooltip("结算剩余 HP 换算成分的比例；1 → 每点剩余 HP 1 分（结算时才计入，HUD 不显示）。")]
+        [SerializeField] private float _scorePerHealthPoint = 1f;
+        [Tooltip("胜利奖励，固定值，不乘难度倍率。")]
         [SerializeField] private int _winBonus = 200;
 
         // 压测覆盖（M6 §3.4）：只有 PerfProbe 在 URL 带 ?perf=1 时写入，0 = 不覆盖。
@@ -137,9 +144,24 @@ namespace Survival.Core
         public float RoundDuration =>
             _perfRoundDurationOverride > 0f ? _perfRoundDurationOverride : _roundDuration;
 
-        public int ScorePerSurvivedSecond => _scorePerSurvivedSecond;
-        public int ScorePerKill => _scorePerKill;
+        public float SurvivalSegmentSeconds => _survivalSegmentSeconds > 0f ? _survivalSegmentSeconds : 15f;
+        public float ScorePerHealthPoint => _scorePerHealthPoint;
         public int WinBonus => _winBonus;
+
+        /// <summary>
+        /// 第 <paramref name="segment"/> 段（0 起）的每秒存活分。越界时重复最后一段，
+        /// 旧资产数组比回合时长短也不会把后段计成 0（ScoreService 在热路径逐帧调用，无分配）。
+        /// </summary>
+        public float SurvivalRateForSegment(int segment)
+        {
+            if (_survivalRatesPerSecond == null || _survivalRatesPerSecond.Length == 0)
+            {
+                return 10f;
+            }
+
+            int index = Mathf.Clamp(segment, 0, _survivalRatesPerSecond.Length - 1);
+            return _survivalRatesPerSecond[index];
+        }
 
         // ---------- 难度（M6 §7.2） ----------
 

@@ -165,17 +165,21 @@ public class WebGLBridge : MonoBehaviour
             payload = new GameOverPayload
             {
                 result = won ? "win" : "lose",
-                score = score.Score,
+                score = score.FinalScore,
                 survivedSeconds = Mathf.Round(survived * 10f) / 10f,
                 kills = score.Kills,
                 nickname = _nickname,
                 // 回传「Unity 实际采用」的档位，H5 以它记分（协议 v3）。
                 difficulty = DifficultyToWire(_gameManager.Config.ActiveDifficulty),
+                // C6 增量字段：H5 可忽略未知字段；受击次数只在结算出现。
+                hitCount = _gameManager.Health != null ? _gameManager.Health.HitCount : 0,
                 breakdown = new ScoreBreakdown
                 {
                     survival = score.SurvivalScore,
+                    health = score.HealthScore,
                     kills = score.KillScore,
                     winBonus = score.WinBonus,
+                    multiplier = _gameManager.Config.ScoreMultiplier,
                 },
             },
         };
@@ -464,6 +468,7 @@ public class WebGLBridge : MonoBehaviour
         public int kills;
         public string nickname;
         public string difficulty;
+        public int hitCount; // C6 增量
         public ScoreBreakdown breakdown;
     }
 
@@ -471,7 +476,9 @@ public class WebGLBridge : MonoBehaviour
     private sealed class ScoreBreakdown
     {
         public int survival;
+        public int health;       // C6 增量：乘倍率后的血量分
         public int kills;
         public int winBonus;
+        public float multiplier; // C6 增量：本局难度倍率
     }
 }

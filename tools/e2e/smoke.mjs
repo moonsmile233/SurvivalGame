@@ -193,6 +193,7 @@ async function main() {
     const afterRound = await appState(page);
     const last = (await page.textContent('#data-last')) || '';
     assert(last.trim() !== '—', 'H5 数据栏显示最近一局');
+    // C6 计分：5s 普通满血胜利的理论值是 395；受击会降低血量分，所以这里只断言格式与正数。
     assert(/^(简单|普通|困难) \d+$/.test(last.trim()), '最近一局格式应为「难度 分数」，实际 ' + last);
     assert(afterRound.best > 0, '最高分已写入，实际 ' + afterRound.best);
     ok(`结算：最近一局「${last.trim()}」/ 最高分 ${afterRound.best}`);

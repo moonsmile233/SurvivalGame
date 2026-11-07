@@ -53,7 +53,7 @@
 | `onDifficultyChanged` | `{"protocol":3,"difficulty":"easy\|normal\|hard"}` | 菜单选择变化时一次（EnterGame 回填不回发） |
 | `onGameOver` | 见下方 schema | `Result`（胜利/失败），每局仅一次（`_reported` 守卫） |
 
-`onGameOver` 载荷（只升 `protocol`，字段形状与 v2 相同）：
+`onGameOver` 载荷（协议仍为 3；C6 只做**增量字段**，H5 可忽略未知字段）：
 
 ```json
 {
@@ -61,22 +61,33 @@
   "event": "gameOver",
   "payload": {
     "result": "win",
-    "score": 980,
+    "score": 1442,
     "survivedSeconds": 60.0,
     "kills": 0,
     "nickname": "阿宝",
     "difficulty": "normal",
-    "breakdown": { "survival": 780, "kills": 0, "winBonus": 200 }
+    "hitCount": 2,
+    "breakdown": {
+      "survival": 1112,
+      "health": 130,
+      "kills": 0,
+      "winBonus": 200,
+      "multiplier": 1.3
+    }
   }
 }
 ```
 
 - `result`：`"win"` | `"lose"`。
+- `score`：唯一权威最终分 = `round((存活分 + 血量分) × 难度倍率) + 200`（胜利奖励不乘倍率）。
 - `survivedSeconds`：保留 1 位小数；胜利固定为回合时长（默认 60）。
-- `kills`：当前无击杀手段，恒为 0（字段保留）。
+- `kills`：无击杀手段，恒为 0（字段保留、不参与公式）。
 - `nickname`：来自 `EnterGame`，只回传不渲染到 Unity。
 - `difficulty`：Unity **实际采用**的档位，H5 以它记分。
-- `breakdown`：字段保留；v1.2 结算卡不上屏，H5 也不再用它展示明细。
+- `hitCount`（C6 增量）：本局真正扣血的次数（无敌期忽略的不计）。
+- `breakdown`（C6 扩展）：`survival` / `health` 是**乘倍率后取整**的分量；`multiplier` 是本局倍率；
+  `winBonus` 仅胜利时 200。由于分别取整，`survival + health` 可能与 `score - winBonus` 差 1，**以 `score` 为准**。
+  H5 不展示明细，只记 `score`。
 
 ### 3.1 状态字符串
 

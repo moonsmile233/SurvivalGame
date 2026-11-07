@@ -98,8 +98,8 @@ async function runFlow(page, label, withResult) {
   const gameOver = await waitForGameOver(page, 300000);
   log(`${label}: gameOver ` + JSON.stringify(gameOver));
   assert(gameOver.payload.difficulty === 'hard', 'difficulty must stay hard, got ' + gameOver.payload.difficulty);
-  // roundDuration=2 + hard multiplier: 2s * 10 * 1.6 + 200 win bonus = 232.
-  assert(gameOver.payload.score === 232, 'hard 2s win score must be 232, got ' + gameOver.payload.score);
+  // C6 score: (2s * 10 + 100 HP) * 1.6 + 200 win bonus = 392.
+  assert(gameOver.payload.score === 392, 'hard 2s win score must be 392, got ' + gameOver.payload.score);
   await page.waitForTimeout(400);
   await saveScreenshot(page, shotPrefix + '-result.png');
 
@@ -140,7 +140,7 @@ async function runViewports(browser, baseUrl) {
     await prepareContext(context);
     const page = await context.newPage();
     log(`viewport ${viewport.name}: loading`);
-    await openGame(page, baseUrl, '?perf=1&roundDuration=2');
+    await openGame(page, baseUrl, '?perf=1&roundDuration=2&invincible=1');
     await saveScreenshot(page, `standalone-viewport-${viewport.name}-menu.png`);
 
     const layout = await layoutOf(page);
@@ -188,9 +188,9 @@ async function main() {
     const context = await browser.newContext({ viewport, deviceScaleFactor: 1 });
     await prepareContext(context);
     const page = await context.newPage();
-    // ?perf=1 gives us the round-duration override; autostart is deliberately NOT set so the
-    // menu -> difficulty -> start path is exercised (策划裁决 B).
-    await openGame(page, baseUrl, '?perf=1&roundDuration=2');
+    // ?perf=1 gives us the round-duration override; invincible=1 keeps the 2s score deterministic.
+    // autostart is deliberately NOT set so the menu -> difficulty -> start path is exercised (策划裁决 B).
+    await openGame(page, baseUrl, '?perf=1&roundDuration=2&invincible=1');
     await runFlow(page, MODE === 'mobile' ? 'mobile' : 'flow', true);
 
     const events = await readEvents(page);

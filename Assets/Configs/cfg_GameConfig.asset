@@ -44,6 +44,11 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 52222c38db18cfa42b8cf4bb69a0016f, type: 2}
   - {fileID: 11400000, guid: 57a226dacf7908440a749334ae621043, type: 2}
   _roundDuration: 60
-  _scorePerSurvivedSecond: 10
-  _scorePerKill: 20
+  _survivalSegmentSeconds: 15
+  _survivalRatesPerSecond:
+  - 10
+  - 12
+  - 15
+  - 20
+  _scorePerHealthPoint: 1
   _winBonus: 200

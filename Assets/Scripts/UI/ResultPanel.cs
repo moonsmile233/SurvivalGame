@@ -1,4 +1,5 @@
 using Survival.Core;
+using Survival.Player;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -6,25 +7,28 @@ using UnityEngine.UI;
 namespace Survival.UI
 {
     /// <summary>
-    /// 结算面板（v1.2）：Result 状态显示本局得分 / 难度 / 存活 / 倍率 + 再来一局 / 返回菜单。
+    /// 结算面板（v1.2 + M6 C6）：Result 状态显示本局最终分 / 难度 / 存活 / 倍率，
+    /// 以及“存活分 · 血量分 · 受击”明细行（决策 D3）+ 再来一局 / 返回菜单。
     /// **始终显示**（不再有 H5 嵌入模式抑制）：结算归 Unity，H5 只展示最高分/最近一局。
-    /// 不显示昵称与分数明细（策划裁决 2026-11-01：按 mock，明细字段保留在 ScoreService，不上屏）。
-    /// 不写分数算法，数值全部读 ScoreService / GameConfig。
+    /// 不显示昵称（昵称只在 H5 渲染）；不写分数算法，数值全部读 ScoreService / GameConfig。
     /// </summary>
     public class ResultPanel : MonoBehaviour
     {
         [SerializeField] private GameManager _gameManager;
+        [SerializeField] private PlayerHealth _playerHealth;
         [SerializeField] private GameObject _panel;
         [SerializeField] private TMP_Text _titleText;
         [SerializeField] private TMP_Text _scoreText;
         [SerializeField] private TMP_Text _infoText;
+        [SerializeField] private TMP_Text _breakdownText;
         [SerializeField] private Button _againButton;
         [SerializeField] private Button _menuButton;
 
         private void Start()
         {
-            if (_gameManager == null || _panel == null || _titleText == null
-                || _scoreText == null || _infoText == null || _againButton == null || _menuButton == null)
+            if (_gameManager == null || _playerHealth == null || _panel == null || _titleText == null
+                || _scoreText == null || _infoText == null || _breakdownText == null
+                || _againButton == null || _menuButton == null)
             {
                 Debug.LogError("[ResultPanel] Missing serialized references, component disabled.");
                 enabled = false;
@@ -70,7 +74,7 @@ namespace Survival.UI
             GameConfig config = _gameManager.Config;
 
             _titleText.text = won ? UiStrings.VictoryTitle : UiStrings.DefeatTitle;
-            _scoreText.text = $"{UiStrings.RoundScoreLabel} {score.Score}";
+            _scoreText.text = $"{UiStrings.RoundScoreLabel} {score.FinalScore}";
 
             int survived = Mathf.RoundToInt(
                 Mathf.Min(_gameManager.ElapsedTime, config != null ? config.RoundDuration : _gameManager.ElapsedTime));
@@ -80,6 +84,12 @@ namespace Survival.UI
                 $"{UiStrings.DifficultyLabel} {DifficultyName(config != null ? config.ActiveDifficulty : Difficulty.Normal)}" +
                 $"{UiStrings.InfoSeparator}{UiStrings.SurvivedLabel} {survived} {UiStrings.SecondsSuffix}" +
                 $"{UiStrings.InfoSeparator}{UiStrings.MultiplierLabel} {UiStrings.TimesSign}{multiplier:0.0}";
+
+            // D3：结算加“存活分 · 血量分 · 受击”一行；HUD 不显示血量分，受击次数也只在结算出现。
+            _breakdownText.text =
+                $"{UiStrings.SurvivalScoreLabel} {score.SurvivalScore}" +
+                $"{UiStrings.InfoSeparator}{UiStrings.HealthScoreLabel} {score.HealthScore}" +
+                $"{UiStrings.InfoSeparator}{UiStrings.HitLabel} {_playerHealth.HitCount}";
         }
 
         /// <summary>档位中文名只在 Unity UI 用；H5 不显示 Unity 的难度文案。</summary>

@@ -1,6 +1,6 @@
 # M6 内容扩展实施计划：冲锋者 / 绕行者 / 计分改造 / 回归
 
-> 文档版本：2026-11-07T10:20+08 · 作者：程序 · 状态：**C5.3 已实装（Charger 触发 4.2→7.0；Flanker 三档 0s 解锁，开局袋 2 普通 + 2 绕行，Charger 解锁后 2/2/1）；C5.2 已完成（3.0 侧绕 + 扑击短突进 + 追离回绕 / 5-tick 袋）；C5/C5.1 已完成（上限 14/30/50、权重解锁、回收 1.5s、到顶补位；Charger Dash 按 D4' 穿阵不参与敌人分离；30/40/50 混合 165FPS/p95 7ms，非 Dash minPair p50 0.77~0.82；alloc 基线 41~48KB/s 非敌人代码，见 `docs/evidence/m6-content/c5/c5-notes.md`）；C6 待放行**
+> 文档版本：2026-11-07T17:05+08 · 作者：程序 · 状态：**C6 已实装并本地构建验证（分段计分/血量分/倍率/胜利 200；HUD 0.1s 粒度；结算明细；协议 v3 增量；字体 75 码位；ScoreSelfCheck PASS；E2E 7 局分值全绿）；C5.3 已完成（Charger 触发 7.0；Flanker 三档 0s 解锁，Charger 解锁后袋 2/2/1）；C5.2 已完成（3.0 侧绕 + 扑击短突进 + 追离回绕 / 5-tick 袋）；C5/C5.1 已完成（上限 14/30/50、权重解锁、回收 1.5s、到顶补位；Charger Dash 按 D4' 穿阵不参与敌人分离；30/40/50 混合 165FPS/p95 7ms，非 Dash minPair p50 0.77~0.82；alloc 基线 41~48KB/s 非敌人代码，见 `docs/evidence/m6-content/c5/c5-notes.md`）；C7 待用户验收后启动**
 > 依据：`docs/tickets/M6-内容扩展.md` §3–§5、`docs/proposals/proposal-M6-重构-游戏优先-v1.2.md`、`docs/参考拆解.md` §2.6；
 > 策划 2026-11-02 跨会话指令（敌人种类 → 计分改造 → 全量回归）。
 > 基线：`main = wip = 198f1a6e`（v1.2.1 已部署线上）；`@` 空；**本计划只进 wip，不动 main、不部署、不发 Release**。
@@ -456,7 +456,7 @@ Unity 结算不显示最高分；`onGameOver` 只单向传分。恢复“同难�
 | C4 | Flanker 行为 + 绕行超时 | `EnemyAI.cs`、`EnemyDefinition.cs` | 构建 #4：`enemyKind=flanker` 探针；**侧绕→扑截图/录屏先给用户看**；40 只 flanker 压测 |
 | C5 | 生成权重/解锁 + 上限补位 + 回收 1.5s | `EnemySpawner.cs`、`DifficultyProfile.cs`、`GameConfig.cs`、`PerfProbe.cs`、`Assets/Configs/dif_*.asset` | 构建 #5（临时）：写入 14/30/50；60s 自然混合；**30/40/50 混合压测**；capBlocked/capRecycled；1.5s 回收；50 不达标停报 |
 | C5.3 | 触发距离 + 绕行解锁微调（用户 2026-11-05 口径） | `dif_*.asset`、`def_Enemy_Charger.asset`、`EnemyDefinition.cs`、`SceneSetup.cs` | 与 C6 同一个构建：开局袋 2 普通 + 2 绕行、Charger 0；解锁后 2/2/1；Charger 7.0 起手 |
-| C6 | 计分重写 + HUD/结算/协议 + 字体 | `ScoreService.cs`、`GameManager.cs`、`PlayerHealth.cs`、`HudView.cs`、`ResultPanel.cs`、`UiStrings.cs`、`WebGLBridge.cs`、`SceneSetup.cs`、`ScoreSelfCheck.cs`、字体资产 | 构建 #6：ScoreSelfCheck；`score.mjs` 2/15/30/45/60；E2E 断言更新；6 视口 |
+| C6 | 计分重写 + HUD/结算/协议 + 字体 | `ScoreService.cs`、`GameManager.cs`、`PlayerHealth.cs`、`HudView.cs`、`ResultPanel.cs`、`UiStrings.cs`、`WebGLBridge.cs`、`SceneSetup.cs`、`ScoreSelfCheck.cs`、字体资产 | **已完成**：构建 `2026-11-07T08:41:44Z`（仓库外 `_builds/`）；ScoreSelfCheck PASS；`score.mjs` 7 局（含 45s=1052 / 60s 1442/1728）全绿；standalone/h5-shell/smoke/6 视口 PASS；证据 `docs/evidence/m6-content/c6/c6-notes.md` |
 | C7 | 全量回归 + 文档 + 1.3.0 最终构建 | E2E、`docs/实现总览.md`、`architecture.md`、`bridge-protocol.md`、`acceptance.md`、`遗留问题.md`、`README.md`、`docs/M6-内容扩展-执行记录.md`、`web/index.html`、`web/unity/**` | 构建 #7（**唯一入 `web/unity` 的构建**，1.3.0）：17 条 + standalone/h5-shell/smoke/6 视口 + 30/40/50 混合；`check-version` PASS |
 
 ### 8.1 每步的提交与证据

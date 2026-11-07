@@ -63,6 +63,9 @@ namespace Survival.Core
 
         public ScoreService Score { get; private set; }
         public GameConfig Config => _config;
+
+        /// <summary>桥接层读结算所需的受击次数（PlayerHealth 是单一事实来源）。</summary>
+        public PlayerHealth Health => _playerHealth;
         public float ElapsedTime => _elapsed;
         public float CountdownRemaining => _countdownRemaining;
 
@@ -102,7 +105,8 @@ namespace Survival.Core
             if (State == GameState.Playing)
             {
                 _elapsed += Time.deltaTime;
-                Score.SetSurvivedSeconds((int)_elapsed);
+                // 每帧按 elapsed 纯函数重算；HUD 只在显示分变化时刷新（ScoreService 内部去重）。
+                Score.Advance(_elapsed);
                 OnTimeChanged?.Invoke(RemainingTime);
 
                 if (_elapsed >= _config.RoundDuration)
@@ -367,16 +371,23 @@ namespace Survival.Core
 
             if (won)
             {
+                // 胜利的存活分固定按满回合计算，不依赖最后一帧的浮点（M6 §4.1）。
                 _elapsed = _config.RoundDuration;
-                Score.SetSurvivedSeconds((int)_elapsed);
-                Score.SetWon(true);
+            }
+
+            Score.Finish(_elapsed, _playerHealth.CurrentHealth, won);
+
+            if (won)
+            {
                 OnTimeChanged?.Invoke(0f);
             }
 
             _enemySpawner.StopSpawning();
             Time.timeScale = 0f;
             SetState(GameState.Result);
-            Debug.Log($"[GameManager] state=Result won={won} survived={_elapsed:F1}s score={Score.Score}");
+            Debug.Log(
+                $"[GameManager] state=Result won={won} survived={_elapsed:F1}s score={Score.FinalScore} " +
+                $"hit={_playerHealth.HitCount} hp={_playerHealth.CurrentHealth}");
         }
 
         private void SetState(GameState next)

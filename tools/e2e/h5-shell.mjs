@@ -110,7 +110,7 @@ async function waitGameOverH5(page, timeout = GAME_TIMEOUT) {
 }
 
 async function runCore(browser, baseUrl) {
-  const url = `${baseUrl}/index.html?testhook=1&perf=1&roundDuration=2`;
+  const url = `${baseUrl}/index.html?testhook=1&perf=1&roundDuration=2&invincible=1`;
   const { context, page, consoleLines } = await newPage(browser, { width: 1280, height: 720 }, url);
 
   // 1) Start must be disabled before Unity onReady.
@@ -186,6 +186,7 @@ async function runCore(browser, baseUrl) {
   await waitStatus(page, '游戏菜单', 30000);
 
   // 5) Finish a real 2s round (hard): best score + last round.
+  // C6 score: (2s * 10 + 100 HP) * 1.6 + 200 = 392.
   layout = await canvasLayout(page);
   await clickCanvas(page, layout.menuStart);
   await waitStatus(page, '游戏中', 60000);
@@ -193,9 +194,9 @@ async function runCore(browser, baseUrl) {
 
   const best = Number(await page.evaluate(() => localStorage.getItem('survival.bestScore')));
   const migrated = await page.evaluate(() => localStorage.getItem('survival.bestScoreMigrated'));
-  assert(best === 232, 'hard 2s win best must be 232, got ' + best);
+  assert(best === 392, 'hard 2s win best must be 392, got ' + best);
   assert(migrated === '1', 'migration marker must be set');
-  assert((await text(page, '#data-last')) === '困难 232', 'last round must be 困难 232');
+  assert((await text(page, '#data-last')) === '困难 392', 'last round must be 困难 392');
   assert((await page.getAttribute('#data-last', 'title') || '').includes('胜利'), 'title must keep win info');
   // 快照必须在下面的注入/刷新之前抓：刷新会清空最近一局，JSON 里才不会被写成「—」。
   const lastRoundAfterRound = await text(page, '#data-last');
@@ -209,7 +210,7 @@ async function runCore(browser, baseUrl) {
       payload: { result: 'lose', score: 100, survivedSeconds: 10, difficulty: 'easy' },
     }));
   });
-  assert(Number(await page.evaluate(() => localStorage.getItem('survival.bestScore'))) === 232, 'low score overwrote best');
+  assert(Number(await page.evaluate(() => localStorage.getItem('survival.bestScore'))) === 392, 'low score overwrote best');
   assert((await text(page, '#data-last')).startsWith('简单 100'), 'last round should update even for a low score');
 
   // 7) No legacy in-game commands were sent.
@@ -225,7 +226,7 @@ async function runCore(browser, baseUrl) {
   await waitReady(page);
   const refreshed = await appState(page);
   assert(refreshed.page === 'Shell', 'reload must return to Shell');
-  assert(refreshed.best === 232, 'best must survive reload');
+  assert(refreshed.best === 392, 'best must survive reload');
   assert((await text(page, '#data-last')) === '—', 'last round must be cleared on reload');
   assert((await page.$eval('#nickname', (el) => el.value)) === '阿宝', 'nickname must survive reload');
 
@@ -313,7 +314,7 @@ async function runMigration(browser, baseUrl) {
 }
 
 async function runFullscreen(browser, baseUrl) {
-  const url = `${baseUrl}/index.html?testhook=1&perf=1&roundDuration=2`;
+  const url = `${baseUrl}/index.html?testhook=1&perf=1&roundDuration=2&invincible=1`;
   const { context, page } = await newPage(browser, { width: 1280, height: 720 }, url);
   await waitReady(page);
   await page.click('#btn-start');
@@ -400,7 +401,7 @@ async function runViewports(browser, baseUrl) {
     // 390×844 跑一次真实 2s 短局（Unity 结算卡 + H5 数据栏）；其余视口只验布局，
     // GameOver 用注入态并在文件名标 layout-only，避免被当成真实结算。
     const realRound = viewport.name === '390x844';
-    const query = realRound ? '&perf=1&roundDuration=2' : '';
+    const query = realRound ? '&perf=1&roundDuration=2&invincible=1' : '';
     const context = await browser.newContext({
       viewport: { width: viewport.width, height: viewport.height },
       deviceScaleFactor: 1,
