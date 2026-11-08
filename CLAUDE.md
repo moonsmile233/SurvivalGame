@@ -1,6 +1,6 @@
 # SurvivalGame — 2D 生存挑战（Unity WebGL + H5）
 
-> 文档版本：2026-11-02T20:50+08 · 作者：策划 · 改前必须从磁盘重读；上下文旧副本作废。
+> 文档版本：2026-11-08T18:20+08 · 作者：策划/程序 · 改前必须从磁盘重读；上下文旧副本作废。
 > 协作与存档规则见 `docs/协作协议.md`（单一写者、写前重读、每步 checkpoint）。
 
 ## 一句话
@@ -10,8 +10,8 @@
 - **文档地图（先看这页）：`docs/文档地图.md`** — 权威顺序、各文档 owner/状态
 - **实现总览（当前事实）：`docs/实现总览.md`** — 规则/状态/输入/敌人/UI/构建/验收一页式说明
 - 完整设计规范：`docs/项目规范.md`（原始设计 + 背景；部分内容已被实现总览取代）
-- 当前状态：**v1.2 已收口（1.2.1 构建入库 `web/unity`，已部署 Netlify）**；M0~M6 主体已完成，M5 ticket 为历史。
-  优化记录 `docs/优化记录-2026-11-02.md`；交接 `docs/交接提示词-2026-11-02-H5薄壳.md`
+- 当前状态：**v1.3.0 已交付（1.3.0 构建入库 `web/unity`，已部署 Netlify，Release `v1.3.0`，main `2f38b710`）**；
+  M0~M6 主体已完成，M5 ticket 为历史。记录 `docs/M6-内容扩展-执行记录.md`；部署/Release 见 `docs/acceptance.md` §3.9
 - 通信协议：`docs/bridge-protocol.md`（实现契约，改代码必须同步）
 - **执行前先看：`docs/遗留问题.md`**（输入后端、构建产物、字体与测试环境注意事项）
 - **玩法增强（M4 P1/P2）：`docs/玩法增强.md`**
@@ -44,17 +44,19 @@
   新站点默认「需登录访问」，必须在后台 **Project configuration → General → Visitor access → Visibility** 改成 **Public**
 - npm 默认缓存 `D:\nodejs\node_cache` 当前用户不可写，`npx` 需带 `npm_config_cache="D:/agent使用学习/浏览器相关/.npm-cache"`
 
-## 当前状态：v1.2 游戏优先已收口（2026-11-02）
+## 当前状态：v1.3.0 已交付（2026-11-08）
 
-M0~M6 主体、v1.2 重构（Unity 菜单/状态机/协议 v3 + H5 薄壳）已完成；最终构建 **1.2.1** 已入库 `web/unity`
-（`builtAt 2026-11-02T13:05:32Z`，9,651,481 B），`?v=1.2.1`，`tools/check-version.mjs` PASS；
-已部署 Netlify production（deploy `6ae88c99…`）。v1.0.0 Release 保留回滚。
+M0~M6（含 v1.3 内容扩展 C1–C7.5）已完成；最终构建 **1.3.0** 已入库 `web/unity`
+（`builtAt 2026-11-07T13:46:43Z`），`?v=1.3.0`，`tools/check-version.mjs` PASS；
+已部署 Netlify production（deploy `6af049771a4cbd7448877fcc`，线上 smoke 9/9、console 0），
+Release `v1.3.0`（tag → `main` `2f38b710`，zip sha256 `b62bd1db…c61a9d`），干净克隆 smoke 通过。
 
 - Unity 拥有主菜单/难度/开局/暂停/重开/返回/结算与统一 3-2-1；H5 只做昵称/进入/数据面板/localStorage/响应式/全屏入口。
+- v1.3：三种敌人、5-tick 袋、上限 14/30/50、0.1s 分段计分、结算明细；协议 v3。
 - 有效测试：`tools/e2e/standalone-menu|focus|perf.mjs` + `h5-shell.mjs` + `smoke.mjs`；旧 v1.1 脚本在 `tools/e2e/legacy/`。
-- 优化记录：`docs/优化记录-2026-11-02.md`；交接：`docs/交接提示词-2026-11-02-H5薄壳.md`。
-- **仍未完成**：人工 60 秒胜利、5 局基线、Honor 90 Pro / iPhone 真机、DPR>1 实测、全屏真机语义、国内托管；
-  **不要宣称完全收口**。
+- 记录：`docs/M6-内容扩展-执行记录.md`；部署/Release 见 `docs/acceptance.md` §3.9。
+- **仍未完成**：人工 60 秒胜利/5 局的具体数据待用户补、Honor 90 Pro / iPhone 真机、DPR>1 实测、全屏真机语义、国内托管；
+  **不要宣称真机完全收口**。
 
 ## 硬约束
 1. **一个状态一个作者**：静态结构（相机、Canvas、玩家、生成器）放在场景里；动态物体（敌人、特效、飘字）运行时生成。禁止两边各生成一份。
