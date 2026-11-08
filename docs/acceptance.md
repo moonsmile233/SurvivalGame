@@ -1,6 +1,6 @@
 # 验收记录（living document）
 
-> 最后更新：2026-11-08（v1.3.0 已部署 Netlify `6af04977…` 并发布 Release `v1.3.0`、main 前移 `2f38b710`、干净克隆通过，见 §3.9；
+> 最后更新：2026-11-08（v1.3.0 已部署 Netlify `6af04977…` 并发布 Release `v1.3.0`、main 前移（构建提交 `2f38b710`）、干净克隆通过，见 §3.9；
 > 2026-11-07 v1.3 内容扩展：1.3.0 构建、三种敌人、分段计分、全量回归，见 §3.8；用户确认人工 60 秒/5 局已完成，具体数据待补）
 > 2026-11-02（v1.2 D 收尾：1.2.1 证据与 Netlify 部署，见 §3.7；v1.2 第一阶段：Unity 菜单/状态机 + 协议 v3 骨架，见 §3.5；
 > 2026-11-01：L1.1 全屏口径见 §3.4；M6 第 2 步三档难度 + H5 主界面 + `ReturnToMenu` 见 §3.3；
@@ -293,7 +293,7 @@
 
 ## 3.9 v1.3.0 部署与 Release（2026-11-08）
 
-> 部署对象：`web/`（1.3.0，`builtAt 2026-11-07T13:46:43Z`）；main 前移 `2f38b710`；Release `v1.3.0`。
+> 部署对象：`web/`（1.3.0，`builtAt 2026-11-07T13:46:43Z`）；main 前移（构建提交 `2f38b710`）；Release `v1.3.0`。
 
 - **Netlify production**：deploy **`6af049771a4cbd7448877fcc`**（2026-11-08 18:05Z 左右 ready），
   线上 URL <https://survivalgame-demo.netlify.app>，unique URL
@@ -305,7 +305,7 @@
     console **0 未预期 error**。证据 `docs/evidence/deploy-1.3.0/smoke-online-chrome-desktop-*`。
   - 截图确认页脚 `v1.3.0`、结算明细「存活分 65 · 血量分 130 · 受击 0」；**无 trial 水印**。
   - 回滚：上一部署 `6ae88c99…`（1.2.1）或 Release v1.0.0。
-- **GitHub**：`main` 快进到 **`2f38b710`**（fast-forward，未改写历史）；
+- **GitHub**：`main` 快进到 1.3.0 构建提交 **`2f38b710`**（fast-forward，未改写历史；随后 docs 提交同步本记录，最新以 `jj log` 为准）；
   Release **`v1.3.0`**（<https://github.com/moonsmile233/SurvivalGame/releases/tag/v1.3.0>，target `main`），
   附件 `SurvivalGame-web-1.3.0.zip` **9,464,620 B**，sha256
   `b62bd1dbcd7cdea778854257360118cccaf824fd3685eac56d164d7472c61a9d`（GitHub 侧 digest 与本地一致）。
@@ -332,7 +332,7 @@
 9. **L1 全屏边界**：无头 Chrome 的 `Esc` 不退出全屏却会传给 Unity 触发暂停；有头浏览器/真机尚未确认
    `Esc` 是否由浏览器消费。若真机上出现「按 Esc 退出全屏后游戏被暂停」，记录后另行决定是否在 H5 捕获阶段拦截。
 10. **v1.3.0 交付已完成**（见 §3.9）：已入 `web/unity`、部署 Netlify（`6af04977…`）、发布 Release `v1.3.0`、
-    `main` 前移 `2f38b710`、干净克隆 smoke 通过。真机/DPR/全屏语义仍待用户设备验证
+    `main` 前移（构建提交 `2f38b710`）、干净克隆 smoke 通过。真机/DPR/全屏语义仍待用户设备验证
     （见 §2、§4.3、`docs/遗留问题.md`）。
 
 ## 5. 结论
